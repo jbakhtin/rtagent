@@ -12,6 +12,14 @@ const (
 	reportInterval = time.Second * 10
 )
 
+type gauge float64
+type counter int64
+
+type AnotherMetric struct {
+	PollCount counter
+	RandomValue gauge
+}
+
 // TODO: реализовать кастомный тип метрики PollCount - counter
 // TODO: реализовать кастомный тип метрики RandomValue - gauge
 
@@ -32,6 +40,7 @@ func (monitor *Monitor) pool() {
 		select {
 			case <-ticker.C:
 				fmt.Println("Метрика собрана")
+				runtime.ReadMemStats(&monitor.memStats)
 			case <-monitor.ctx.Done():
 				fmt.Println("Сбор метрик приостановлен!")
 				return
@@ -46,6 +55,9 @@ func (monitor *Monitor) report() {
 		select {
 			case <-ticker.C:
 				fmt.Println("Метрика отрпавлена!")
+
+				fmt.Println(monitor.GetMemStats())
+
 			case <-monitor.ctx.Done():
 				fmt.Println("Отправка метрики приостановлена!")
 				return
@@ -58,8 +70,21 @@ func (monitor *Monitor) Start () {
 	go monitor.report()
 }
 
-func (monitor *Monitor) Done () {
+func (monitor *Monitor) Stop () {
 	monitor.cancel()
+}
+
+func(monitor Monitor) GetMemStats() map[string]gauge {
+	result := make(map[string]gauge, 20)
+
+	result["Alloc"] = gauge(monitor.memStats.Alloc)
+	result["Frees"] = gauge(monitor.memStats.Frees)
+	result["HeapAlloc"] = gauge(monitor.memStats.HeapAlloc)
+	result["BuckHashSys"] = gauge(monitor.memStats.BuckHashSys)
+	result["GCSys"] = gauge(monitor.memStats.GCSys)
+	result["HeapIdle"] =gauge( monitor.memStats.HeapIdle)
+
+	return result
 }
 
 func NewMonitor(ctx context.Context, pollInterval, reportInterval time.Duration) Monitor {
@@ -73,17 +98,13 @@ func NewMonitor(ctx context.Context, pollInterval, reportInterval time.Duration)
 	}
 }
 
-//TODO: сделать остановшик
-//TODO: сделать остановшик через определенное время
-//TODO: сделать остановшик на опредленоое время
-
 func main() {
 	ctx := context.Background()
 
 	monitor := NewMonitor(ctx, time.Second * 2, time.Second * 10)
 
 	monitor.Start()
-	time.AfterFunc(time.Second * 20, monitor.Done)
+	time.AfterFunc(time.Second * 20, monitor.Stop)
 
 	timer := time.NewTimer(time.Second * 60)
 	<-timer.C
