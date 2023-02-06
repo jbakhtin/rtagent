@@ -60,7 +60,7 @@ func (monitor *Monitor) report() () {
 				fmt.Println("Метрика отрпавлена!")
 
 				for key, value := range monitor.GetMemStats() {
-					endpoint := "http://127.0.0.1:8000/update/" + fmt.Sprintf("%T", value) + "/" + key + "/" + fmt.Sprint(value)
+					endpoint := "http://127.0.0.1:8080/update/" + fmt.Sprintf("%T", value) + "/" + key + "/" + fmt.Sprint(value)
 					//fmt.Println(endpoint)
 
 					_, err := http.NewRequest(http.MethodPost, endpoint, nil)
