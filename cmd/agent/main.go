@@ -68,13 +68,19 @@ func (monitor *Monitor) report() () {
 						fmt.Println(err)
 					}
 
+					req.Header.Add("Content-Type", "text/plain.")
+
 					// конструируем клиент
 					client := &http.Client{}
 					// отправляем запрос
-					_, err = client.Do(req)
-					if err != nil {
-						fmt.Println(err)
+					res, err2 := client.Do(req)
+					if err2 != nil {
+						fmt.Println(err2)
 					}
+
+					// печатаем код ответа
+					fmt.Println("Статус-код ", res.Status)
+					defer res.Body.Close()
 				}
 
 			case <-monitor.ctx.Done():
