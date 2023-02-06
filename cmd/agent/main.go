@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"runtime"
 	"time"
 )
@@ -36,6 +37,8 @@ type Monitor struct {
 func (monitor *Monitor) pool() {
 	ticker := time.NewTicker(monitor.pollInterval)
 
+
+
 	for {
 		select {
 			case <-ticker.C:
@@ -48,7 +51,7 @@ func (monitor *Monitor) pool() {
 	}
 }
 
-func (monitor *Monitor) report() {
+func (monitor *Monitor) report() () {
 	ticker := time.NewTicker(monitor.reportInterval)
 
 	for {
@@ -56,7 +59,15 @@ func (monitor *Monitor) report() {
 			case <-ticker.C:
 				fmt.Println("Метрика отрпавлена!")
 
-				fmt.Println(monitor.GetMemStats())
+				for key, value := range monitor.GetMemStats() {
+					endpoint := "http://127.0.0.1:8000/update/" + fmt.Sprintf("%T", value) + "/" + key + "/" + fmt.Sprint(value)
+					//fmt.Println(endpoint)
+
+					_, err := http.NewRequest(http.MethodPost, endpoint, nil)
+					if err != nil {
+						fmt.Println(err)
+					}
+				}
 
 			case <-monitor.ctx.Done():
 				fmt.Println("Отправка метрики приостановлена!")
