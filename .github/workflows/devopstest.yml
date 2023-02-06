@@ -33,7 +33,7 @@ jobs:
         with:
           repository: Yandex-Practicum/go-autotests
           latest: true
-          fileName: "devopstest;random"
+          fileName: "*"
           out-file-path: .tools
 
       - name: Setup autotest binary
