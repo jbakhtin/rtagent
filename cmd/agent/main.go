@@ -63,7 +63,15 @@ func (monitor *Monitor) report() () {
 					endpoint := "http://127.0.0.1:8080/update/" + fmt.Sprintf("%T", value) + "/" + key + "/" + fmt.Sprint(value)
 					//fmt.Println(endpoint)
 
-					_, err := http.NewRequest(http.MethodPost, endpoint, nil)
+					req, err := http.NewRequest(http.MethodPost, endpoint, nil)
+					if err != nil {
+						fmt.Println(err)
+					}
+
+					// конструируем клиент
+					client := &http.Client{}
+					// отправляем запрос
+					_, err = client.Do(req)
 					if err != nil {
 						fmt.Println(err)
 					}
