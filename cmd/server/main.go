@@ -31,12 +31,34 @@ func getMetrics(w http.ResponseWriter, r *http.Request) {
 
 func updateMetric(w http.ResponseWriter, r *http.Request) {
 
+	q := r.URL.Query().Get("type")
+	if q == "" {
+		http.Error(w, "The type parameter is missing", http.StatusBadRequest)
+		return
+	}
+
+	q = r.URL.Query().Get("key")
+	if q == "" {
+		http.Error(w, "The key parameter is missing", http.StatusBadRequest)
+		return
+	}
+
+	q = r.URL.Query().Get("value")
+	if q == "" {
+		http.Error(w, "The value parameter is missing", http.StatusBadRequest)
+		return
+	}
+
 	ctx := context.Background()
 	repository := inmemory.NewMetricRepository(&ctx)
 
 	metricService := services.NewMetricService(&ctx, repository)
 
 	metricService.Create("test", "test", "test")
+
+	w.Header().Set("content-type", "text/plain")
+	// устанавливаем статус-код 200
+	w.WriteHeader(http.StatusOK)
 }
 
 func main() {

@@ -67,7 +67,7 @@ func (monitor *Monitor) report() () {
 					return
 				}
 
-				req.Header.Add("Content-Type", "text/plain.")
+				req.Header.Add("Content-Type", "text/plain")
 
 				// конструируем клиент
 				client := &http.Client{}
