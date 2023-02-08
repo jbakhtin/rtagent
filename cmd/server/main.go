@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/jbakhtin/rtagent/internal/repositories/storages/inMemory"
+	"github.com/jbakhtin/rtagent/internal/repositories/storages/inmemory"
 	"github.com/jbakhtin/rtagent/internal/services"
 	"net/http"
 )
@@ -32,7 +32,7 @@ func getMetrics(w http.ResponseWriter, r *http.Request) {
 func updateMetric(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
-	repository := inMemory.NewMetricRepository(&ctx)
+	repository := inmemory.NewMetricRepository(&ctx)
 
 	metricService := services.NewMetricService(&ctx, repository)
 
