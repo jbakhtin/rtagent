@@ -43,10 +43,17 @@ func (h *HandlerMetric) Find() http.HandlerFunc {
 func (h *HandlerMetric) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tp := chi.URLParam(r, "type")
+		if tp == "" || tp == "unknown" {
+			http.Error(w, errors.New("type not valid").Error(), http.StatusNotImplemented)
+			return
+		}
+
 		k := chi.URLParam(r, "key")
+		// Need to add valudate
+
 		vl := chi.URLParam(r, "value")
 		if vl == "" || vl == "none" {
-			http.Error(w, errors.New("type not valid").Error(), http.StatusBadRequest)
+			http.Error(w, errors.New("value not valid").Error(), http.StatusBadRequest)
 			return
 		}
 
