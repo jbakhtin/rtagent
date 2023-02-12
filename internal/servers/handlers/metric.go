@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
 	"net/http"
@@ -44,6 +45,10 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 		tp := chi.URLParam(r, "type")
 		k := chi.URLParam(r, "key")
 		vl := chi.URLParam(r, "value")
+		if vl == "" || vl == "none" {
+			http.Error(w, errors.New("type not valid").Error(), http.StatusBadRequest)
+			return
+		}
 
 		metric, err := h.repo.Update(tp, k, vl)
 

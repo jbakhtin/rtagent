@@ -13,12 +13,12 @@ const (
 	reportInterval = time.Second * 10
 )
 
-type gauge float64
-type counter int64
+type Gauge float64
+type Counter int64
 
 type AnotherMetric struct {
-	PollCount counter
-	RandomValue gauge
+	PollCount Counter
+	RandomValue Gauge
 }
 
 // TODO: реализовать кастомный тип метрики PollCount - counter
@@ -99,15 +99,15 @@ func (monitor *Monitor) Stop () {
 	monitor.cancel()
 }
 
-func(monitor Monitor) GetMemStats() map[string]gauge {
-	result := make(map[string]gauge, 20)
+func(monitor Monitor) GetMemStats() map[string]Gauge {
+	result := make(map[string]Gauge, 20)
 
-	result["Alloc"] = gauge(monitor.memStats.Alloc)
-	result["Frees"] = gauge(monitor.memStats.Frees)
-	result["HeapAlloc"] = gauge(monitor.memStats.HeapAlloc)
-	result["BuckHashSys"] = gauge(monitor.memStats.BuckHashSys)
-	result["GCSys"] = gauge(monitor.memStats.GCSys)
-	result["HeapIdle"] =gauge( monitor.memStats.HeapIdle)
+	result["Alloc"] = Gauge(monitor.memStats.Alloc)
+	result["Frees"] = Gauge(monitor.memStats.Frees)
+	result["HeapAlloc"] = Gauge(monitor.memStats.HeapAlloc)
+	result["BuckHashSys"] = Gauge(monitor.memStats.BuckHashSys)
+	result["GCSys"] = Gauge(monitor.memStats.GCSys)
+	result["HeapIdle"] =Gauge( monitor.memStats.HeapIdle)
 
 	return result
 }

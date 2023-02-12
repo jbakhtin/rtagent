@@ -15,7 +15,7 @@ func main() {
 	monitor.Start()
 	defer monitor.Stop()
 
-	timer := time.NewTimer(time.Second * 30)
+	timer := time.NewTimer(time.Second * 60 * 60)
 
 	select {
 	case <-timer.C:
