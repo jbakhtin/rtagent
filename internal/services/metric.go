@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
+	"strconv"
 )
 
 type MetricService struct {
@@ -40,10 +41,25 @@ func (ms *MetricService) Get() ([]models.Metric, error){
 }
 
 func (ms *MetricService) Update(tp, k, vl string) (models.Metric, error) {
-	metric, err := ms.repository.Update(tp, k, vl)
+	var metric models.Metric
+	var err error
 
+	if tp == "gauge" || tp == "rtagent.Gauge" {
+		metric, err = ms.repository.Update(tp, k, vl)
+	} else if tp == "counter" || tp == "rtagent.Counter" {
+		metric, err = ms.repository.Find(tp, k)
+		int1, _ := strconv.Atoi(metric.Value())
+		int2, _ := strconv.Atoi(vl)
+
+		int3 := int1 + int2
+
+		metric, err = ms.repository.Update(tp, k, strconv.Itoa(int3))
+	}
+
+	//fmt.Println("зашел в сервис")
 	if err != nil {
 		fmt.Println("Update error: ", err)
+		return metric, err
 	}
 
 	return metric, nil

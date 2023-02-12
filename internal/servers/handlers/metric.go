@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
+	"github.com/jbakhtin/rtagent/internal/services"
 	"net/http"
 )
 
@@ -57,7 +59,10 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 			return
 		}
 
-		metric, err := h.repo.Update(tp, k, vl)
+		ctx := context.Background()
+		service := services.NewMetricService(&ctx, h.repo)
+
+		metric, err := service.Update(tp, k, vl)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
