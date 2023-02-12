@@ -19,6 +19,16 @@ func NewMetricService (ctx *context.Context, repository interfaces.MetricReposit
 	}
 }
 
+func (ms *MetricService) Find(tp, key string) (models.Metric, error){
+	metric, err := ms.repository.Find(tp, key)
+
+	if err != nil {
+		fmt.Println("Find error: ", err)
+	}
+
+	return metric, nil
+}
+
 func (ms *MetricService) Get() ([]models.Metric, error){
 	metrics, err := ms.repository.Get()
 
@@ -29,21 +39,11 @@ func (ms *MetricService) Get() ([]models.Metric, error){
 	return metrics, nil
 }
 
-func (ms *MetricService) Update(type2, key, value string) (models.Metric, error) {
-	metric, err := ms.repository.Update(type2, key, value)
+func (ms *MetricService) Update(tp, k, vl string) (models.Metric, error) {
+	metric, err := ms.repository.Update(tp, k, vl)
 
 	if err != nil {
 		fmt.Println("Update error: ", err)
-	}
-
-	return metric, nil
-}
-
-func (ms *MetricService) Create(type2, key, value string) (models.Metric, error) {
-	metric, err := ms.repository.Create(type2, key, value)
-
-	if err != nil {
-		fmt.Println("Crated error: ", err)
 	}
 
 	return metric, nil

@@ -3,40 +3,29 @@ package inmemory
 import (
 	"context"
 	"github.com/jbakhtin/rtagent/internal/models"
+	"github.com/jbakhtin/rtagent/internal/storages/memstorage"
 )
 
 type Metric struct {
 	ctx *context.Context
-}
-
-func (metric *Metric) Get() ([]models.Metric, error) {
-	return []models.Metric{}, nil
+	memStorage memstorage.MemStorage
 }
 
 func NewMetricRepository(ctx *context.Context) *Metric {
 	return &Metric{
 		ctx: ctx,
+		memStorage: memstorage.New(),
 	}
 }
 
-func (metric *Metric) Update(type2, key, value string) (models.Metric, error) {
-
-	return models.Metric{
-		Type2: type2 + "_updated",
-		Key:   key + "_updated",
-		Value: value + "_updated",
-	}, nil
+func (metric *Metric) Get() ([]models.Metric, error) {
+	return metric.memStorage.Get()
 }
 
-func (metric *Metric) Create(type2, key, value string) (models.Metric, error) {
-
-	return models.Metric{
-		Type2: type2,
-		Key:   key,
-		Value: value,
-	}, nil
+func (metric *Metric) Find(tp, key string) (models.Metric, error) {
+	return metric.memStorage.Find(tp, key)
 }
 
-
-
-
+func (metric *Metric) Update(tp, k, vl string) (models.Metric, error) {
+	return metric.memStorage.Set(tp, k, vl)
+}
