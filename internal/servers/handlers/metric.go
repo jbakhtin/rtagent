@@ -32,13 +32,7 @@ func (h *HandlerMetric) Find() http.HandlerFunc {
 			return
 		}
 
-		metricJson, err := json.Marshal(metric.Value())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Write(metricJson)
+		w.Write([]byte(metric.Value()))
 	}
 }
 

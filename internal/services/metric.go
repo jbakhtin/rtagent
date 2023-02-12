@@ -48,12 +48,16 @@ func (ms *MetricService) Update(tp, k, vl string) (models.Metric, error) {
 		metric, err = ms.repository.Update(tp, k, vl)
 	} else if tp == "counter" || tp == "rtagent.Counter" {
 		metric, err = ms.repository.Find(tp, k)
-		int1, _ := strconv.Atoi(metric.Value())
-		int2, _ := strconv.Atoi(vl)
+		if err != nil {
+			metric, err = ms.repository.Update(tp, k, vl)
+		} else {
+			int1, _ := strconv.Atoi(metric.Value())
+			int2, _ := strconv.Atoi(vl)
 
-		int3 := int1 + int2
+			int3 := int1 + int2
 
-		metric, err = ms.repository.Update(tp, k, strconv.Itoa(int3))
+			metric, err = ms.repository.Update(tp, k, strconv.Itoa(int3))
+		}
 	}
 
 	//fmt.Println("зашел в сервис")
