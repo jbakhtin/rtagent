@@ -25,7 +25,9 @@ func (memStorage *MemStorage) Set(tp, k, vl string) (models.Metric, error) {
 
 	metric := models.NewMetric(tp, k, vl)
 
-	idx := slices.IndexFunc(memStorage.items, func(c models.Metric) bool { return c.Type() == "k" })
+	idx := slices.IndexFunc(memStorage.items, func(c models.Metric) bool {
+		return c.Type() == tp && c.Key() == k
+	})
 
 	if idx == -1 {
 		memStorage.items = append(memStorage.items, metric)
