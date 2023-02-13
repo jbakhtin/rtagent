@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/jbakhtin/rtagent/internal/rtagent"
 	"time"
 )
@@ -16,9 +15,5 @@ func main() {
 	defer monitor.Stop()
 
 	timer := time.NewTimer(time.Second * 60 * 60)
-
-	select {
-	case <-timer.C:
-		fmt.Println("Агент приостановлен.")
-	}
+	<-timer.C
 }

@@ -136,7 +136,7 @@ func(monitor Monitor) GetStats() map[string]Metricer {
 	result["GCSys"] = gauge(monitor.memStats.GCSys)
 	result["HeapIdle"] = gauge( monitor.memStats.HeapIdle)
 
-	result["PoolCounter"] = monitor.poolCounter
+	result["PoolCount"] = monitor.poolCounter
 	result["RandomValue"] = monitor.randomValue
 
 	return result
