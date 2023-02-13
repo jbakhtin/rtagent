@@ -46,7 +46,7 @@ type Monitor struct {
 
 	memStats runtime.MemStats
 
-	poolCounter counter
+	pollCounter counter
 	randomValue gauge
 
 	ctx    context.Context
@@ -62,7 +62,7 @@ func (monitor *Monitor) pooling() {
 			fmt.Println("Метрика собрана")
 			runtime.ReadMemStats(&monitor.memStats) // TODO: вызов промежуточной функции
 			monitor.randomValue = 12
-			monitor.poolCounter.increment(1)
+			monitor.pollCounter.increment(1)
 		case <-monitor.ctx.Done():
 			fmt.Println("Сбор метрик приостановлен!")
 			return
@@ -109,7 +109,7 @@ func (monitor *Monitor) reporting() () {
 				fmt.Println("Статус-код ", res.Status)
 				res.Body.Close()
 			}
-			monitor.poolCounter.flush()
+			monitor.pollCounter.flush()
 		case <-monitor.ctx.Done():
 			fmt.Println("Отправка метрики приостановлена!")
 			return
@@ -136,7 +136,7 @@ func(monitor Monitor) GetStats() map[string]Metricer {
 	result["GCSys"] = gauge(monitor.memStats.GCSys)
 	result["HeapIdle"] = gauge( monitor.memStats.HeapIdle)
 
-	result["PoolCount"] = monitor.poolCounter
+	result["PollCount"] = monitor.poolCounter
 	result["RandomValue"] = monitor.randomValue
 
 	return result
