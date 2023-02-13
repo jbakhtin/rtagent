@@ -1,18 +1,27 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
 	"github.com/jbakhtin/rtagent/internal/services"
+	"html/template"
 	"net/http"
 )
 
 type HandlerMetric struct {
 	repo interfaces.MetricRepository
 }
+
+var temp = `
+	{{range .}}
+			<div>{{ .K }}: {{ .Vl }}</div>
+	{{end}}
+`
 
 func NewHandlerMetric(repo interfaces.MetricRepository) *HandlerMetric {
 	return &HandlerMetric{
@@ -82,12 +91,14 @@ func (h *HandlerMetric) Get() http.HandlerFunc {
 			return
 		}
 
-		metricJson, err := json.Marshal(metrics)
+		t := template.Must(template.New("test").Parse(temp))
+		buffer := bytes.NewBuffer(nil)
+		err = t.Execute(buffer, metrics)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		w.Write(metricJson)
+		fmt.Fprint(w, buffer)
 	}
 }

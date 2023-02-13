@@ -20,7 +20,7 @@ func Start() error {
 	r.Use(middleware.Logger)
 
 	r.Route("/", func(r chi.Router) {
-		r.Get("/", handlerMetric.Get()) // TODO: Need return HTML
+		r.Get("/", handlerMetric.Get()) // TODO: отображение HTML
 
 		r.Get("/value/{type}/{key}", handlerMetric.Find())
 		r.Post("/update/{type}/{key}/{value}", handlerMetric.Update())

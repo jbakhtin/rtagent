@@ -14,11 +14,19 @@ const (
 )
 
 type Gauge float64
-type Counter int64
 
-type AnotherMetric struct {
-	PollCount Counter
-	RandomValue Gauge
+type Counter struct {
+	value int64
+}
+
+func (c *Counter) Increment() int64 {
+	c.value++
+	return c.value
+}
+
+func (c *Counter) SetZero() int64 {
+	c.value = 0
+	return c.value
 }
 
 // TODO: реализовать кастомный тип метрики PollCount - counter
@@ -29,6 +37,8 @@ type Monitor struct {
 	reportInterval time.Duration
 
 	memStats runtime.MemStats
+	poolCounter Counter
+	randomValue Gauge
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -41,7 +51,9 @@ func (monitor *Monitor) pool() {
 		select {
 		case <-ticker.C:
 			fmt.Println("Метрика собрана")
-			runtime.ReadMemStats(&monitor.memStats)
+			runtime.ReadMemStats(&monitor.memStats) // TODO: вызов промежуточной функции
+			monitor.poolCounter.Increment()
+			monitor.randomValue = 12
 		case <-monitor.ctx.Done():
 			fmt.Println("Сбор метрик приостановлен!")
 			return
@@ -56,12 +68,18 @@ func (monitor *Monitor) report() () {
 		select {
 		case <-ticker.C:
 			fmt.Println("Метрика отрпавлена!")
+			var endpoint string
+			var client *http.Client
+			var req *http.Request
+			var err error
+			var res *http.Response
 
+			// Send base metrics
 			for key, value := range monitor.GetMemStats() {
-				endpoint := "http://127.0.0.1:8080/update/" + fmt.Sprintf("%T", value) + "/" + key + "/" + fmt.Sprint(value)
+				endpoint = "http://127.0.0.1:8080/update/" + fmt.Sprintf("%T", value) + "/" + key + "/" + fmt.Sprint(value)
 				//fmt.Println(endpoint)
 
-				req, err := http.NewRequest(http.MethodPost, endpoint, nil)
+				req, err = http.NewRequest(http.MethodPost, endpoint, nil)
 				if err != nil {
 					fmt.Println(err)
 					return
@@ -70,24 +88,75 @@ func (monitor *Monitor) report() () {
 				req.Header.Add("Content-Type", "text/plain")
 
 				// конструируем клиент
-				client := &http.Client{}
+				client = &http.Client{}
 				// отправляем запрос
-				res, err2 := client.Do(req)
-				if err2 != nil {
-					fmt.Println(err2)
+				res, err = client.Do(req)
+				if err != nil {
+					fmt.Println(err)
 					return
 				}
 
 				// печатаем код ответа
 				fmt.Println("Статус-код ", res.Status)
-				defer res.Body.Close()
+				res.Body.Close()
 			}
+
+			// Send randomValue metrics
+			endpoint = "http://127.0.0.1:8080/update/gauge/randomValue/" + fmt.Sprint(monitor.randomValue)
+
+			req, err = http.NewRequest(http.MethodPost, endpoint, nil)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			req.Header.Add("Content-Type", "text/plain")
+
+			// конструируем клиент
+			client = &http.Client{}
+			// отправляем запрос
+			res, err = client.Do(req)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			// печатаем код ответа
+			fmt.Println("Статус-код ", res.Status)
+			res.Body.Close()
+
+			// Send pullCounter metrics
+			endpoint = "http://127.0.0.1:8080/update/counter/poulCounter/" + fmt.Sprint(monitor.poolCounter.value)
+			monitor.poolCounter.SetZero()
+
+			req, err = http.NewRequest(http.MethodPost, endpoint, nil)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			req.Header.Add("Content-Type", "text/plain")
+
+			// конструируем клиент
+			client = &http.Client{}
+			// отправляем запрос
+			res, err = client.Do(req)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			// печатаем код ответа
+			fmt.Println("Статус-код ", res.Status)
+			res.Body.Close()
 
 		case <-monitor.ctx.Done():
 			fmt.Println("Отправка метрики приостановлена!")
 			return
 		}
 	}
+
+	// TODO: вызов функции пост обработки метрик
 }
 
 func (monitor *Monitor) Start () {
