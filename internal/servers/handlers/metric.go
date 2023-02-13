@@ -72,13 +72,13 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 			return
 		}
 
-		metricJson, err := json.Marshal(metric)
+		metricJSON, err := json.Marshal(metric)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		w.Write(metricJson)
+		w.Write(metricJSON)
 	}
 }
 

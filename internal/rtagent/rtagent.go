@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 	"runtime"
 	"time"
 )
@@ -13,20 +14,27 @@ const (
 	reportInterval = time.Second * 10
 )
 
-type Gauge float64
-
-type Counter struct {
-	value int64
+type Metricer interface {
+	Type() string
 }
 
-func (c *Counter) Increment() int64 {
-	c.value++
-	return c.value
+type gauge float64
+type counter int64
+
+func (g gauge) Type() string {
+	return reflect.TypeOf(g).Name()
 }
 
-func (c *Counter) SetZero() int64 {
-	c.value = 0
-	return c.value
+func (c counter) Type() string {
+	return reflect.TypeOf(c).Name()
+}
+
+func (c *counter) increment(count counter) {
+	 *c += count
+}
+
+func (c *counter) flush() {
+	*c = 0
 }
 
 // TODO: реализовать кастомный тип метрики PollCount - counter
@@ -37,14 +45,15 @@ type Monitor struct {
 	reportInterval time.Duration
 
 	memStats runtime.MemStats
-	poolCounter Counter
-	randomValue Gauge
+
+	poolCounter counter
+	randomValue gauge
 
 	ctx    context.Context
 	cancel context.CancelFunc
 }
 
-func (monitor *Monitor) pool() {
+func (monitor *Monitor) pooling() {
 	ticker := time.NewTicker(monitor.pollInterval)
 
 	for {
@@ -52,8 +61,8 @@ func (monitor *Monitor) pool() {
 		case <-ticker.C:
 			fmt.Println("Метрика собрана")
 			runtime.ReadMemStats(&monitor.memStats) // TODO: вызов промежуточной функции
-			monitor.poolCounter.Increment()
 			monitor.randomValue = 12
+			monitor.poolCounter.increment(1)
 		case <-monitor.ctx.Done():
 			fmt.Println("Сбор метрик приостановлен!")
 			return
@@ -61,7 +70,7 @@ func (monitor *Monitor) pool() {
 	}
 }
 
-func (monitor *Monitor) report() () {
+func (monitor *Monitor) reporting() () {
 	ticker := time.NewTicker(monitor.reportInterval)
 
 	for {
@@ -75,8 +84,8 @@ func (monitor *Monitor) report() () {
 			var res *http.Response
 
 			// Send base metrics
-			for key, value := range monitor.GetMemStats() {
-				endpoint = "http://127.0.0.1:8080/update/" + fmt.Sprintf("%T", value) + "/" + key + "/" + fmt.Sprint(value)
+			for key, value := range monitor.GetStats() {
+				endpoint = "http://127.0.0.1:8080/update/" + value.Type() + "/" + key + "/" + fmt.Sprint(value)
 				//fmt.Println(endpoint)
 
 				req, err = http.NewRequest(http.MethodPost, endpoint, nil)
@@ -100,83 +109,35 @@ func (monitor *Monitor) report() () {
 				fmt.Println("Статус-код ", res.Status)
 				res.Body.Close()
 			}
-
-			// Send randomValue metrics
-			endpoint = "http://127.0.0.1:8080/update/gauge/RandomValue/" + fmt.Sprint(monitor.randomValue)
-
-			req, err = http.NewRequest(http.MethodPost, endpoint, nil)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			req.Header.Add("Content-Type", "text/plain")
-
-			// конструируем клиент
-			client = &http.Client{}
-			// отправляем запрос
-			res, err = client.Do(req)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			// печатаем код ответа
-			fmt.Println("Статус-код ", res.Status)
-			res.Body.Close()
-
-			// Send pullCounter metrics
-			endpoint = "http://127.0.0.1:8080/update/counter/PulCounter/" + fmt.Sprint(monitor.poolCounter.value)
-			monitor.poolCounter.SetZero()
-
-			req, err = http.NewRequest(http.MethodPost, endpoint, nil)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			req.Header.Add("Content-Type", "text/plain")
-
-			// конструируем клиент
-			client = &http.Client{}
-			// отправляем запрос
-			res, err = client.Do(req)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			// печатаем код ответа
-			fmt.Println("Статус-код ", res.Status)
-			res.Body.Close()
-
+			monitor.poolCounter.flush()
 		case <-monitor.ctx.Done():
 			fmt.Println("Отправка метрики приостановлена!")
 			return
 		}
 	}
-
-	// TODO: вызов функции пост обработки метрик
 }
 
 func (monitor *Monitor) Start () {
-	go monitor.pool()
-	go monitor.report()
+	go monitor.pooling()
+	go monitor.reporting()
 }
 
 func (monitor *Monitor) Stop () {
 	monitor.cancel()
 }
 
-func(monitor Monitor) GetMemStats() map[string]Gauge {
-	result := make(map[string]Gauge, 20)
+func(monitor Monitor) GetStats() map[string]Metricer {
+	result := map[string]Metricer{}
 
-	result["Alloc"] = Gauge(monitor.memStats.Alloc)
-	result["Frees"] = Gauge(monitor.memStats.Frees)
-	result["HeapAlloc"] = Gauge(monitor.memStats.HeapAlloc)
-	result["BuckHashSys"] = Gauge(monitor.memStats.BuckHashSys)
-	result["GCSys"] = Gauge(monitor.memStats.GCSys)
-	result["HeapIdle"] =Gauge( monitor.memStats.HeapIdle)
+	result["Alloc"] = gauge(monitor.memStats.Alloc)
+	result["Frees"] = gauge(monitor.memStats.Frees)
+	result["HeapAlloc"] = gauge(monitor.memStats.HeapAlloc)
+	result["BuckHashSys"] = gauge(monitor.memStats.BuckHashSys)
+	result["GCSys"] = gauge(monitor.memStats.GCSys)
+	result["HeapIdle"] = gauge( monitor.memStats.HeapIdle)
+
+	result["PoolCounter"] = monitor.poolCounter
+	result["RandomValue"] = monitor.randomValue
 
 	return result
 }
