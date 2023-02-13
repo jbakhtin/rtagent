@@ -102,7 +102,7 @@ func (monitor *Monitor) report() () {
 			}
 
 			// Send randomValue metrics
-			endpoint = "http://127.0.0.1:8080/update/gauge/randomValue/" + fmt.Sprint(monitor.randomValue)
+			endpoint = "http://127.0.0.1:8080/update/gauge/RandomValue/" + fmt.Sprint(monitor.randomValue)
 
 			req, err = http.NewRequest(http.MethodPost, endpoint, nil)
 			if err != nil {
@@ -126,7 +126,7 @@ func (monitor *Monitor) report() () {
 			res.Body.Close()
 
 			// Send pullCounter metrics
-			endpoint = "http://127.0.0.1:8080/update/counter/poulCounter/" + fmt.Sprint(monitor.poolCounter.value)
+			endpoint = "http://127.0.0.1:8080/update/counter/PulCounter/" + fmt.Sprint(monitor.poolCounter.value)
 			monitor.poolCounter.SetZero()
 
 			req, err = http.NewRequest(http.MethodPost, endpoint, nil)
