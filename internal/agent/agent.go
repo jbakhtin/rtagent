@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"reflect"
 	"runtime"
-	"sync"
 	"time"
 )
 
@@ -41,7 +40,6 @@ func (c *counter) flush() {
 }
 
 type Monitor struct {
-	sync.Mutex
 	pollInterval time.Duration
 	reportInterval time.Duration
 
@@ -82,13 +80,10 @@ func (monitor *Monitor) polling() {
 }
 
 func (monitor *Monitor) poll() {
-	monitor.Lock()
-
 	runtime.ReadMemStats(&monitor.memStats)
 	monitor.randomValue = 12 // it is human randomizer
 	monitor.pollCounter += 1 // TODO: исправить гонку
 
-	monitor.Unlock()
 }
 
 // reporting - инициирует отправку данных с заданным интервалом monitor.reportInterval
@@ -108,8 +103,6 @@ func (monitor *Monitor) reporting() () {
 
 // report - отправить данные
 func (monitor *Monitor) report() () {
-	monitor.Lock()
-
 	for key, value := range monitor.GetStats() {
 		endpoint := "http://127.0.0.1:8080/update/" + value.Type() + "/" + key + "/" + fmt.Sprint(value)
 		req, err := http.NewRequest(http.MethodPost, endpoint, nil)
@@ -133,8 +126,6 @@ func (monitor *Monitor) report() () {
 		}
 	}
 	monitor.pollCounter = 0
-
-	monitor.Unlock()
 }
 
 // Start - запустить мониторинг
