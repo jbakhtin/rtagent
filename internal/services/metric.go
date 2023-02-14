@@ -34,7 +34,7 @@ func (ms *MetricService) Get() ([]models.Metric, error){
 	metrics, err := ms.repository.Get()
 
 	if err != nil {
-		fmt.Println("Update error: ", err)
+		fmt.Println("Get error: ", err)
 	}
 
 	return metrics, nil
@@ -44,9 +44,9 @@ func (ms *MetricService) Update(tp, k, vl string) (models.Metric, error) {
 	var metric models.Metric
 	var err error
 
-	if tp == "gauge" || tp == "rtagent.Gauge" {
+	if tp == "gauge" {
 		metric, err = ms.repository.Update(tp, k, vl)
-	} else if tp == "counter" || tp == "rtagent.Counter" {
+	} else if tp == "counter" {
 		metric, err = ms.repository.Find(tp, k)
 		if err != nil {
 			metric, err = ms.repository.Update(tp, k, vl)
@@ -60,7 +60,6 @@ func (ms *MetricService) Update(tp, k, vl string) (models.Metric, error) {
 		}
 	}
 
-	//fmt.Println("зашел в сервис")
 	if err != nil {
 		fmt.Println("Update error: ", err)
 		return metric, err

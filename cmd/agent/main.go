@@ -2,14 +2,18 @@ package main
 
 import (
 	"context"
-	"github.com/jbakhtin/rtagent/internal/rtagent"
+	"github.com/jbakhtin/rtagent/internal/agent"
 	"time"
+)
+
+const (
+	pollInterval = time.Second * 2
+	reportInterval = time.Second * 10
 )
 
 func main() {
 	ctx := context.Background()
-
-	monitor := rtagent.NewMonitor(ctx, time.Second * 2, time.Second * 10)
+	monitor := agent.NewMonitor(ctx, pollInterval, reportInterval)
 
 	monitor.Start()
 	defer monitor.Stop()
