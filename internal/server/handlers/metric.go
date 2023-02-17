@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -65,20 +64,14 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 		ctx := context.Background()
 		service := services.NewMetricService(&ctx, h.repo)
 
-		metric, err := service.Update(tp, k, vl)
+		_, err := service.Update(tp, k, vl)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		metricJSON, err := json.Marshal(metric)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Write(metricJSON)
+		w.WriteHeader(http.StatusOK)
 	}
 }
 

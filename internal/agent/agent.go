@@ -98,7 +98,6 @@ func (monitor *Monitor) reporting(ctx context.Context, chanError chan error) {
 func (monitor *Monitor) report() error {
 	for key, value := range monitor.GetStats() {
 		client := resty.New()
-
 		_, err := client.R().SetHeaders(map[string]string{
 			"Content-Type": "text/plain",
 		}).SetPathParams(map[string]string{
