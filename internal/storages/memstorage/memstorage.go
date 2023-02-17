@@ -38,7 +38,7 @@ func (memStorage *MemStorage) Set(tp, k, vl string) (models.Metric, error) {
 	return metric, nil
 }
 
-func (memStorage *MemStorage) Find(tp, k string) (models.Metric, error) {
+func (memStorage *MemStorage) Get(tp, k string) (models.Metric, error) {
 	memStorage.Lock()
 	defer memStorage.Unlock()
 
@@ -53,7 +53,7 @@ func (memStorage *MemStorage) Find(tp, k string) (models.Metric, error) {
 	return memStorage.items[idx], nil
 }
 
-func (memStorage *MemStorage) Get() ([]models.Metric, error) {
+func (memStorage *MemStorage) GetAll() ([]models.Metric, error) {
 	memStorage.Lock()
 	defer memStorage.Unlock()
 

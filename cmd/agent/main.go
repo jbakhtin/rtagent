@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	"fmt"
 	"github.com/jbakhtin/rtagent/internal/agent"
 	"time"
 )
@@ -12,12 +12,8 @@ const (
 )
 
 func main() {
-	ctx := context.Background()
-	monitor := agent.NewMonitor(ctx, pollInterval, reportInterval)
-
-	monitor.Start()
-	defer monitor.Stop()
-
-	timer := time.NewTimer(time.Second * 60 * 60)
-	<-timer.C
+	err := agent.Start(pollInterval, reportInterval)
+	if err != nil {
+		fmt.Println(err)
+	}
 }

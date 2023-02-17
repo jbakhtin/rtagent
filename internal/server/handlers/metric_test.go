@@ -23,7 +23,7 @@ func TestHandlerMetric_Find(t *testing.T) {
 			h := &HandlerMetric{
 				repo: tt.fields.repo,
 			}
-			if got := h.Find(); !reflect.DeepEqual(got, tt.want) {
+			if got := h.Get(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Find() = %v, want %v", got, tt.want)
 			}
 		})

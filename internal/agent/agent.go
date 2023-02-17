@@ -47,54 +47,46 @@ type Monitor struct {
 
 	pollCounter counter
 	randomValue gauge
-
-	ctx    context.Context // TODO: For what?
-	cancel context.CancelFunc
-}
-
-// NewMonitor - констурктор для Monitor
-func NewMonitor(ctx context.Context, pollInterval, reportInterval time.Duration) Monitor {
-	ctx, cancel := context.WithCancel(ctx)
-
-	return Monitor{
-		pollInterval:   pollInterval,
-		reportInterval: reportInterval,
-		ctx:            ctx,
-		cancel:         cancel,
-	}
 }
 
 // pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
-func (monitor *Monitor) polling() {
+func (monitor *Monitor) polling(ctx context.Context, chanError chan error) {
 	ticker := time.NewTicker(monitor.pollInterval)
 
 	for {
 		select {
 		case <-ticker.C:
-			monitor.poll()
-		case <-monitor.ctx.Done():
+			err := monitor.poll()
+			if err != nil {
+				chanError <- err
+			}
+		case <- ctx.Done():
 			fmt.Println("Сбор метрик приостановлен!")
 			return
 		}
 	}
 }
 
-func (monitor *Monitor) poll() {
+func (monitor *Monitor) poll() error {
 	runtime.ReadMemStats(&monitor.memStats)
-	monitor.randomValue = 12 // it is human randomizer
+	monitor.randomValue = 12 // TODO: реализовать рандомайзер
 	monitor.pollCounter += 1 // TODO: исправить гонку
 
+	return nil
 }
 
 // reporting - инициирует отправку данных с заданным интервалом monitor.reportInterval
-func (monitor *Monitor) reporting() () {
+func (monitor *Monitor) reporting(ctx context.Context, chanError chan error) {
 	ticker := time.NewTicker(monitor.reportInterval)
 
 	for {
 		select {
 		case <-ticker.C:
-			monitor.report()
-		case <-monitor.ctx.Done():
+			err := monitor.report()
+			if err != nil {
+				chanError <- err
+			}
+		case <- ctx.Done():
 			fmt.Println("Отправка метрики приостановлена!")
 			return
 		}
@@ -102,13 +94,13 @@ func (monitor *Monitor) reporting() () {
 }
 
 // report - отправить данные
-func (monitor *Monitor) report() () {
+func (monitor *Monitor) report() error {
 	for key, value := range monitor.GetStats() {
 		endpoint := "http://127.0.0.1:8080/update/" + value.Type() + "/" + key + "/" + fmt.Sprint(value)
 		req, err := http.NewRequest(http.MethodPost, endpoint, nil)
 		if err != nil {
-			fmt.Println(err)
-			return
+			fmt.Println(err) // TODO: реализовать логирование
+			return err
 		}
 		req.Header.Add("Content-Type", "text/plain")
 
@@ -116,27 +108,41 @@ func (monitor *Monitor) report() () {
 		res, err := client.Do(req)
 		if err != nil {
 			fmt.Println(err)
-			return
+			return err
 		}
 
 		err = res.Body.Close()
 		if err != nil {
 			fmt.Println(err)
-			return
+			return err
 		}
 	}
 	monitor.pollCounter = 0
+
+	return nil
 }
 
 // Start - запустить мониторинг
-func (monitor *Monitor) Start () {
-	go monitor.polling()
-	go monitor.reporting()
-}
+func Start (pollInterval, reportInterval time.Duration) error {
+	ctx, cancel := context.WithCancel(context.Background())
 
-// Stop - остановить мониторинг
-func (monitor *Monitor) Stop () {
-	monitor.cancel()
+	monitor := Monitor{
+		pollInterval:   pollInterval,
+		reportInterval: reportInterval,
+	}
+
+	chanErr := make(chan error)
+
+	go monitor.polling(ctx, chanErr)
+	go monitor.reporting(ctx, chanErr)
+
+	err := <-chanErr
+	// TODO: Выяснить правильный ли подход
+	// принимаем решение, продолжить сбор и отправку метрик или останоить выполение программы
+	// Решаю прикратить выполение программы
+	cancel()
+
+	return err
 }
 
 //GetStats - Поулчить слайс содержщий последние акутальные данные

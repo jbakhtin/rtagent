@@ -17,7 +17,7 @@ type HandlerMetric struct {
 	repo interfaces.MetricRepository
 }
 
-var temp = `
+var listOfMetricHTMLTemplate = `
 	{{range .}}
 			<div>{{ .K }}: {{ .Vl }}</div>
 	{{end}}
@@ -29,12 +29,12 @@ func NewHandlerMetric(repo interfaces.MetricRepository) *HandlerMetric {
 	}
 }
 
-func (h *HandlerMetric) Find() http.HandlerFunc {
+func (h *HandlerMetric) Get() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tp := chi.URLParam(r, "type")
 		k := chi.URLParam(r, "key")
 
-		metric, err := h.repo.Find(tp, k)
+		metric, err := h.repo.Get(tp, k)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -82,16 +82,16 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 	}
 }
 
-func (h *HandlerMetric) Get() http.HandlerFunc {
+func (h *HandlerMetric) GetAll() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		metrics, err := h.repo.Get()
+		metrics, err := h.repo.GetAll()
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		t := template.Must(template.New("test").Parse(temp))
+		t := template.Must(template.New("test").Parse(listOfMetricHTMLTemplate))
 		buffer := bytes.NewBuffer(nil)
 		err = t.Execute(buffer, metrics)
 		if err != nil {

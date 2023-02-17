@@ -20,8 +20,8 @@ func NewMetricService (ctx *context.Context, repository interfaces.MetricReposit
 	}
 }
 
-func (ms *MetricService) Find(tp, key string) (models.Metric, error){
-	metric, err := ms.repository.Find(tp, key)
+func (ms *MetricService) Get(tp, key string) (models.Metric, error){
+	metric, err := ms.repository.Get(tp, key)
 
 	if err != nil {
 		fmt.Println("Find error: ", err)
@@ -30,8 +30,8 @@ func (ms *MetricService) Find(tp, key string) (models.Metric, error){
 	return metric, nil
 }
 
-func (ms *MetricService) Get() ([]models.Metric, error){
-	metrics, err := ms.repository.Get()
+func (ms *MetricService) GetAll() ([]models.Metric, error){
+	metrics, err := ms.repository.GetAll()
 
 	if err != nil {
 		fmt.Println("Get error: ", err)
@@ -47,7 +47,7 @@ func (ms *MetricService) Update(tp, k, vl string) (models.Metric, error) {
 	if tp == "gauge" {
 		metric, err = ms.repository.Update(tp, k, vl)
 	} else if tp == "counter" {
-		metric, err = ms.repository.Find(tp, k)
+		metric, err = ms.repository.Get(tp, k)
 		if err != nil {
 			metric, err = ms.repository.Update(tp, k, vl)
 		} else {

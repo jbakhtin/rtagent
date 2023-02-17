@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/servers"
+	"github.com/jbakhtin/rtagent/internal/server"
 )
 
 func main() {
-	error := servers.Start()
-	if error != nil {
-		fmt.Println(error)
+	err := server.Start() // TODO: нужно ли пробрасывать контекст, может ли это пригодится?
+	if err != nil {
+		fmt.Println(err) // TODO: реализовать логирование ошибок
 	}
 }
