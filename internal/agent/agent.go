@@ -3,7 +3,7 @@ package agent // Package agent TODO: rename to agent
 import (
 	"context"
 	"fmt"
-	"net/http"
+	"github.com/go-resty/resty/v2"
 	"reflect"
 	"runtime"
 	"time"
@@ -40,6 +40,7 @@ func (c *counter) flush() {
 }
 
 type Monitor struct {
+	serverAddress string
 	pollInterval time.Duration
 	reportInterval time.Duration
 
@@ -96,22 +97,16 @@ func (monitor *Monitor) reporting(ctx context.Context, chanError chan error) {
 // report - отправить данные
 func (monitor *Monitor) report() error {
 	for key, value := range monitor.GetStats() {
-		endpoint := "http://127.0.0.1:8080/update/" + value.Type() + "/" + key + "/" + fmt.Sprint(value)
-		req, err := http.NewRequest(http.MethodPost, endpoint, nil)
-		if err != nil {
-			fmt.Println(err) // TODO: реализовать логирование
-			return err
-		}
-		req.Header.Add("Content-Type", "text/plain")
+		client := resty.New()
 
-		client := &http.Client{}
-		res, err := client.Do(req)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
+		_, err := client.R().SetHeaders(map[string]string{
+			"Content-Type": "text/plain",
+		}).SetPathParams(map[string]string{
+			"type": value.Type(),
+			"key": key,
+			"value": fmt.Sprint(value),
+		}).Post(monitor.serverAddress + "/update/{type}/{key}/{value}")
 
-		err = res.Body.Close()
 		if err != nil {
 			fmt.Println(err)
 			return err
@@ -123,12 +118,13 @@ func (monitor *Monitor) report() error {
 }
 
 // Start - запустить мониторинг
-func Start (pollInterval, reportInterval time.Duration) error {
+func Start (serverAddress string, pollInterval, reportInterval time.Duration) error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	monitor := Monitor{
 		pollInterval:   pollInterval,
 		reportInterval: reportInterval,
+		serverAddress: serverAddress,
 	}
 
 	chanErr := make(chan error)

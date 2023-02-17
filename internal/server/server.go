@@ -8,14 +8,14 @@ import (
 	"net/http"
 )
 
-func Start() error {
+func Start(serverAddress string) error {
 	r := chi.NewRouter()
 
 	repo := inmemory.NewMetricRepository()
 	handlerMetric := handlers.NewHandlerMetric(repo)
 
 	// middlewares
-	r.Use(middleware.Logger)
+	r.Use(middleware.Logger) // TODO: need to add another middlewares
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlerMetric.GetAll())
@@ -23,5 +23,5 @@ func Start() error {
 		r.Post("/update/{type}/{key}/{value}", handlerMetric.Update())
 	})
 
-	return http.ListenAndServe(":8080", r)
+	return http.ListenAndServe(serverAddress, r)
 }
