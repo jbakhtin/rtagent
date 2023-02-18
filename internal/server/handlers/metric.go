@@ -95,7 +95,7 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 			case "gauge":
 				floatValue, err := strconv.ParseFloat(mValue, 64)
 				if err != nil {
-					http.Error(w, errors.New("value not valid").Error(), http.StatusNotImplemented)
+					http.Error(w, errors.New("value not valid").Error(), http.StatusBadRequest)
 					return
 				}
 
@@ -104,14 +104,14 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 			case "counter":
 				intValue, err := strconv.ParseInt(mValue, 10, 0)
 				if err != nil {
-					http.Error(w, errors.New("value not valid").Error(), http.StatusNotImplemented)
+					http.Error(w, errors.New("value not valid").Error(), http.StatusBadRequest)
 					return
 				}
 
 				metric.MCounter = models.Counter(intValue)
 				metric.MType = metric.MCounter.Type()
 		default:
-			http.Error(w, errors.New("type not valid").Error(), http.StatusBadRequest)
+			http.Error(w, errors.New("type not valid").Error(), http.StatusNotImplemented)
 			return
 		}
 
