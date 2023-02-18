@@ -1,28 +1,19 @@
 package models
 
+type Gauge float64
+type Counter int64
+
 type Metric struct {
-	Tp string
-	K  string
-	Vl string
+	MKey string
+	MType string
+	MGauge Gauge
+	MCounter Counter
 }
 
-func NewMetric(tp, k, vl string) Metric {
-	return Metric{
-		Tp: tp,
-		K: k,
-		Vl: vl,
-	}
+func (g Gauge) Type() string {
+	return "gauge"
 }
 
-func (m Metric) Type() string {
-	return m.Tp
+func (c Counter) Type() string {
+	return "counter"
 }
-
-func (m Metric) Key() string {
-	return m.K
-}
-
-func (m Metric) Value() string {
-	return m.Vl
-}
-

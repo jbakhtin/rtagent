@@ -3,7 +3,7 @@ package interfaces
 import "github.com/jbakhtin/rtagent/internal/models"
 
 type MetricRepository interface {
-	GetAll() ([]models.Metric, error)
-	Get(t, key string) (models.Metric, error)
-	Update(tp, k, vl string) (models.Metric, error)
+	GetAll() (map[string]models.Metric, error)
+	Get(key string) (models.Metric, error)
+	Update(models.Metric) (models.Metric, error)
 }

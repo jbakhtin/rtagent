@@ -5,24 +5,24 @@ import (
 	"github.com/jbakhtin/rtagent/internal/storages/memstorage"
 )
 
-type Metric struct {
+type MetricRepository struct {
 	memStorage memstorage.MemStorage
 }
 
-func NewMetricRepository() *Metric {
-	return &Metric{
+func NewMetricRepository() *MetricRepository {
+	return &MetricRepository{
 		memStorage: memstorage.New(),
 	}
 }
 
-func (metric *Metric) GetAll() ([]models.Metric, error) {
-	return metric.memStorage.GetAll()
+func (metricRepo *MetricRepository) GetAll() (map[string]models.Metric, error) {
+	return metricRepo.memStorage.GetAll()
 }
 
-func (metric *Metric) Get(tp, key string) (models.Metric, error) {
-	return metric.memStorage.Get(tp, key)
+func (metricRepo *MetricRepository) Get(key string) (models.Metric, error) {
+	return metricRepo.memStorage.Get(key)
 }
 
-func (metric *Metric) Update(tp, k, vl string) (models.Metric, error) {
-	return metric.memStorage.Set(tp, k, vl)
+func (metricRepo *MetricRepository) Update(metric models.Metric) (models.Metric, error) {
+	return metricRepo.memStorage.Set(metric)
 }

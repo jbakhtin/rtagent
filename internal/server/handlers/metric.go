@@ -3,14 +3,20 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
 	"github.com/jbakhtin/rtagent/internal/services"
 	"html/template"
 	"net/http"
+	"strconv"
 )
+
+type gauge float64
+type counter int64
 
 type HandlerMetric struct {
 	repo interfaces.MetricRepository
@@ -18,7 +24,11 @@ type HandlerMetric struct {
 
 var listOfMetricHTMLTemplate = `
 	{{range .}}
-			<div>{{ .K }}: {{ .Vl }}</div>
+		{{if (eq .MType "gauge")}}
+			<div>{{.MKey}}:{{.MGauge}}</div>
+		{{else if (eq .MType "counter")}}
+			<div>{{.MKey}}:{{.MCounter}}</div>
+		{{end}}
 	{{end}}
 `
 
@@ -30,42 +40,87 @@ func NewHandlerMetric(repo interfaces.MetricRepository) *HandlerMetric {
 
 func (h *HandlerMetric) Get() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tp := chi.URLParam(r, "type")
-		k := chi.URLParam(r, "key")
+		var err error
+		var mValue []byte
+		var metric models.Metric
 
-		metric, err := h.repo.Get(tp, k)
+		mKey := chi.URLParam(r, "key")
+		if mKey == "" {
+			http.Error(w, "record not found", http.StatusNotFound)
+		}
 
+		metric, err = h.repo.Get(mKey)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
-		w.Write([]byte(metric.Value()))
+		switch metric.MType {
+			case "gauge":
+				mValue, err = json.Marshal(metric.MGauge)
+			case "counter":
+				mValue, err = json.Marshal(metric.MCounter)
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		_, err = w.Write(mValue)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 }
 
 func (h *HandlerMetric) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tp := chi.URLParam(r, "type")
-		if tp == "" || tp == "unknown" {
-			http.Error(w, errors.New("type not valid").Error(), http.StatusNotImplemented)
-			return
-		}
+		metric := models.Metric{}
 
-		k := chi.URLParam(r, "key")
-		// Need to add valudate
-
-		vl := chi.URLParam(r, "value")
-		if vl == "" || vl == "none" {
+		mValue := chi.URLParam(r, "value")
+		if mValue == "" {
 			http.Error(w, errors.New("value not valid").Error(), http.StatusBadRequest)
 			return
 		}
 
+		mKey := chi.URLParam(r, "key")
+		if mKey == "" {
+			http.Error(w, errors.New("value not valid").Error(), http.StatusBadRequest)
+			return
+		}
+
+		mType := chi.URLParam(r, "type")
+		switch mType {
+			case "gauge":
+				floatValue, err := strconv.ParseFloat(mValue, 64)
+				if err != nil {
+					http.Error(w, errors.New("value not valid").Error(), http.StatusNotImplemented)
+					return
+				}
+
+				metric.MGauge = models.Gauge(floatValue)
+				metric.MType = metric.MGauge.Type()
+			case "counter":
+				intValue, err := strconv.ParseInt(mValue, 10, 0)
+				if err != nil {
+					http.Error(w, errors.New("value not valid").Error(), http.StatusNotImplemented)
+					return
+				}
+
+				metric.MCounter = models.Counter(intValue)
+				metric.MType = metric.MCounter.Type()
+		default:
+			http.Error(w, errors.New("type not valid").Error(), http.StatusBadRequest)
+			return
+		}
+
+		metric.MKey = mKey
+
 		ctx := context.Background()
 		service := services.NewMetricService(&ctx, h.repo)
 
-		_, err := service.Update(tp, k, vl)
-
+		_, err := service.Update(metric)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -78,6 +133,8 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 func (h *HandlerMetric) GetAll() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		metrics, err := h.repo.GetAll()
+
+		fmt.Println(metrics)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
