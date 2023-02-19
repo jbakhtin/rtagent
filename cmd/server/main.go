@@ -6,11 +6,11 @@ import (
 	"github.com/jbakhtin/rtagent/internal/server"
 )
 
-const serverAddress = "127.0.0.1"
+const serverDomain = "127.0.0.1"
 const serverPort = "8080"
 
 func main() {
-	err := server.Start(serverAddress + ":" + serverPort) // TODO: нужно ли пробрасывать контекст, может ли это пригодится?
+	err := server.Start(fmt.Sprintf("%s:%s", serverDomain, serverPort))
 	if err != nil {
 		fmt.Println(err) // TODO: реализовать логирование ошибок
 	}

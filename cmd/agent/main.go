@@ -15,7 +15,7 @@ const (
 )
 
 func main() {
-	err := agent.Start(serverDomain+":"+serverPort, pollInterval, reportInterval)
+	err := agent.Start(fmt.Sprintf("%s:%s", serverDomain, serverPort), pollInterval, reportInterval)
 	if err != nil {
 		fmt.Println(err)
 	}
