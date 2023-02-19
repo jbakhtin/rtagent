@@ -26,11 +26,11 @@ func (memStorage *MemStorage) Set(metric models.Metric) (models.Metric, error) {
 	return metric, nil
 }
 
-func (memStorage *MemStorage) Get(k string) (models.Metric, error) {
+func (memStorage *MemStorage) Get(key string) (models.Metric, error) {
 	memStorage.Lock()
 	defer memStorage.Unlock()
 
-	if value, ok := memStorage.items[k]; ok {
+	if value, ok := memStorage.items[key]; ok {
 		return value, nil
 	}
 

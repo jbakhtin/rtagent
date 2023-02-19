@@ -1,7 +1,6 @@
 package services
 
 import (
-	"context"
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
@@ -9,7 +8,6 @@ import (
 
 type MetricService struct {
 	repository interfaces.MetricRepository
-	ctx *context.Context
 }
 
 func NewMetricService (repository interfaces.MetricRepository) *MetricService {
