@@ -9,10 +9,10 @@ type MetricRepository struct {
 	memStorage memstorage.MemStorage
 }
 
-func NewMetricRepository() *MetricRepository {
+func NewMetricRepository() (*MetricRepository, error) {
 	return &MetricRepository{
 		memStorage: memstorage.New(),
-	}
+	}, nil
 }
 
 func (metricRepo *MetricRepository) GetAll() (map[string]models.Metric, error) {

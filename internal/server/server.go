@@ -12,8 +12,14 @@ import (
 func Start(serverAddress string) error {
 	r := chi.NewRouter()
 
-	repo := inmemory.NewMetricRepository()
-	handlerMetric := handlers.NewHandlerMetric(repo)
+	repo, err := inmemory.NewMetricRepository()
+	if err != nil {
+		return err
+	}
+	handlerMetric, err := handlers.NewHandlerMetric(repo)
+	if err != nil {
+		return err
+	}
 
 	// middlewares
 	r.Use(middleware.Logger) // TODO: need to add another middlewares

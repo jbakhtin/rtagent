@@ -11,10 +11,10 @@ type MetricService struct {
 	repository interfaces.MetricRepository
 }
 
-func NewMetricService(repository interfaces.MetricRepository) *MetricService {
+func NewMetricService(repository interfaces.MetricRepository) (*MetricService, error) {
 	return &MetricService{
 		repository: repository,
-	}
+	}, nil
 }
 
 func (ms *MetricService) Get(key string) (models.Metric, error) {

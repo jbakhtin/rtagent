@@ -28,10 +28,10 @@ var listOfMetricHTMLTemplate = `
 	{{end}}
 `
 
-func NewHandlerMetric(repo interfaces.MetricRepository) *HandlerMetric {
+func NewHandlerMetric(repo interfaces.MetricRepository) (*HandlerMetric, error){
 	return &HandlerMetric{
 		repo: repo,
-	}
+	}, nil
 }
 
 func (h *HandlerMetric) Get() http.HandlerFunc {
@@ -45,20 +45,38 @@ func (h *HandlerMetric) Get() http.HandlerFunc {
 			http.Error(w, "record not found", http.StatusNotFound)
 		}
 
-		metric, err = h.repo.Get(mKey)
+		mType := chi.URLParam(r, "type")
+		if mType == "" {
+			http.Error(w, "invalid type", http.StatusInternalServerError)
+		}
+
+		service, err := services.NewMetricService(h.repo)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotImplemented)
+			return
+		}
+
+		metric, err = service.Get(mKey)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
-		switch metric.MType {
+		switch mType {
 		case models.GaugeType:
 			mValue, err = json.Marshal(metric.MGauge)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 		case models.CounterType:
 			mValue, err = json.Marshal(metric.MCounter)
-		}
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		default:
+			http.Error(w, "type not implemented", http.StatusNotImplemented)
 			return
 		}
 
@@ -113,9 +131,13 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 
 		metric.MKey = mKey
 
-		service := services.NewMetricService(h.repo)
+		service, err := services.NewMetricService(h.repo)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-		_, err := service.Update(metric)
+		_, err = service.Update(metric)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -127,7 +149,13 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 
 func (h *HandlerMetric) GetAll() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		metrics, err := h.repo.GetAll()
+		service, err := services.NewMetricService(h.repo)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		metrics, err := service.GetAll()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
