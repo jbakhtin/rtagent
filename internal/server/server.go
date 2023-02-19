@@ -1,11 +1,12 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jbakhtin/rtagent/internal/repositories/storages/inmemory"
 	"github.com/jbakhtin/rtagent/internal/server/handlers"
-	"net/http"
 )
 
 func Start(serverAddress string) error {

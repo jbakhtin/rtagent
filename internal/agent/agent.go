@@ -3,10 +3,11 @@ package agent // Package agent TODO: rename to agent
 import (
 	"context"
 	"fmt"
-	"github.com/go-resty/resty/v2"
-	"github.com/jbakhtin/rtagent/internal/models"
 	"runtime"
 	"time"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/jbakhtin/rtagent/internal/models"
 )
 
 // Metricer - интерфейс для сущности метрики
@@ -15,8 +16,8 @@ type Metricer interface {
 }
 
 type Monitor struct {
-	serverAddress string
-	pollInterval time.Duration
+	serverAddress  string
+	pollInterval   time.Duration
 	reportInterval time.Duration
 
 	memStats runtime.MemStats
@@ -31,14 +32,14 @@ func (monitor *Monitor) polling(ctx context.Context, chanError chan error) {
 
 	for {
 		select {
-			case <-ticker.C:
-				err := monitor.poll()
-				if err != nil {
-					chanError <- err
-				}
-			case <- ctx.Done():
-				fmt.Println("Сбор метрик приостановлен!")
-				return
+		case <-ticker.C:
+			err := monitor.poll()
+			if err != nil {
+				chanError <- err
+			}
+		case <-ctx.Done():
+			fmt.Println("Сбор метрик приостановлен!")
+			return
 		}
 	}
 }
@@ -46,7 +47,7 @@ func (monitor *Monitor) polling(ctx context.Context, chanError chan error) {
 func (monitor *Monitor) poll() error {
 	runtime.ReadMemStats(&monitor.memStats)
 	monitor.randomValue = 12 // TODO: реализовать рандомайзер
-	monitor.pollCounter++ // TODO: исправить гонку
+	monitor.pollCounter++    // TODO: исправить гонку
 
 	return nil
 }
@@ -57,14 +58,14 @@ func (monitor *Monitor) reporting(ctx context.Context, chanError chan error) {
 
 	for {
 		select {
-			case <-ticker.C:
-				err := monitor.report()
-				if err != nil {
-					chanError <- err
-				}
-			case <- ctx.Done():
-				fmt.Println("Отправка метрики приостановлена!")
-				return
+		case <-ticker.C:
+			err := monitor.report()
+			if err != nil {
+				chanError <- err
+			}
+		case <-ctx.Done():
+			fmt.Println("Отправка метрики приостановлена!")
+			return
 		}
 	}
 }
@@ -76,8 +77,8 @@ func (monitor *Monitor) report() error {
 		_, err := client.R().SetHeaders(map[string]string{
 			"Content-Type": "text/plain",
 		}).SetPathParams(map[string]string{
-			"type": value.Type(),
-			"key": key,
+			"type":  value.Type(),
+			"key":   key,
 			"value": fmt.Sprint(value),
 		}).Post(monitor.serverAddress + "/update/{type}/{key}/{value}")
 		if err != nil {
@@ -92,7 +93,7 @@ func (monitor *Monitor) report() error {
 }
 
 // Start - запустить мониторинг
-func Start (serverAddress string, pollInterval, reportInterval time.Duration) error {
+func Start(serverAddress string, pollInterval, reportInterval time.Duration) error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	monitor := Monitor{
@@ -114,8 +115,8 @@ func Start (serverAddress string, pollInterval, reportInterval time.Duration) er
 	return err
 }
 
-//GetStats - Поулчить слайс содержщий последние акутальные данные
-func(monitor Monitor) GetStats() map[string]Metricer {
+// GetStats - Поулчить слайс содержщий последние акутальные данные
+func (monitor Monitor) GetStats() map[string]Metricer {
 	result := map[string]Metricer{}
 
 	// memStats

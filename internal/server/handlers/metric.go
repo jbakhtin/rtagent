@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"net/http"
+	"strconv"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
 	"github.com/jbakhtin/rtagent/internal/services"
-	"html/template"
-	"net/http"
-	"strconv"
 )
 
 type HandlerMetric struct {
@@ -51,10 +52,10 @@ func (h *HandlerMetric) Get() http.HandlerFunc {
 		}
 
 		switch metric.MType {
-			case models.GaugeType:
-				mValue, err = json.Marshal(metric.MGauge)
-			case models.CounterType:
-				mValue, err = json.Marshal(metric.MCounter)
+		case models.GaugeType:
+			mValue, err = json.Marshal(metric.MGauge)
+		case models.CounterType:
+			mValue, err = json.Marshal(metric.MCounter)
 		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -75,36 +76,36 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 
 		mValue := chi.URLParam(r, "value")
 		if mValue == "" {
-			http.Error(w,"value not valid", http.StatusBadRequest)
+			http.Error(w, "value not valid", http.StatusBadRequest)
 			return
 		}
 
 		mKey := chi.URLParam(r, "key")
 		if mKey == "" {
-			http.Error(w,"key not valid", http.StatusBadRequest)
+			http.Error(w, "key not valid", http.StatusBadRequest)
 			return
 		}
 
 		mType := chi.URLParam(r, "type")
 		switch mType {
-			case models.GaugeType:
-				floatValue, err := strconv.ParseFloat(mValue, 64)
-				if err != nil {
-					http.Error(w, "value not valid", http.StatusBadRequest)
-					return
-				}
+		case models.GaugeType:
+			floatValue, err := strconv.ParseFloat(mValue, 64)
+			if err != nil {
+				http.Error(w, "value not valid", http.StatusBadRequest)
+				return
+			}
 
-				metric.MGauge = models.Gauge(floatValue)
-				metric.MType = metric.MGauge.Type()
-			case models.CounterType:
-				intValue, err := strconv.ParseInt(mValue, 10, 0)
-				if err != nil {
-					http.Error(w,"value not valid", http.StatusBadRequest)
-					return
-				}
+			metric.MGauge = models.Gauge(floatValue)
+			metric.MType = metric.MGauge.Type()
+		case models.CounterType:
+			intValue, err := strconv.ParseInt(mValue, 10, 0)
+			if err != nil {
+				http.Error(w, "value not valid", http.StatusBadRequest)
+				return
+			}
 
-				metric.MCounter = models.Counter(intValue)
-				metric.MType = metric.MCounter.Type()
+			metric.MCounter = models.Counter(intValue)
+			metric.MType = metric.MCounter.Type()
 		default:
 			http.Error(w, "type not valid", http.StatusNotImplemented)
 			return

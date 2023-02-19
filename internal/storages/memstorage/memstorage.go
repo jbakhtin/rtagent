@@ -2,8 +2,9 @@ package memstorage
 
 import (
 	"errors"
-	"github.com/jbakhtin/rtagent/internal/models"
 	"sync"
+
+	"github.com/jbakhtin/rtagent/internal/models"
 )
 
 type MemStorage struct {
