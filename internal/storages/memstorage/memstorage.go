@@ -3,23 +3,8 @@ package memstorage
 import (
 	"errors"
 	"github.com/jbakhtin/rtagent/internal/models"
-	"reflect"
 	"sync"
 )
-
-type entity interface {
-	Type() string
-}
-type gauge float64
-type counter int64
-
-func (g gauge) Type() string {
-	return reflect.TypeOf(g).Name()
-}
-
-func (c counter) Type() string {
-	return reflect.TypeOf(c).Name()
-}
 
 type MemStorage struct {
 	sync.RWMutex

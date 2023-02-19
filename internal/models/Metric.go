@@ -1,19 +1,26 @@
 package models
 
-type Gauge float64
-type Counter int64
+const  (
+	GaugeType = "gauge"
+	CounterType = "counter"
+)
 
-type Metric struct {
-	MKey string
-	MType string
-	MGauge Gauge
-	MCounter Counter
-}
+type (
+	Gauge float64
+	Counter int64
+
+	Metric struct {
+		MKey string
+		MType string
+		MGauge Gauge
+		MCounter Counter
+	}
+)
 
 func (g Gauge) Type() string {
-	return "gauge"
+	return GaugeType
 }
 
 func (c Counter) Type() string {
-	return "counter"
+	return CounterType
 }

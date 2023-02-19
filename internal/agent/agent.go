@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-resty/resty/v2"
-	"reflect"
+	"github.com/jbakhtin/rtagent/internal/models"
 	"runtime"
 	"time"
 )
@@ -14,31 +14,6 @@ type Metricer interface {
 	Type() string
 }
 
-// gauge - тип сущности метрики
-type gauge float64
-
-// Type - возвращает тип метрики
-func (g gauge) Type() string {
-	return reflect.TypeOf(g).Name()
-}
-// counter - тип сущности метрики
-type counter int64
-
-// Type - возвращает тип мерики
-func (c counter) Type() string {
-	return reflect.TypeOf(c).Name()
-}
-
-// increment - имплементирует нестандартную логику изменения значения
-func (c *counter) increment(count counter) {
-	 *c += count
-}
-
-// flush - имплементирует логику изменения значения
-func (c *counter) flush() {
-	*c = 0
-}
-
 type Monitor struct {
 	serverAddress string
 	pollInterval time.Duration
@@ -46,8 +21,8 @@ type Monitor struct {
 
 	memStats runtime.MemStats
 
-	pollCounter counter
-	randomValue gauge
+	pollCounter models.Counter
+	randomValue models.Gauge
 }
 
 // pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
@@ -56,14 +31,14 @@ func (monitor *Monitor) polling(ctx context.Context, chanError chan error) {
 
 	for {
 		select {
-		case <-ticker.C:
-			err := monitor.poll()
-			if err != nil {
-				chanError <- err
-			}
-		case <- ctx.Done():
-			fmt.Println("Сбор метрик приостановлен!")
-			return
+			case <-ticker.C:
+				err := monitor.poll()
+				if err != nil {
+					chanError <- err
+				}
+			case <- ctx.Done():
+				fmt.Println("Сбор метрик приостановлен!")
+				return
 		}
 	}
 }
@@ -71,7 +46,7 @@ func (monitor *Monitor) polling(ctx context.Context, chanError chan error) {
 func (monitor *Monitor) poll() error {
 	runtime.ReadMemStats(&monitor.memStats)
 	monitor.randomValue = 12 // TODO: реализовать рандомайзер
-	monitor.pollCounter += 1 // TODO: исправить гонку
+	monitor.pollCounter++ // TODO: исправить гонку
 
 	return nil
 }
@@ -82,14 +57,14 @@ func (monitor *Monitor) reporting(ctx context.Context, chanError chan error) {
 
 	for {
 		select {
-		case <-ticker.C:
-			err := monitor.report()
-			if err != nil {
-				chanError <- err
-			}
-		case <- ctx.Done():
-			fmt.Println("Отправка метрики приостановлена!")
-			return
+			case <-ticker.C:
+				err := monitor.report()
+				if err != nil {
+					chanError <- err
+				}
+			case <- ctx.Done():
+				fmt.Println("Отправка метрики приостановлена!")
+				return
 		}
 	}
 }
@@ -105,12 +80,12 @@ func (monitor *Monitor) report() error {
 			"key": key,
 			"value": fmt.Sprint(value),
 		}).Post(monitor.serverAddress + "/update/{type}/{key}/{value}")
-
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
 	}
+
 	monitor.pollCounter = 0
 
 	return nil
@@ -121,16 +96,15 @@ func Start (serverAddress string, pollInterval, reportInterval time.Duration) er
 	ctx, cancel := context.WithCancel(context.Background())
 
 	monitor := Monitor{
+		serverAddress:  serverAddress,
 		pollInterval:   pollInterval,
 		reportInterval: reportInterval,
-		serverAddress: serverAddress,
 	}
 
 	chanErr := make(chan error)
 
 	go monitor.polling(ctx, chanErr)
 	go monitor.reporting(ctx, chanErr)
-
 	err := <-chanErr
 	// TODO: Выяснить правильный ли подход
 	// принимаем решение, продолжить сбор и отправку метрик или останоить выполение программы
@@ -145,32 +119,32 @@ func(monitor Monitor) GetStats() map[string]Metricer {
 	result := map[string]Metricer{}
 
 	// memStats
-	result["Alloc"] = gauge(monitor.memStats.Alloc)
-	result["Frees"] = gauge(monitor.memStats.Frees)
-	result["HeapAlloc"] = gauge(monitor.memStats.HeapAlloc)
-	result["BuckHashSys"] = gauge(monitor.memStats.BuckHashSys)
-	result["GCSys"] = gauge(monitor.memStats.GCSys)
-	result["HeapIdle"] = gauge( monitor.memStats.HeapIdle)
-	result["HeapInuse"] = gauge( monitor.memStats.HeapInuse)
-	result["HeapObjects"] = gauge( monitor.memStats.HeapObjects)
-	result["HeapReleased"] = gauge( monitor.memStats.HeapReleased)
-	result["HeapSys"] = gauge( monitor.memStats.HeapSys)
-	result["LastGC"] = gauge( monitor.memStats.LastGC)
-	result["Lookups"] = gauge( monitor.memStats.Lookups)
-	result["MCacheInuse"] = gauge( monitor.memStats.MCacheInuse)
-	result["MCacheSys"] = gauge( monitor.memStats.MCacheSys)
-	result["MSpanInuse"] = gauge( monitor.memStats.MSpanInuse)
-	result["MSpanSys"] = gauge( monitor.memStats.MSpanSys)
-	result["Mallocs"] = gauge( monitor.memStats.Mallocs)
-	result["NextGC"] = gauge( monitor.memStats.NextGC)
-	result["NumForcedGC"] = gauge( monitor.memStats.NumForcedGC)
-	result["NumGC"] = gauge( monitor.memStats.NumGC)
-	result["OtherSys"] = gauge( monitor.memStats.OtherSys)
-	result["PauseTotalNs"] = gauge( monitor.memStats.PauseTotalNs)
-	result["StackInuse"] = gauge( monitor.memStats.StackInuse)
-	result["StackSys"] = gauge( monitor.memStats.StackSys)
-	result["Sys"] = gauge( monitor.memStats.Sys)
-	result["TotalAlloc"] = gauge( monitor.memStats.TotalAlloc)
+	result["Alloc"] = models.Gauge(monitor.memStats.Alloc)
+	result["Frees"] = models.Gauge(monitor.memStats.Frees)
+	result["HeapAlloc"] = models.Gauge(monitor.memStats.HeapAlloc)
+	result["BuckHashSys"] = models.Gauge(monitor.memStats.BuckHashSys)
+	result["GCSys"] = models.Gauge(monitor.memStats.GCSys)
+	result["HeapIdle"] = models.Gauge(monitor.memStats.HeapIdle)
+	result["HeapInuse"] = models.Gauge(monitor.memStats.HeapInuse)
+	result["HeapObjects"] = models.Gauge(monitor.memStats.HeapObjects)
+	result["HeapReleased"] = models.Gauge(monitor.memStats.HeapReleased)
+	result["HeapSys"] = models.Gauge(monitor.memStats.HeapSys)
+	result["LastGC"] = models.Gauge(monitor.memStats.LastGC)
+	result["Lookups"] = models.Gauge(monitor.memStats.Lookups)
+	result["MCacheInuse"] = models.Gauge(monitor.memStats.MCacheInuse)
+	result["MCacheSys"] = models.Gauge(monitor.memStats.MCacheSys)
+	result["MSpanInuse"] = models.Gauge(monitor.memStats.MSpanInuse)
+	result["MSpanSys"] = models.Gauge(monitor.memStats.MSpanSys)
+	result["Mallocs"] = models.Gauge(monitor.memStats.Mallocs)
+	result["NextGC"] = models.Gauge(monitor.memStats.NextGC)
+	result["NumForcedGC"] = models.Gauge(monitor.memStats.NumForcedGC)
+	result["NumGC"] = models.Gauge(monitor.memStats.NumGC)
+	result["OtherSys"] = models.Gauge(monitor.memStats.OtherSys)
+	result["PauseTotalNs"] = models.Gauge(monitor.memStats.PauseTotalNs)
+	result["StackInuse"] = models.Gauge(monitor.memStats.StackInuse)
+	result["StackSys"] = models.Gauge(monitor.memStats.StackSys)
+	result["Sys"] = models.Gauge(monitor.memStats.Sys)
+	result["TotalAlloc"] = models.Gauge(monitor.memStats.TotalAlloc)
 
 	// Custom stats
 	result["PollCount"] = monitor.pollCounter
