@@ -73,6 +73,7 @@ func (m *Monitor) reporting(ctx context.Context, chanError chan error) {
 // report - отправить данные
 func (m *Monitor) report() error {
 	for key, value := range m.GetStats() {
+		endpoint := fmt.Sprintf("%s/update/{type}/{key}/{value}", m.serverAddress)
 		client := resty.New()
 		_, err := client.R().SetHeaders(map[string]string{
 			"Content-Type": "text/plain",
@@ -80,7 +81,7 @@ func (m *Monitor) report() error {
 			"type":  value.Type(),
 			"key":   key,
 			"value": fmt.Sprint(value),
-		}).Post(m.serverAddress + "/update/{type}/{key}/{value}")
+		}).Post(endpoint)
 		if err != nil {
 			fmt.Println(err)
 			return err
@@ -108,9 +109,7 @@ func Start(serverAddress string, pollInterval, reportInterval time.Duration) err
 	go monitor.polling(ctx, chanErr)
 	go monitor.reporting(ctx, chanErr)
 	err := <-chanErr
-	// TODO: Выяснить правильный ли подход
-	// принимаем решение, продолжить сбор и отправку метрик или останоить выполение программы
-	// Решаю прикратить выполение программы
+	// TODO: реализовать счетчик  ошибок, если ошибок 10-20 - завершаем работу
 	cancel()
 
 	return err
