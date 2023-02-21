@@ -45,8 +45,9 @@ func TestHandlerMetric_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := &HandlerMetric{
-				repo: tt.fields.repo,
+			h, err := NewHandlerMetric()
+			if err != nil {
+				require.NoError(t, err)
 			}
 
 			request := httptest.NewRequest(http.MethodGet, tt.fields.request, nil)

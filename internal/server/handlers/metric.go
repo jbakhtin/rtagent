@@ -10,7 +10,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/models"
-	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
 	"github.com/jbakhtin/rtagent/internal/services"
 )
 
@@ -28,7 +27,7 @@ var listOfMetricHTMLTemplate = `
 	{{end}}
 `
 
-func NewHandlerMetric(repo interfaces.MetricRepository) (*HandlerMetric, error){
+func NewHandlerMetric() (*HandlerMetric, error){
 	service, err := services.NewMetricService()
 	if err != nil {
 		return nil, err

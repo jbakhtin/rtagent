@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/jbakhtin/rtagent/internal/repositories/storages/inmemory"
 	"github.com/jbakhtin/rtagent/internal/server/handlers"
 )
 
@@ -22,11 +21,7 @@ func New(serverAddress string) (Server, error) {
 func (s Server) Start() error {
 	r := chi.NewRouter()
 
-	repo, err := inmemory.NewMetricRepository()
-	if err != nil {
-		return err
-	}
-	handlerMetric, err := handlers.NewHandlerMetric(repo)
+	handlerMetric, err := handlers.NewHandlerMetric()
 	if err != nil {
 		return err
 	}
