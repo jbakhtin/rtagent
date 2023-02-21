@@ -20,7 +20,7 @@ type Monitor struct {
 	pollInterval   time.Duration
 	reportInterval time.Duration
 
-	memStats runtime.MemStats
+	memStats *runtime.MemStats
 
 	pollCounter models.Counter
 	randomValue models.Gauge
@@ -45,7 +45,7 @@ func (monitor *Monitor) polling(ctx context.Context, chanError chan error) {
 }
 
 func (monitor *Monitor) poll() error {
-	runtime.ReadMemStats(&monitor.memStats)
+	runtime.ReadMemStats(monitor.memStats)
 	monitor.randomValue = 12 // TODO: реализовать рандомайзер
 	monitor.pollCounter++    // TODO: исправить гонку
 
@@ -100,6 +100,7 @@ func Start(serverAddress string, pollInterval, reportInterval time.Duration) err
 		serverAddress:  serverAddress,
 		pollInterval:   pollInterval,
 		reportInterval: reportInterval,
+		memStats: &runtime.MemStats{},
 	}
 
 	chanErr := make(chan error)
