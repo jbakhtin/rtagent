@@ -15,7 +15,7 @@ import (
 )
 
 type HandlerMetric struct {
-	repo interfaces.MetricRepository
+	service *services.MetricService
 }
 
 var listOfMetricHTMLTemplate = `
@@ -29,8 +29,13 @@ var listOfMetricHTMLTemplate = `
 `
 
 func NewHandlerMetric(repo interfaces.MetricRepository) (*HandlerMetric, error){
+	service, err := services.NewMetricService()
+	if err != nil {
+		return nil, err
+	}
+
 	return &HandlerMetric{
-		repo: repo,
+		service: service,
 	}, nil
 }
 
@@ -50,13 +55,7 @@ func (h *HandlerMetric) Get() http.HandlerFunc {
 			http.Error(w, "invalid type", http.StatusInternalServerError)
 		}
 
-		service, err := services.NewMetricService(h.repo)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotImplemented)
-			return
-		}
-
-		metric, err = service.Get(mKey)
+		metric, err = h.service.Get(mKey)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -131,13 +130,7 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 
 		metric.MKey = mKey
 
-		service, err := services.NewMetricService(h.repo)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		_, err = service.Update(metric)
+		_, err := h.service.Update(metric)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -149,13 +142,7 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 
 func (h *HandlerMetric) GetAll() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		service, err := services.NewMetricService(h.repo)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		metrics, err := service.GetAll()
+		metrics, err := h.service.GetAll()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

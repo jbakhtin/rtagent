@@ -1,4 +1,4 @@
-package agent // Package agent TODO: rename to agent
+package agent
 
 import (
 	"context"

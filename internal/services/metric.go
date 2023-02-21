@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"github.com/jbakhtin/rtagent/internal/repositories/storages/inmemory"
 
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
@@ -11,7 +12,13 @@ type MetricService struct {
 	repository interfaces.MetricRepository
 }
 
-func NewMetricService(repository interfaces.MetricRepository) (*MetricService, error) {
+func NewMetricService() (*MetricService, error) {
+	// Инициализируе нужное хранилище
+	repository, err := inmemory.NewMetricRepository()
+	if err != nil {
+		return nil, err
+	}
+
 	return &MetricService{
 		repository: repository,
 	}, nil
