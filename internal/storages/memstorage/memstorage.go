@@ -18,29 +18,29 @@ func New() MemStorage {
 	}
 }
 
-func (memStorage *MemStorage) Set(metric models.Metric) (models.Metric, error) {
-	memStorage.Lock()
-	defer memStorage.Unlock()
+func (ms *MemStorage) Set(metric models.Metric) (models.Metric, error) {
+	ms.Lock()
+	defer ms.Unlock()
 
-	memStorage.items[metric.MKey] = metric
+	ms.items[metric.MKey] = metric
 
 	return metric, nil
 }
 
-func (memStorage *MemStorage) Get(key string) (models.Metric, error) {
-	memStorage.Lock()
-	defer memStorage.Unlock()
+func (ms *MemStorage) Get(key string) (models.Metric, error) {
+	ms.Lock()
+	defer ms.Unlock()
 
-	if value, ok := memStorage.items[key]; ok {
+	if value, ok := ms.items[key]; ok {
 		return value, nil
 	}
 
 	return models.Metric{}, errors.New("record not found")
 }
 
-func (memStorage *MemStorage) GetAll() (map[string]models.Metric, error) {
-	memStorage.Lock()
-	defer memStorage.Unlock()
+func (ms *MemStorage) GetAll() (map[string]models.Metric, error) {
+	ms.Lock()
+	defer ms.Unlock()
 
-	return memStorage.items, nil
+	return ms.items, nil
 }
