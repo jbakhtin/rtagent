@@ -12,7 +12,12 @@ const serverPort = "8080"
 func main() {
 	serverAddress := fmt.Sprintf("%s:%s", serverDomain, serverPort)
 
-	err := server.Start(serverAddress)
+	s, err := server.New(serverAddress)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = s.Start()
 	if err != nil {
 		fmt.Println(err) // TODO: реализовать логирование ошибок
 	}

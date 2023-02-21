@@ -17,7 +17,12 @@ const (
 func main() {
 	serverAddress := fmt.Sprintf("%s:%s", serverDomain, serverPort)
 
-	err := agent.Start(serverAddress, pollInterval, reportInterval)
+	monitor, err := agent.New(serverAddress, pollInterval, reportInterval)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err = monitor.Start()
 	if err != nil {
 		fmt.Println(err)
 	}

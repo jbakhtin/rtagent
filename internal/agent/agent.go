@@ -26,6 +26,30 @@ type Monitor struct {
 	randomValue models.Gauge
 }
 
+func New(serverAddress string, pollInterval, reportInterval time.Duration) (Monitor, error){
+	return Monitor{
+		serverAddress:serverAddress,
+		pollInterval: pollInterval,
+		reportInterval: reportInterval,
+		memStats: &runtime.MemStats{},
+	}, nil
+}
+
+// Start - запустить мониторинг
+func (m Monitor) Start() error {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	chanErr := make(chan error)
+
+	go m.polling(ctx, chanErr)
+	go m.reporting(ctx, chanErr)
+	err := <-chanErr
+	// TODO: реализовать счетчик  ошибок, если ошибок 10-20 - завершаем работу
+	cancel()
+
+	return err
+}
+
 // pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
 func (m *Monitor) polling(ctx context.Context, chanError chan error) {
 	ticker := time.NewTicker(m.pollInterval)
@@ -91,28 +115,6 @@ func (m *Monitor) report() error {
 	m.pollCounter = 0
 
 	return nil
-}
-
-// Start - запустить мониторинг
-func Start(serverAddress string, pollInterval, reportInterval time.Duration) error {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	monitor := Monitor{
-		serverAddress:  serverAddress,
-		pollInterval:   pollInterval,
-		reportInterval: reportInterval,
-		memStats: &runtime.MemStats{},
-	}
-
-	chanErr := make(chan error)
-
-	go monitor.polling(ctx, chanErr)
-	go monitor.reporting(ctx, chanErr)
-	err := <-chanErr
-	// TODO: реализовать счетчик  ошибок, если ошибок 10-20 - завершаем работу
-	cancel()
-
-	return err
 }
 
 // GetStats - Поулчить слайс содержщий последние акутальные данные

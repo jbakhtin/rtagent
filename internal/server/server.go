@@ -9,7 +9,17 @@ import (
 	"github.com/jbakhtin/rtagent/internal/server/handlers"
 )
 
-func Start(serverAddress string) error {
+type Server struct {
+	serverAddress string
+}
+
+func New(serverAddress string) (Server, error) {
+	return Server{
+		serverAddress: serverAddress,
+	}, nil
+}
+
+func (s Server) Start() error {
 	r := chi.NewRouter()
 
 	repo, err := inmemory.NewMetricRepository()
@@ -30,5 +40,5 @@ func Start(serverAddress string) error {
 		r.Post("/update/{type}/{key}/{value}", handlerMetric.Update())
 	})
 
-	return http.ListenAndServe(serverAddress, r)
+	return http.ListenAndServe(s.serverAddress, r)
 }
