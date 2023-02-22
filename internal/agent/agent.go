@@ -3,11 +3,13 @@ package agent
 import (
 	"context"
 	"fmt"
+	"github.com/jbakhtin/rtagent/internal/models"
+	"math/rand"
 	"runtime"
 	"time"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/jbakhtin/rtagent/internal/models"
+	"github.com/jbakhtin/rtagent/internal/types"
 )
 
 // Metricer - интерфейс для сущности метрики
@@ -70,8 +72,8 @@ func (m *Monitor) polling(ctx context.Context, chanError chan error) {
 
 func (m *Monitor) poll() error {
 	runtime.ReadMemStats(m.memStats)
-	m.randomValue = 12 // TODO: реализовать рандомайзер
-	m.pollCounter++
+	m.randomValue.MValue = types.Gauge(rand.Intn(12)) //TODO: реализовать сеттер
+	m.pollCounter.Increment()
 
 	return nil
 }
@@ -112,7 +114,7 @@ func (m *Monitor) report() error {
 		}
 	}
 
-	m.pollCounter = 0
+	m.pollCounter.Flush()
 
 	return nil
 }
@@ -122,36 +124,36 @@ func (m Monitor) GetStats() map[string]Metricer {
 	result := map[string]Metricer{}
 
 	// memStats
-	result["Alloc"] = models.Gauge(m.memStats.Alloc)
-	result["Frees"] = models.Gauge(m.memStats.Frees)
-	result["HeapAlloc"] = models.Gauge(m.memStats.HeapAlloc)
-	result["BuckHashSys"] = models.Gauge(m.memStats.BuckHashSys)
-	result["GCSys"] = models.Gauge(m.memStats.GCSys)
-	result["HeapIdle"] = models.Gauge(m.memStats.HeapIdle)
-	result["HeapInuse"] = models.Gauge(m.memStats.HeapInuse)
-	result["HeapObjects"] = models.Gauge(m.memStats.HeapObjects)
-	result["HeapReleased"] = models.Gauge(m.memStats.HeapReleased)
-	result["HeapSys"] = models.Gauge(m.memStats.HeapSys)
-	result["LastGC"] = models.Gauge(m.memStats.LastGC)
-	result["Lookups"] = models.Gauge(m.memStats.Lookups)
-	result["MCacheInuse"] = models.Gauge(m.memStats.MCacheInuse)
-	result["MCacheSys"] = models.Gauge(m.memStats.MCacheSys)
-	result["MSpanInuse"] = models.Gauge(m.memStats.MSpanInuse)
-	result["MSpanSys"] = models.Gauge(m.memStats.MSpanSys)
-	result["Mallocs"] = models.Gauge(m.memStats.Mallocs)
-	result["NextGC"] = models.Gauge(m.memStats.NextGC)
-	result["NumForcedGC"] = models.Gauge(m.memStats.NumForcedGC)
-	result["NumGC"] = models.Gauge(m.memStats.NumGC)
-	result["OtherSys"] = models.Gauge(m.memStats.OtherSys)
-	result["PauseTotalNs"] = models.Gauge(m.memStats.PauseTotalNs)
-	result["StackInuse"] = models.Gauge(m.memStats.StackInuse)
-	result["StackSys"] = models.Gauge(m.memStats.StackSys)
-	result["Sys"] = models.Gauge(m.memStats.Sys)
-	result["TotalAlloc"] = models.Gauge(m.memStats.TotalAlloc)
+	result["Alloc"] = types.Gauge(m.memStats.Alloc)
+	result["Frees"] = types.Gauge(m.memStats.Frees)
+	result["HeapAlloc"] = types.Gauge(m.memStats.HeapAlloc)
+	result["BuckHashSys"] = types.Gauge(m.memStats.BuckHashSys)
+	result["GCSys"] = types.Gauge(m.memStats.GCSys)
+	result["HeapIdle"] = types.Gauge(m.memStats.HeapIdle)
+	result["HeapInuse"] = types.Gauge(m.memStats.HeapInuse)
+	result["HeapObjects"] = types.Gauge(m.memStats.HeapObjects)
+	result["HeapReleased"] = types.Gauge(m.memStats.HeapReleased)
+	result["HeapSys"] = types.Gauge(m.memStats.HeapSys)
+	result["LastGC"] = types.Gauge(m.memStats.LastGC)
+	result["Lookups"] = types.Gauge(m.memStats.Lookups)
+	result["MCacheInuse"] = types.Gauge(m.memStats.MCacheInuse)
+	result["MCacheSys"] = types.Gauge(m.memStats.MCacheSys)
+	result["MSpanInuse"] = types.Gauge(m.memStats.MSpanInuse)
+	result["MSpanSys"] = types.Gauge(m.memStats.MSpanSys)
+	result["Mallocs"] = types.Gauge(m.memStats.Mallocs)
+	result["NextGC"] = types.Gauge(m.memStats.NextGC)
+	result["NumForcedGC"] = types.Gauge(m.memStats.NumForcedGC)
+	result["NumGC"] = types.Gauge(m.memStats.NumGC)
+	result["OtherSys"] = types.Gauge(m.memStats.OtherSys)
+	result["PauseTotalNs"] = types.Gauge(m.memStats.PauseTotalNs)
+	result["StackInuse"] = types.Gauge(m.memStats.StackInuse)
+	result["StackSys"] = types.Gauge(m.memStats.StackSys)
+	result["Sys"] = types.Gauge(m.memStats.Sys)
+	result["TotalAlloc"] = types.Gauge(m.memStats.TotalAlloc)
 
 	// Custom stats
-	result["PollCount"] = m.pollCounter
-	result["RandomValue"] = m.randomValue
+	result["PollCount"] = m.pollCounter.MValue
+	result["RandomValue"] = m.randomValue.MValue
 
 	return result
 }

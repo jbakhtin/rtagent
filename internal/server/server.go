@@ -31,8 +31,10 @@ func (s Server) Start() error {
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlerMetric.GetAll())
-		r.Get("/value/{type}/{key}", handlerMetric.Get())
-		r.Post("/update/{type}/{key}/{value}", handlerMetric.Update())
+		r.Get("/value/gauge/{key}", handlerMetric.GetGauge())
+		r.Get("/value/counter/{key}", handlerMetric.GetCounter())
+		r.Post("/update/gauge/{key}/{value}", handlerMetric.UpdateGauge())
+		r.Post("/update/counter/{key}/{value}", handlerMetric.UpdateCounter())
 	})
 
 	return http.ListenAndServe(s.serverAddress, r)

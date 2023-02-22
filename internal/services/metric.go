@@ -2,9 +2,9 @@ package services
 
 import (
 	"fmt"
+	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/repositories/storages/inmemory"
 
-	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
 )
 
@@ -24,8 +24,8 @@ func NewMetricService() (*MetricService, error) {
 	}, nil
 }
 
-func (ms *MetricService) Get(key string) (models.Metric, error) {
-	metric, err := ms.repository.Get(key)
+func (ms *MetricService) GetCounter(key string) (models.Counter, error) {
+	metric, err := ms.repository.GetCounter(key)
 	if err != nil {
 		fmt.Println("Find error: ", err)
 		return metric, err
@@ -34,7 +34,17 @@ func (ms *MetricService) Get(key string) (models.Metric, error) {
 	return metric, nil
 }
 
-func (ms *MetricService) GetAll() (map[string]models.Metric, error) {
+func (ms *MetricService) GetGauge(key string) (models.Gauge, error) {
+	metric, err := ms.repository.GetGauge(key)
+	if err != nil {
+		fmt.Println("Find error: ", err)
+		return metric, err
+	}
+
+	return metric, nil
+}
+
+func (ms *MetricService) GetAll() (map[string]models.Metricer, error) {
 	metrics, err := ms.repository.GetAll()
 	if err != nil {
 		fmt.Println("Get error: ", err)
@@ -44,17 +54,21 @@ func (ms *MetricService) GetAll() (map[string]models.Metric, error) {
 	return metrics, nil
 }
 
-func (ms *MetricService) Update(metric models.Metric) (models.Metric, error) {
-	var err error
+func (ms *MetricService) UpdateCounter(metric models.Counter) (models.Counter, error) {
+	oldMetric, _ := ms.repository.GetCounter(metric.MKey)
+	metric.MValue += oldMetric.MValue
 
-	switch metric.MType {
-	case models.GaugeType: // do nothing
-	case models.CounterType:
-		oldMetric, _ := ms.repository.Get(metric.MKey)
-		metric.MCounter += oldMetric.MCounter
+	err := ms.repository.UpdateCounter(metric)
+	if err != nil {
+		fmt.Println("Update error: ", err)
+		return metric, err
 	}
 
-	metric, err = ms.repository.Update(metric)
+	return metric, nil
+}
+
+func (ms *MetricService) UpdateGauge(metric models.Gauge) (models.Gauge, error) {
+	err := ms.repository.UpdateGauge(metric)
 	if err != nil {
 		fmt.Println("Update error: ", err)
 		return metric, err
