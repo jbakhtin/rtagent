@@ -24,7 +24,7 @@ func NewMetricService() (*MetricService, error) {
 	}, nil
 }
 
-func (ms *MetricService) Get(key string) (models.Metric, error) {
+func (ms *MetricService) Get(key string) (models.Metricer, error) {
 	metric, err := ms.repository.Get(key)
 	if err != nil {
 		fmt.Println("Find error: ", err)
@@ -34,7 +34,7 @@ func (ms *MetricService) Get(key string) (models.Metric, error) {
 	return metric, nil
 }
 
-func (ms *MetricService) GetAll() (map[string]models.Metric, error) {
+func (ms *MetricService) GetAll() (map[string]models.Metricer, error) {
 	metrics, err := ms.repository.GetAll()
 	if err != nil {
 		fmt.Println("Get error: ", err)
@@ -44,14 +44,23 @@ func (ms *MetricService) GetAll() (map[string]models.Metric, error) {
 	return metrics, nil
 }
 
-func (ms *MetricService) Update(metric models.Metric) (models.Metric, error) {
+func (ms *MetricService) Update(metric models.Metricer) (models.Metricer, error) {
 	var err error
 
-	switch metric.MType {
-	case models.GaugeType: // do nothing
-	case models.CounterType:
-		oldMetric, _ := ms.repository.Get(metric.MKey)
-		metric.MCounter += oldMetric.MCounter
+	switch m := metric.(type) {
+	case models.Counter:
+		entity, err := ms.repository.Get(m.MKey)
+		if err != nil {
+			break
+		}
+
+		oldMetric, ok := entity.(models.Counter)
+		if !ok {
+			return nil, err
+		}
+
+		m.Add(oldMetric.MValue)
+		metric = m
 	}
 
 	metric, err = ms.repository.Update(metric)
