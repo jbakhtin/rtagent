@@ -2,6 +2,7 @@ package memstorage
 
 import (
 	"errors"
+	"golang.org/x/exp/maps"
 	"sync"
 
 	"github.com/jbakhtin/rtagent/internal/models"
@@ -9,25 +10,25 @@ import (
 
 type MemStorage struct {
 	sync.RWMutex
-	items map[string]models.Metric
+	items map[string]models.Metricer
 }
 
 func New() MemStorage {
 	return MemStorage{
-		items: make(map[string]models.Metric, 0),
+		items: make(map[string]models.Metricer, 0),
 	}
 }
 
-func (ms *MemStorage) Set(metric models.Metric) (models.Metric, error) {
+func (ms *MemStorage) Set(metric models.Metricer) (models.Metricer, error) {
 	ms.Lock()
 	defer ms.Unlock()
 
-	ms.items[metric.MKey] = metric
+	ms.items[metric.Key()] = metric
 
 	return metric, nil
 }
 
-func (ms *MemStorage) Get(key string) (models.Metric, error) {
+func (ms *MemStorage) Get(key string) (models.Metricer, error) {
 	ms.Lock()
 	defer ms.Unlock()
 
@@ -35,12 +36,16 @@ func (ms *MemStorage) Get(key string) (models.Metric, error) {
 		return value, nil
 	}
 
-	return models.Metric{}, errors.New("record not found")
+	return nil, errors.New("record not found")
 }
 
-func (ms *MemStorage) GetAll() (map[string]models.Metric, error) {
+func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
 	ms.Lock()
 	defer ms.Unlock()
 
-	return ms.items, nil
+	// Deep copy
+	metrics := make(map[string]models.Metricer, len(ms.items))
+	maps.Copy(metrics, ms.items)
+
+	return metrics, nil
 }

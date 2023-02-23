@@ -27,7 +27,7 @@ func (s Server) Start() error {
 	}
 
 	// middlewares
-	r.Use(middleware.Logger) // TODO: need to add another middlewares
+	r.Use(middleware.Logger)
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlerMetric.GetAll())

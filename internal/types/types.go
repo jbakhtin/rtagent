@@ -1,20 +1,17 @@
-package models
+package types
 
 const  (
 	GaugeType = "gauge"
 	CounterType = "counter"
 )
 
+type Metricer interface {
+	Type() string
+}
+
 type (
 	Gauge float64
 	Counter int64
-
-	Metric struct {
-		MKey string
-		MType string
-		MGauge Gauge
-		MCounter Counter
-	}
 )
 
 func (g Gauge) Type() string {
