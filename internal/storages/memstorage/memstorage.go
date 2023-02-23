@@ -2,7 +2,6 @@ package memstorage
 
 import (
 	"errors"
-	"golang.org/x/exp/maps"
 	"sync"
 
 	"github.com/jbakhtin/rtagent/internal/models"
@@ -44,8 +43,7 @@ func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
 	defer ms.Unlock()
 
 	// Deep copy
-	metrics := make(map[string]models.Metricer, len(ms.items))
-	maps.Copy(metrics, ms.items)
+	metrics := ms.items
 
 	return metrics, nil
 }
