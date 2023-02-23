@@ -74,19 +74,24 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 		}
 
 		var metric models.Metricer
+		var err error
 
 		mType := chi.URLParam(r, "type")
 		switch mType {
 		case models.GaugeType:
-			metric , _ = models.NewGauge(mType, mKey, mValue)
+			metric , err = models.NewGauge(mType, mKey, mValue)
 		case models.CounterType:
-			metric , _ = models.NewCounter(mType, mKey, mValue)
+			metric , err = models.NewCounter(mType, mKey, mValue)
 		default:
 			http.Error(w, "type not valid", http.StatusNotImplemented)
 			return
 		}
+		if err != nil {
+			http.Error(w, "type not valid", http.StatusBadRequest)
+			return
+		}
 
-		_, err := h.service.Update(metric)
+		_, err = h.service.Update(metric)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
