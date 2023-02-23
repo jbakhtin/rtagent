@@ -47,11 +47,9 @@ func (ms *MetricService) GetAll() (map[string]models.Metricer, error) {
 func (ms *MetricService) Update(metric models.Metricer) (models.Metricer, error) {
 	var err error
 
-	switch metric.(type) {
+	switch m := metric.(type) {
 	case models.Counter:
-		newMetric := metric.(models.Counter)
-
-		entity, err := ms.repository.Get(newMetric.MKey)
+		entity, err := ms.repository.Get(m.MKey)
 		if err != nil {
 			break
 		}
@@ -61,8 +59,8 @@ func (ms *MetricService) Update(metric models.Metricer) (models.Metricer, error)
 			return nil, err
 		}
 
-		newMetric.Add(oldMetric.MValue)
-		metric = newMetric
+		m.Add(oldMetric.MValue)
+		metric = m
 	}
 
 	metric, err = ms.repository.Update(metric)
