@@ -3,27 +3,21 @@ package agent
 import (
 	"context"
 	"fmt"
+	"github.com/jbakhtin/rtagent/internal/types"
+	"golang.org/x/exp/rand"
 	"runtime"
 	"time"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/jbakhtin/rtagent/internal/models"
 )
-
-// Metricer - интерфейс для сущности метрики
-type Metricer interface {
-	Type() string
-}
 
 type Monitor struct {
 	serverAddress  string
 	pollInterval   time.Duration
 	reportInterval time.Duration
 
-	memStats *runtime.MemStats
-
-	pollCounter models.Counter
-	randomValue models.Gauge
+	pollCounter types.Counter
+	randomValue types.Gauge
 }
 
 func New(serverAddress string, pollInterval, reportInterval time.Duration) (Monitor, error){
@@ -31,7 +25,6 @@ func New(serverAddress string, pollInterval, reportInterval time.Duration) (Moni
 		serverAddress:serverAddress,
 		pollInterval: pollInterval,
 		reportInterval: reportInterval,
-		memStats: &runtime.MemStats{},
 	}, nil
 }
 
@@ -69,10 +62,8 @@ func (m *Monitor) polling(ctx context.Context, chanError chan error) {
 }
 
 func (m *Monitor) poll() error {
-	runtime.ReadMemStats(m.memStats)
-	m.randomValue = 12 // TODO: реализовать рандомайзер
+	m.randomValue = types.Gauge(rand.Float64())
 	m.pollCounter++
-
 	return nil
 }
 
@@ -118,36 +109,39 @@ func (m *Monitor) report() error {
 }
 
 // GetStats - Поулчить слайс содержщий последние акутальные данные
-func (m Monitor) GetStats() map[string]Metricer {
-	result := map[string]Metricer{}
+func (m Monitor) GetStats() map[string]types.Metricer {
+	memStats := runtime.MemStats{}
+	runtime.ReadMemStats(&memStats)
+
+	result := map[string]types.Metricer{}
 
 	// memStats
-	result["Alloc"] = models.Gauge(m.memStats.Alloc)
-	result["Frees"] = models.Gauge(m.memStats.Frees)
-	result["HeapAlloc"] = models.Gauge(m.memStats.HeapAlloc)
-	result["BuckHashSys"] = models.Gauge(m.memStats.BuckHashSys)
-	result["GCSys"] = models.Gauge(m.memStats.GCSys)
-	result["HeapIdle"] = models.Gauge(m.memStats.HeapIdle)
-	result["HeapInuse"] = models.Gauge(m.memStats.HeapInuse)
-	result["HeapObjects"] = models.Gauge(m.memStats.HeapObjects)
-	result["HeapReleased"] = models.Gauge(m.memStats.HeapReleased)
-	result["HeapSys"] = models.Gauge(m.memStats.HeapSys)
-	result["LastGC"] = models.Gauge(m.memStats.LastGC)
-	result["Lookups"] = models.Gauge(m.memStats.Lookups)
-	result["MCacheInuse"] = models.Gauge(m.memStats.MCacheInuse)
-	result["MCacheSys"] = models.Gauge(m.memStats.MCacheSys)
-	result["MSpanInuse"] = models.Gauge(m.memStats.MSpanInuse)
-	result["MSpanSys"] = models.Gauge(m.memStats.MSpanSys)
-	result["Mallocs"] = models.Gauge(m.memStats.Mallocs)
-	result["NextGC"] = models.Gauge(m.memStats.NextGC)
-	result["NumForcedGC"] = models.Gauge(m.memStats.NumForcedGC)
-	result["NumGC"] = models.Gauge(m.memStats.NumGC)
-	result["OtherSys"] = models.Gauge(m.memStats.OtherSys)
-	result["PauseTotalNs"] = models.Gauge(m.memStats.PauseTotalNs)
-	result["StackInuse"] = models.Gauge(m.memStats.StackInuse)
-	result["StackSys"] = models.Gauge(m.memStats.StackSys)
-	result["Sys"] = models.Gauge(m.memStats.Sys)
-	result["TotalAlloc"] = models.Gauge(m.memStats.TotalAlloc)
+	result["Alloc"] = types.Gauge(memStats.Alloc)
+	result["Frees"] = types.Gauge(memStats.Frees)
+	result["HeapAlloc"] = types.Gauge(memStats.HeapAlloc)
+	result["BuckHashSys"] = types.Gauge(memStats.BuckHashSys)
+	result["GCSys"] = types.Gauge(memStats.GCSys)
+	result["HeapIdle"] = types.Gauge(memStats.HeapIdle)
+	result["HeapInuse"] = types.Gauge(memStats.HeapInuse)
+	result["HeapObjects"] = types.Gauge(memStats.HeapObjects)
+	result["HeapReleased"] = types.Gauge(memStats.HeapReleased)
+	result["HeapSys"] = types.Gauge(memStats.HeapSys)
+	result["LastGC"] = types.Gauge(memStats.LastGC)
+	result["Lookups"] = types.Gauge(memStats.Lookups)
+	result["MCacheInuse"] = types.Gauge(memStats.MCacheInuse)
+	result["MCacheSys"] = types.Gauge(memStats.MCacheSys)
+	result["MSpanInuse"] = types.Gauge(memStats.MSpanInuse)
+	result["MSpanSys"] = types.Gauge(memStats.MSpanSys)
+	result["Mallocs"] = types.Gauge(memStats.Mallocs)
+	result["NextGC"] = types.Gauge(memStats.NextGC)
+	result["NumForcedGC"] = types.Gauge(memStats.NumForcedGC)
+	result["NumGC"] = types.Gauge(memStats.NumGC)
+	result["OtherSys"] = types.Gauge(memStats.OtherSys)
+	result["PauseTotalNs"] = types.Gauge(memStats.PauseTotalNs)
+	result["StackInuse"] = types.Gauge(memStats.StackInuse)
+	result["StackSys"] = types.Gauge(memStats.StackSys)
+	result["Sys"] = types.Gauge(memStats.Sys)
+	result["TotalAlloc"] = types.Gauge(memStats.TotalAlloc)
 
 	// Custom stats
 	result["PollCount"] = m.pollCounter

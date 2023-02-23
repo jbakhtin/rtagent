@@ -15,14 +15,14 @@ func NewMetricRepository() (*MetricRepository, error) {
 	}, nil
 }
 
-func (mr *MetricRepository) GetAll() (map[string]models.Metric, error) {
+func (mr *MetricRepository) GetAll() (map[string]models.Metricer, error) {
 	return mr.memStorage.GetAll()
 }
 
-func (mr *MetricRepository) Get(key string) (models.Metric, error) {
+func (mr *MetricRepository) Get(key string) (models.Metricer, error) {
 	return mr.memStorage.Get(key)
 }
 
-func (mr *MetricRepository) Update(metric models.Metric) (models.Metric, error) {
+func (mr *MetricRepository) Update(metric models.Metricer) (models.Metricer, error) {
 	return mr.memStorage.Set(metric)
 }
