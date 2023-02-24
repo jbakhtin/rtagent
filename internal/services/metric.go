@@ -47,7 +47,7 @@ func (ms *MetricService) GetAll() (map[string]models.Metricer, error) {
 func (ms *MetricService) Update(metric models.Metricer) (models.Metricer, error) {
 	var err error
 
-	switch m := metric.(type) {
+	switch m := metric.(type) { // TODO: продумать про переиспользование старых переменных (52, 57)
 	case models.Counter:
 		entity, err := ms.repository.Get(m.MKey)
 		if err != nil {

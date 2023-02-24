@@ -42,8 +42,12 @@ func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
 	ms.Lock()
 	defer ms.Unlock()
 
-	// Deep copy
-	metrics := ms.items
+	result := make(map[string]models.Metricer, len(ms.items))
 
-	return metrics, nil
+	// Deep copy
+	for k, v := range ms.items {
+		result[k] = v
+	}
+
+	return result, nil
 }

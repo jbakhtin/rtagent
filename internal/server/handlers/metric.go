@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/services"
+	"github.com/jbakhtin/rtagent/internal/types"
 	"html/template"
 	"net/http"
 )
@@ -78,9 +79,9 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 
 		mType := chi.URLParam(r, "type")
 		switch mType {
-		case models.GaugeType:
+		case types.GaugeType:
 			metric , err = models.NewGauge(mType, mKey, mValue)
-		case models.CounterType:
+		case types.CounterType:
 			metric , err = models.NewCounter(mType, mKey, mValue)
 		default:
 			http.Error(w, "type not valid", http.StatusNotImplemented)

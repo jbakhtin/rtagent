@@ -6,18 +6,13 @@ import (
 	"strconv"
 )
 
-const  (
-	GaugeType = "gauge"
-	CounterType = "counter"
-)
+type Metricer interface {
+	Type() string
+	Key() string
+	StringValue() string
+}
 
 type (
-	Metricer interface {
-		Type() string
-		Key() string
-		StringValue() string
-	}
-
 	Description struct {
 		MKey string
 		MType string
@@ -53,7 +48,7 @@ func NewGauge(mType, mKey, mValue string) (Gauge, error){
 
 
 func (g Gauge) Type() string {
-	return GaugeType
+	return g.MType
 }
 
 func (g Gauge) Key() string {
@@ -83,7 +78,7 @@ func NewCounter(mType, mKey, mValue string) (Counter, error){
 }
 
 func (c Counter) Type() string {
-	return CounterType
+	return c.MType
 }
 
 func (c Counter) Key() string {

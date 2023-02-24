@@ -17,7 +17,6 @@ type Monitor struct {
 	reportInterval time.Duration
 
 	pollCounter types.Counter
-	randomValue types.Gauge
 }
 
 func New(serverAddress string, pollInterval, reportInterval time.Duration) (Monitor, error){
@@ -62,7 +61,6 @@ func (m *Monitor) polling(ctx context.Context, chanError chan error) {
 }
 
 func (m *Monitor) poll() error {
-	m.randomValue = types.Gauge(rand.Float64())
 	m.pollCounter++
 	return nil
 }
@@ -145,7 +143,7 @@ func (m Monitor) GetStats() map[string]types.Metricer {
 
 	// Custom stats
 	result["PollCount"] = m.pollCounter
-	result["RandomValue"] = m.randomValue
+	result["RandomValue"] = types.Gauge(rand.Int())
 
 	return result
 }

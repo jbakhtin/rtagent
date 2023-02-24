@@ -17,8 +17,7 @@ func main() {
 		fmt.Println(err)
 	}
 
-	err = s.Start()
-	if err != nil {
+	if err = s.Start(); err != nil {
 		fmt.Println(err) // TODO: реализовать логирование ошибок
 	}
 }
