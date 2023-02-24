@@ -22,8 +22,7 @@ func main() {
 		fmt.Println(err)
 	}
 
-	err = monitor.Start()
-	if err != nil {
+	if err := monitor.Start(); err != nil {
 		fmt.Println(err)
 	}
 }
