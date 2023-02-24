@@ -6,7 +6,7 @@ func main() {
 	testMap := make(map[string]string, 2)
 
 	testMap["test1"] = "Test1"
-	testMap["test2"] = "Test2"
+	testMap["test2"] = "Test2 "
 
 	copiedMap := make(map[string]string, len(testMap))
 
