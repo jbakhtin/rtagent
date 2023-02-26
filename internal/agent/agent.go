@@ -130,10 +130,17 @@ func (m *Monitor) reportV2() error {
 		}
 
 		request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
+		if err != nil {
+			return err
+		}
 		request.Header.Set("Content-Type", "application/json")
 
 		client := http.Client{}
-		_, err = client.Do(request)
+		response, err := client.Do(request)
+		if err != nil {
+			return err
+		}
+		err = response.Body.Close()
 		if err != nil {
 			return err
 		}
