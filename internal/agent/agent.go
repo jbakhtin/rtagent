@@ -39,11 +39,20 @@ func (m Monitor) Start() error {
 
 	go m.polling(ctx, chanErr)
 	go m.reporting(ctx, chanErr)
-	err := <-chanErr
-	// TODO: реализовать счетчик  ошибок, если ошибок 10-20 - завершаем работу
-	cancel()
 
-	return err
+	var errCount int
+
+	for {
+		select {
+		case err := <-chanErr:
+			errCount++
+			fmt.Println(err)
+			if errCount > 10 {
+				cancel()
+				return err
+			}
+		}
+	}
 }
 
 // pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
