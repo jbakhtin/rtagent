@@ -173,6 +173,7 @@ func (m Monitor) GetStats() map[string]types.Metricer {
 	result["HeapAlloc"] = types.Gauge(memStats.HeapAlloc)
 	result["BuckHashSys"] = types.Gauge(memStats.BuckHashSys)
 	result["GCSys"] = types.Gauge(memStats.GCSys)
+	result["GCCPUFraction"] = types.Gauge(memStats.GCCPUFraction)
 	result["HeapIdle"] = types.Gauge(memStats.HeapIdle)
 	result["HeapInuse"] = types.Gauge(memStats.HeapInuse)
 	result["HeapObjects"] = types.Gauge(memStats.HeapObjects)
