@@ -134,8 +134,9 @@ func (m *Monitor) reportV2() error {
 
 		client := http.Client{}
 		_, err = client.Do(request)
-		//defer response.Body.Close()
-
+		if err != nil {
+			return err
+		}
 	}
 
 	m.pollCounter = 0

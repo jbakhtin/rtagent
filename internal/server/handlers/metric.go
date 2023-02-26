@@ -7,8 +7,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/services"
+	"github.com/jbakhtin/rtagent/internal/types"
 	"html/template"
 	"net/http"
+	"strconv"
 )
 
 type HandlerMetric struct {
@@ -63,22 +65,31 @@ func (h *HandlerMetric) Get() http.HandlerFunc {
 func (h *HandlerMetric) GetV2() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var metrics models.Metric
-		json.NewDecoder(r.Body).Decode(&metrics)
+		err := json.NewDecoder(r.Body).Decode(&metrics)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-		fmt.Println(metrics)
-		fmt.Println(metrics.MValue)
+		metric, err := h.service.Get(metrics.MKey)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-		//metric, _ := h.service.Get(metrics.ID)
+		var buf bytes.Buffer
+		jsonEncoder := json.NewEncoder(&buf)
+		err = jsonEncoder.Encode(metric)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-		//var buf bytes.Buffer
-		//jsonEncoder := json.NewEncoder(&buf)
-		//jsonEncoder.Encode(metric)
-		//
-		//_, err := w.Write(buf.Bytes())
-		//if err != nil {
-		//	http.Error(w, err.Error(), http.StatusBadRequest)
-		//	return
-		//}
+		_, err = w.Write(buf.Bytes())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 }
 
@@ -96,18 +107,36 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 			return
 		}
 
-		var metric models.Metricer
-		var err error
-
 		mType := chi.URLParam(r, "type")
-		metric , err = models.NewGauge(mType, mKey, mValue)
 
-		if err != nil {
-			http.Error(w, "type not valid", http.StatusBadRequest)
+		var Value interface{}
+		switch mType {
+		case types.GaugeType:
+			floatV, err := strconv.ParseFloat(mValue, 64)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			Value = types.Gauge(floatV)
+		case types.CounterType:
+			intV, err := strconv.ParseInt(mValue, 10, 0)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			Value = types.Counter(intV)
+		default:
+			http.Error(w, "type not valid", http.StatusNotImplemented)
 			return
 		}
 
-		_, err = h.service.Update(metric)
+		metric := models.Metric{
+			MKey: mKey,
+			MType: mType,
+			MValue: Value,
+		}
+
+		_, err := h.service.Update(metric)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -120,7 +149,11 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 func (h *HandlerMetric) UpdateV2() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var metric models.Metric
-		json.NewDecoder(r.Body).Decode(&metric)
+		err := json.NewDecoder(r.Body).Decode(&metric)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotImplemented)
+			return
+		}
 
 		if _, err := h.service.Update(metric); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
