@@ -64,16 +64,18 @@ func (h *HandlerMetric) Get() http.HandlerFunc {
 
 func (h *HandlerMetric) GetV2() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
 		var metrics models.Metric
 		err := json.NewDecoder(r.Body).Decode(&metrics)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
 		metric, err := h.service.Get(metrics.MKey)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
@@ -81,14 +83,12 @@ func (h *HandlerMetric) GetV2() http.HandlerFunc {
 		jsonEncoder := json.NewEncoder(&buf)
 		err = jsonEncoder.Encode(metric)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-
-		w.Header().Add("Content-Type", "application/json")
 		_, err = w.Write(buf.Bytes())
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 	}

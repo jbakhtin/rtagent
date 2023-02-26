@@ -28,6 +28,10 @@ func (s Server) Start() error {
 
 	// middlewares
 	r.Use(middleware.Logger)
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlerMetric.GetAll())
