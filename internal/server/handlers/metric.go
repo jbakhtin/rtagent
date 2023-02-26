@@ -85,12 +85,12 @@ func (h *HandlerMetric) GetV2() http.HandlerFunc {
 			return
 		}
 
+		w.Header().Add("Content-Type", "application/json")
 		_, err = w.Write(buf.Bytes())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		w.Header().Add("Content-Type", "application/json")
 	}
 }
 

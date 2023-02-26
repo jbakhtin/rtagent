@@ -12,10 +12,6 @@ type Metricer interface {
 	StringValue() string
 }
 
-type Valuer interface {
-	Type() string
-}
-
 type (
 	Metric struct {
 		MKey   string      `json:"id,omitempty"`
@@ -32,7 +28,7 @@ type (
 	}
 )
 
-func (t *Metric) UnmarshalJSON(data []byte) error {
+func (m *Metric) UnmarshalJSON(data []byte) error {
 	// TODO: переделать в соответсвии с уроком: Спринт 2 -> Стандартные сериализаторы -> 2. Динамический JSON-объект
 	// TODO: обраюотать ошибки если поля переданы неправильно
 	var aliasValue Metrics
@@ -43,17 +39,17 @@ func (t *Metric) UnmarshalJSON(data []byte) error {
 
 	fmt.Println(aliasValue)
 
-	t.MKey = aliasValue.ID
-	t.MType = aliasValue.MType
+	m.MKey = aliasValue.ID
+	m.MType = aliasValue.MType
 
-	switch t.MType {
+	switch m.MType {
 	case types.GaugeType:
 		if aliasValue.Value != nil  {
-			t.MValue = *aliasValue.Value
+			m.MValue = *aliasValue.Value
 		}
 	case types.CounterType:
 		if aliasValue.Delta != nil  {
-			t.MValue = *aliasValue.Delta
+			m.MValue = *aliasValue.Delta
 		}
 	}
 
@@ -71,14 +67,6 @@ func (m Metric) Key() string {
 func (m Metric) StringValue() string {
 	value := fmt.Sprintf("%v", m.MValue)
 	return value
-}
-
-func (g Gauge) Type() string {
-	return g.Type()
-}
-
-func (c Counter) Type() string {
-	return c.Type()
 }
 
 // Request
