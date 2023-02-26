@@ -34,6 +34,7 @@ func New(serverAddress string, pollInterval, reportInterval time.Duration) (Moni
 // Start - запустить мониторинг
 func (m Monitor) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	chanErr := make(chan error)
 
@@ -41,18 +42,27 @@ func (m Monitor) Start() error {
 	go m.reporting(ctx, chanErr)
 
 	var errCount int
+	var err error
 
 	for {
 		select {
-		case err := <-chanErr:
+		case err = <-chanErr:
 			errCount++
 			fmt.Println(err)
-			if errCount > 10 {
+			if errCount > 10 { // TODO: вынести в константу
+				// TODO: реализовать отправку количества ошибко на сервер
+				// TODO: реализовать новый тип метрики - стринг отправлять описание ошибки на сервер
 				cancel()
-				return err
 			}
+			case <-ctx.Done():
+				time.Sleep(m.reportInterval)
+				goto exit
 		}
 	}
+
+	exit:
+
+	return err
 }
 
 // pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
