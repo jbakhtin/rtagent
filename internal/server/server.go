@@ -37,7 +37,7 @@ func (s Server) Start() error {
 		r.Get("/", handlerMetric.GetAll())
 
 		r.Route("/value/", func(r chi.Router) {
-			r.Get("/", handlerMetric.GetV2()) //TODO: знать, стоит ли выносить хендлерами v2 в отдельный модуль
+			r.Post("/", handlerMetric.GetV2()) //TODO: знать, стоит ли выносить хендлерами v2 в отдельный модуль
 			r.Get("/{type}/{key}", handlerMetric.Get())
 		})
 
