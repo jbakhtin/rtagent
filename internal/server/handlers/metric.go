@@ -137,13 +137,24 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 			MValue: Value,
 		}
 
-		_, err := h.service.Update(metric)
+		test, err := h.service.Update(metric)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		var buf bytes.Buffer
+		jsonEncoder := json.NewEncoder(&buf)
+		err = jsonEncoder.Encode(test)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		_, err = w.Write(buf.Bytes())
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 	}
 }
 

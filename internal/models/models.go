@@ -16,7 +16,7 @@ type (
 	Metric struct {
 		MKey   string      `json:"id,omitempty"`
 		MType  string      `json:"type,omitempty"`
-		MValue interface{}
+		MValue interface{} `json:"value"`
 	}
 
 	Gauge struct {
