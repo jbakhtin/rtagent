@@ -1,10 +1,14 @@
 package agent
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"golang.org/x/exp/rand"
+	"net/http"
 	"runtime"
 	"time"
 
@@ -72,7 +76,7 @@ func (m *Monitor) reporting(ctx context.Context, chanError chan error) {
 	for {
 		select {
 		case <-ticker.C:
-			err := m.report()
+			err := m.reportV2()
 			if err != nil {
 				chanError <- err
 			}
@@ -99,6 +103,39 @@ func (m *Monitor) report() error {
 			fmt.Println(err)
 			return err
 		}
+	}
+
+	m.pollCounter = 0
+
+	return nil
+}
+
+func (m *Monitor) reportV2() error {
+	for key, value := range m.GetStats() {
+		endpoint := fmt.Sprintf("%s/update/", m.serverAddress)
+		metric := models.Metrics{
+			ID: key,
+			MType: value.Type(),
+		}
+		switch v := value.(type) {
+			case types.Counter:
+				metric.Delta = &v
+			case types.Gauge:
+				metric.Value = &v
+		}
+
+		buf, err := json.Marshal(metric)
+		if err != nil {
+			return err
+		}
+
+		request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
+		request.Header.Set("Content-Type", "application/json")
+
+		client := http.Client{}
+		_, err = client.Do(request)
+		//defer response.Body.Close()
+
 	}
 
 	m.pollCounter = 0

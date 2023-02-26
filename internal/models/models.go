@@ -1,6 +1,8 @@
 package models
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"strconv"
@@ -12,88 +14,103 @@ type Metricer interface {
 	StringValue() string
 }
 
+type Valuer interface {
+	Type() string
+}
+
 type (
-	Description struct {
-		MKey string
-		MType string
+	Metric struct {
+		MKey   string      `json:"id,omitempty"`
+		MType  string      `json:"type,omitempty"`
+		MValue interface{}
 	}
 
 	Gauge struct {
-		Description
-		MValue types.Gauge
+		VValue types.Gauge `json:"value"`
 	}
 
 	Counter struct {
-		Description
-		MValue types.Counter
+		VValue types.Counter `json:"delta"`
 	}
 )
 
-// Gauge ----
+func (t *Metric) UnmarshalJSON(data []byte) error {
+	// TODO: переделать в соответсвии с уроком: Спринт 2 -> Стандартные сериализаторы -> 2. Динамический JSON-объект
+	// TODO: обраюотать ошибки если поля переданы неправильно
+	var aliasValue Metrics
 
-func NewGauge(mType, mKey, mValue string) (Gauge, error){
-	value, err := strconv.ParseFloat(mValue, 64)
-	if err != nil {
-		return Gauge{}, err
+	if err := json.Unmarshal(data, &aliasValue); err != nil {
+		return err
 	}
 
-	return Gauge{
-		Description: Description {
-			MKey: mKey,
-			MType: mType,
-		},
-		MValue: types.Gauge(value),
+	t.MKey = aliasValue.ID
+	t.MType = aliasValue.MType
+
+	switch t.MType {
+	case types.GaugeType:
+		t.MValue = *aliasValue.Value
+	case types.CounterType:
+		t.MValue = *aliasValue.Delta
+	default:
+		return errors.New("type not recognized")
+	}
+
+	return nil
+}
+
+func NewGauge(mType, mKey, mValue string) (Metricer, error){
+	var Value types.Metricer
+
+	switch mType {
+	case types.GaugeType:
+		floatV, err := strconv.ParseFloat(mValue, 64)
+		if err != nil {
+			return nil, err
+		}
+		Value = types.Gauge(floatV)
+	case types.CounterType:
+		intV, err := strconv.ParseInt(mValue, 10, 0)
+		if err != nil {
+			return nil, err
+		}
+		Value = types.Counter(intV)
+	default:
+		return nil, errors.New("types not recognized")
+	}
+
+	return Metric{
+		MKey: mKey,
+		MType: mType,
+		MValue: Value,
 	}, nil
 }
 
 
-func (g Gauge) Type() string {
-	return g.MType
+func (m Metric) Type() string {
+	return m.MType
 }
 
-func (g Gauge) Key() string {
-	return g.MKey
+func (m Metric) Key() string {
+	return m.MKey
 }
 
-func (g Gauge) StringValue() string {
-	value := fmt.Sprintf("%v", g.MValue)
+func (m Metric) StringValue() string {
+	value := fmt.Sprintf("%v", m.MValue)
 	return value
 }
 
-// Counter ----
-
-func NewCounter(mType, mKey, mValue string) (Counter, error){
-	value, err := strconv.ParseInt(mValue, 10, 0)
-	if err != nil {
-		return Counter{}, err
-	}
-
-	return Counter{
-		Description: Description {
-			MKey: mKey,
-			MType: mType,
-		},
-		MValue: types.Counter(value),
-	}, nil
+func (g Gauge) Type() string {
+	return g.Type()
 }
 
 func (c Counter) Type() string {
-	return c.MType
+	return c.Type()
 }
 
-func (c Counter) Key() string {
-	return c.MKey
-}
-
-func (c Counter) StringValue() string {
-	value := fmt.Sprintf("%v", c.MValue)
-	return value
-}
-
-func (c *Counter) Increment() {
-	c.MValue++
-}
-
-func (c *Counter) Add(value types.Counter) {
-	c.MValue += value
+// Request
+type Metrics struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *types.Counter   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *types.Gauge `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }

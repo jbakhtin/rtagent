@@ -31,8 +31,16 @@ func (s Server) Start() error {
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlerMetric.GetAll())
-		r.Get("/value/{type}/{key}", handlerMetric.Get())
-		r.Post("/update/{type}/{key}/{value}", handlerMetric.Update())
+
+		r.Route("/value/", func(r chi.Router) {
+			r.Get("/", handlerMetric.GetV2()) //TODO: знать, стоит ли выносить хендлерами v2 в отдельный модуль
+			r.Get("/{type}/{key}", handlerMetric.Get())
+		})
+
+		r.Route("/update/", func(r chi.Router) {
+			r.Post("/", handlerMetric.UpdateV2()) // v2
+			r.Post("/{type}/{key}/{value}", handlerMetric.Update())
+		})
 	})
 
 	return http.ListenAndServe(s.serverAddress, r)

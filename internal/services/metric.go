@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/repositories/storages/inmemory"
+	"github.com/jbakhtin/rtagent/internal/types"
 
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
@@ -47,19 +48,23 @@ func (ms *MetricService) GetAll() (map[string]models.Metricer, error) {
 func (ms *MetricService) Update(metric models.Metricer) (models.Metricer, error) {
 	var err error
 
-	switch m := metric.(type) { // TODO: продумать про переиспользование старых переменных (52, 57)
-	case models.Counter:
+	m, _ := metric.(models.Metric)
+	switch Value := m.MValue.(type) { // TODO: подумать как сделать код элегантнее
+	case types.Counter:
 		entity, err := ms.repository.Get(m.MKey)
 		if err != nil {
 			break
 		}
 
-		oldMetric, ok := entity.(models.Counter)
+		oldMetric, ok := entity.(models.Metric)
 		if !ok {
 			return nil, err
 		}
 
-		m.Add(oldMetric.MValue)
+		counter := oldMetric.MValue.(types.Counter)
+
+		Value.Add(counter)
+		m.MValue = Value
 		metric = m
 	}
 

@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/services"
-	"github.com/jbakhtin/rtagent/internal/types"
 	"html/template"
 	"net/http"
 )
@@ -60,6 +60,28 @@ func (h *HandlerMetric) Get() http.HandlerFunc {
 	}
 }
 
+func (h *HandlerMetric) GetV2() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var metrics models.Metric
+		json.NewDecoder(r.Body).Decode(&metrics)
+
+		fmt.Println(metrics)
+		fmt.Println(metrics.MValue)
+
+		//metric, _ := h.service.Get(metrics.ID)
+
+		//var buf bytes.Buffer
+		//jsonEncoder := json.NewEncoder(&buf)
+		//jsonEncoder.Encode(metric)
+		//
+		//_, err := w.Write(buf.Bytes())
+		//if err != nil {
+		//	http.Error(w, err.Error(), http.StatusBadRequest)
+		//	return
+		//}
+	}
+}
+
 func (h *HandlerMetric) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mValue := chi.URLParam(r, "value")
@@ -78,15 +100,8 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 		var err error
 
 		mType := chi.URLParam(r, "type")
-		switch mType {
-		case types.GaugeType:
-			metric , err = models.NewGauge(mType, mKey, mValue)
-		case types.CounterType:
-			metric , err = models.NewCounter(mType, mKey, mValue)
-		default:
-			http.Error(w, "type not valid", http.StatusNotImplemented)
-			return
-		}
+		metric , err = models.NewGauge(mType, mKey, mValue)
+
 		if err != nil {
 			http.Error(w, "type not valid", http.StatusBadRequest)
 			return
@@ -94,6 +109,20 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 
 		_, err = h.service.Update(metric)
 		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func (h *HandlerMetric) UpdateV2() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var metric models.Metric
+		json.NewDecoder(r.Body).Decode(&metric)
+
+		if _, err := h.service.Update(metric); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
