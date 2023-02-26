@@ -16,7 +16,7 @@ type (
 	Metric struct {
 		MKey   string      `json:"id,omitempty"`
 		MType  string      `json:"type,omitempty"`
-		MValue interface{} `json:"value"`
+		MValue interface{}
 	}
 
 	Gauge struct {
@@ -55,6 +55,30 @@ func (m *Metric) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+func (m Metric) MarshalJSON() ([]byte, error) {
+	metrics := Metrics{
+		ID: m.MKey,
+		MType: m.MType,
+	}
+
+	if m.MValue != nil {
+		switch v := m.MValue.(type) {
+		case types.Gauge:
+			metrics.Value = &v
+		case types.Counter:
+			metrics.Delta = &v
+		}
+	}
+
+	bytes, err := json.Marshal(metrics)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes, nil
+}
+
 
 func (m Metric) Type() string {
 	return m.MType

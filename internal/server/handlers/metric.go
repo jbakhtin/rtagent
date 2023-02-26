@@ -143,14 +143,13 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 			return
 		}
 
-		var buf bytes.Buffer
-		jsonEncoder := json.NewEncoder(&buf)
-		err = jsonEncoder.Encode(test)
+		jsonMetric, err := json.Marshal(test)
+		fmt.Println(jsonMetric)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		_, err = w.Write(buf.Bytes())
+		_, err = w.Write(jsonMetric)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -167,8 +166,20 @@ func (h *HandlerMetric) UpdateV2() http.HandlerFunc {
 			return
 		}
 
-		if _, err := h.service.Update(metric); err != nil {
+		test, err := h.service.Update(metric)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		jsonMetric, err := json.Marshal(test)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		_, err = w.Write(jsonMetric)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
