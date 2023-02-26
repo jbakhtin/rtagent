@@ -20,11 +20,11 @@ type (
 	}
 
 	Gauge struct {
-		VValue types.Gauge `json:"value"`
+		VValue types.Gauge `json:"value,omitempty"`
 	}
 
 	Counter struct {
-		VValue types.Counter `json:"delta"`
+		VValue types.Counter `json:"delta,omitempty"`
 	}
 )
 
@@ -36,8 +36,6 @@ func (m *Metric) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &aliasValue); err != nil {
 		return err
 	}
-
-	fmt.Println(aliasValue)
 
 	m.MKey = aliasValue.ID
 	m.MType = aliasValue.MType

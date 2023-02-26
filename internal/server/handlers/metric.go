@@ -159,6 +159,7 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 
 func (h *HandlerMetric) UpdateV2() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		var metric models.Metric
 		err := json.NewDecoder(r.Body).Decode(&metric)
 		if err != nil {
