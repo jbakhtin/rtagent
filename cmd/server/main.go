@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/caarlos0/env/v6"
+	"github.com/jbakhtin/rtagent/internal/config"
+	"log"
 
 	"github.com/jbakhtin/rtagent/internal/server"
 )
@@ -10,10 +13,15 @@ const serverDomain = "127.0.0.1"
 const serverPort = "8080"
 
 func main() {
-	// TODO: добавить логер для сервера
-	serverAddress := fmt.Sprintf("%s:%s", serverDomain, serverPort)
+	var cfg config.Config
+	err := env.Parse(&cfg)
+	if err != nil {
+		log.Println(err)
+	}
 
-	s, err := server.New(serverAddress)
+	// TODO: добавить логер для сервера
+
+	s, err := server.New(cfg)
 	if err != nil {
 		fmt.Println(err)
 	}

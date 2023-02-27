@@ -2,8 +2,12 @@ package main
 
 import (
 	"fmt"
-	"go.uber.org/zap"
+	"github.com/jbakhtin/rtagent/internal/config"
+	"log"
 	"time"
+
+	"github.com/caarlos0/env/v6"
+	"go.uber.org/zap"
 
 	"github.com/jbakhtin/rtagent/internal/agent"
 )
@@ -16,14 +20,19 @@ const (
 )
 
 func main() {
+	var cfg config.Config
+	err := env.Parse(&cfg)
+	if err != nil {
+		log.Println(err)
+	}
+
 	logger, err := zap.NewDevelopment()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	serverAddress := fmt.Sprintf("%s:%s", serverDomain, serverPort)
-	monitor, err := agent.New(serverAddress, pollInterval, reportInterval, logger)
+	monitor, err := agent.New(cfg, logger)
 	if err != nil {
 		fmt.Println(err)
 	}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"go.uber.org/zap"
@@ -28,12 +29,12 @@ type Monitor struct {
 	pollCounter types.Counter
 }
 
-func New(serverAddress string, pollInterval, reportInterval time.Duration, logger *zap.Logger) (Monitor, error){
+func New(ctf config.Config, logger *zap.Logger) (Monitor, error){
 	return Monitor{
 		log: logger,
-		serverAddress: serverAddress,
-		pollInterval: pollInterval,
-		reportInterval: reportInterval,
+		serverAddress: ctf.Address,
+		pollInterval: ctf.PollInterval,
+		reportInterval: ctf.ReportInterval,
 	}, nil
 }
 

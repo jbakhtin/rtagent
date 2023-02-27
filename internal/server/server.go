@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+	"github.com/jbakhtin/rtagent/internal/config"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -12,9 +14,9 @@ type Server struct {
 	serverAddress string
 }
 
-func New(serverAddress string) (Server, error) {
+func New(cfg config.Config) (Server, error) {
 	return Server{
-		serverAddress: serverAddress,
+		serverAddress: cfg.Address,
 	}, nil
 }
 
@@ -45,6 +47,8 @@ func (s Server) Start() error {
 			r.Post("/{type}/{key}/{value}", handlerMetric.Update())
 		})
 	})
+
+	fmt.Println(s.serverAddress)
 
 	return http.ListenAndServe(s.serverAddress, r)
 }
