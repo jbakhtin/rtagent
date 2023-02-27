@@ -7,15 +7,20 @@ import (
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/types"
+	"go.uber.org/zap"
 	"golang.org/x/exp/rand"
 	"net/http"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/go-resty/resty/v2"
 )
 
 type Monitor struct {
+	sc sync.Mutex
+	log *zap.Logger
+
 	serverAddress  string
 	pollInterval   time.Duration
 	reportInterval time.Duration
@@ -23,16 +28,17 @@ type Monitor struct {
 	pollCounter types.Counter
 }
 
-func New(serverAddress string, pollInterval, reportInterval time.Duration) (Monitor, error){
+func New(serverAddress string, pollInterval, reportInterval time.Duration, logger *zap.Logger) (Monitor, error){
 	return Monitor{
-		serverAddress:serverAddress,
+		log: logger,
+		serverAddress: serverAddress,
 		pollInterval: pollInterval,
 		reportInterval: reportInterval,
 	}, nil
 }
 
 // Start - запустить мониторинг
-func (m Monitor) Start() error {
+func (m *Monitor) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -48,20 +54,24 @@ func (m Monitor) Start() error {
 		select {
 		case err = <-chanErr:
 			errCount++
-			fmt.Println(err)
+			m.log.Info(err.Error())
+
 			if errCount > 10 { // TODO: вынести в константу
 				// TODO: реализовать отправку количества ошибко на сервер
 				// TODO: реализовать новый тип метрики - стринг отправлять описание ошибки на сервер
+
+				m.log.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", 10))
 				cancel()
 			}
 			case <-ctx.Done():
+				m.log.Info("завершаем работу агента")
+				m.log.Info("ожидаем перед окончательным завершением")
 				time.Sleep(m.reportInterval)
 				goto exit
 		}
 	}
 
 	exit:
-
 	return err
 }
 
@@ -77,13 +87,16 @@ func (m *Monitor) polling(ctx context.Context, chanError chan error) {
 				chanError <- err
 			}
 		case <-ctx.Done():
-			fmt.Println("Сбор метрик приостановлен!")
+			m.log.Info("сбор метрик приостановлен")
 			return
 		}
 	}
 }
 
 func (m *Monitor) poll() error {
+	m.sc.Lock()
+	defer m.sc.Unlock()
+
 	m.pollCounter++
 	return nil
 }
@@ -100,7 +113,7 @@ func (m *Monitor) reporting(ctx context.Context, chanError chan error) {
 				chanError <- err
 			}
 		case <-ctx.Done():
-			fmt.Println("Отправка метрики приостановлена!")
+			m.log.Info("отправка метрики приостановлена")
 			return
 		}
 	}
@@ -108,6 +121,9 @@ func (m *Monitor) reporting(ctx context.Context, chanError chan error) {
 
 // report - отправить данные
 func (m *Monitor) report() error {
+	m.sc.Lock()
+	defer m.sc.Unlock()
+
 	for key, value := range m.GetStats() {
 		endpoint := fmt.Sprintf("%s/update/{type}/{key}/{value}", m.serverAddress)
 		client := resty.New()
@@ -119,7 +135,6 @@ func (m *Monitor) report() error {
 			"value": fmt.Sprint(value),
 		}).Post(endpoint)
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 	}
@@ -159,19 +174,18 @@ func (m *Monitor) reportV2() error {
 		if err != nil {
 			return err
 		}
-		err = response.Body.Close()
-		if err != nil {
+
+		if err = response.Body.Close(); err != nil {
 			return err
 		}
 	}
 
 	m.pollCounter = 0
-
 	return nil
 }
 
 // GetStats - Поулчить слайс содержщий последние акутальные данные
-func (m Monitor) GetStats() map[string]types.Metricer {
+func (m *Monitor) GetStats() map[string]types.Metricer {
 	memStats := runtime.MemStats{}
 	runtime.ReadMemStats(&memStats)
 

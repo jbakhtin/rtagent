@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"time"
 
 	"github.com/jbakhtin/rtagent/internal/agent"
@@ -15,15 +16,19 @@ const (
 )
 
 func main() {
-	serverAddress := fmt.Sprintf("%s:%s", serverDomain, serverPort)
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	monitor, err := agent.New(serverAddress, pollInterval, reportInterval)
+	serverAddress := fmt.Sprintf("%s:%s", serverDomain, serverPort)
+	monitor, err := agent.New(serverAddress, pollInterval, reportInterval, logger)
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	if err := monitor.Start(); err != nil {
-		fmt.Println(err)
-		fmt.Println("Test")
+		logger.Error(err.Error())
 	}
 }

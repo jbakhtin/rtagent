@@ -29,14 +29,14 @@ func (s Server) Start() error {
 	// middlewares
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
+	r.Use(middleware.Logger) // TODO: узнать, можно ли реализовать через zap.Logger
 	r.Use(middleware.Recoverer)
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlerMetric.GetAll())
 
 		r.Route("/value/", func(r chi.Router) {
-			r.Post("/", handlerMetric.GetV2()) //TODO: знать, стоит ли выносить хендлерами v2 в отдельный модуль
+			r.Post("/", handlerMetric.GetV2()) //TODO: узнать, стоит ли выносить хендлерами v2 в отдельный модуль
 			r.Get("/{type}/{key}", handlerMetric.Get())
 		})
 

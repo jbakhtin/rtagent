@@ -20,11 +20,11 @@ type (
 	}
 
 	Gauge struct {
-		VValue types.Gauge `json:"value,omitempty"`
+		Value types.Gauge `json:"value,omitempty"`
 	}
 
 	Counter struct {
-		VValue types.Counter `json:"delta,omitempty"`
+		Delta types.Counter `json:"delta,omitempty"`
 	}
 )
 
