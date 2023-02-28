@@ -32,7 +32,7 @@ type Monitor struct {
 func New(ctf config.Config, logger *zap.Logger) (Monitor, error){
 	return Monitor{
 		log: logger,
-		serverAddress: fmt.Sprintf("http://%s", ctf.Address),
+		serverAddress: fmt.Sprintf("http://%s", ctf.Address), //TODO: переделать зависимость от http/https
 		pollInterval: ctf.PollInterval,
 		reportInterval: ctf.ReportInterval,
 	}, nil
