@@ -66,9 +66,6 @@ func (tf *toFile) WriteList(event *map[string]models.Metric) error {
 	if err = tf.writer.WriteByte('\n'); err != nil {
 		return err
 	}
-	if err != nil {
-		return err
-	}
 	// записываем буфер в файл
 	return tf.writer.Flush()
 }
