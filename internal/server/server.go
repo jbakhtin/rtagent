@@ -2,8 +2,8 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"github.com/jbakhtin/rtagent/internal/config"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -49,7 +49,7 @@ func (s Server) Start(ctx context.Context, cfg config.Config) error {
 		})
 	})
 
-	fmt.Println(s.serverAddress)
+	log.Println(s.serverAddress)
 
 	return http.ListenAndServe(s.serverAddress, r)
 }

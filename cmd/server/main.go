@@ -24,9 +24,11 @@ func main() {
 		fmt.Println(err)
 	}
 
-	ctx, cencel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	if err = s.Start(ctx, cfg); err != nil {
-		fmt.Println(err)
+		log.Println(err)
+		cancel()
 	}
-	cencel()
+	log.Println("сервер остановлен")
+	cancel()
 }
