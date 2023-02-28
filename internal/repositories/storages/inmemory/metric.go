@@ -2,6 +2,7 @@ package inmemory
 
 import (
 	"context"
+
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/storages/memstorage"
@@ -9,13 +10,17 @@ import (
 
 type MetricRepository struct {
 	memStorage memstorage.MemStorage
-	cfg config.Config
+	cfg        config.Config
 }
 
 func NewMetricRepository(ctx context.Context, cfg config.Config) (*MetricRepository, error) {
+	memStorage, err := memstorage.New(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &MetricRepository{
-		memStorage: memstorage.New(ctx, cfg),
-		cfg: cfg,
+		memStorage: memStorage,
+		cfg:        cfg,
 	}, nil
 }
 

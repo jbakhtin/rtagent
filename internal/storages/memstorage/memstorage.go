@@ -3,7 +3,6 @@ package memstorage
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"sync"
 
@@ -11,37 +10,36 @@ import (
 )
 
 type MemStorage struct {
-	sync.RWMutex
+	snc sync.RWMutex
 	snapshot *Snapshot
 	items map[string]models.Metric
 }
 
-func New(ctx context.Context, cfg config.Config) MemStorage { // TODO: обработать возврат ошиок
+func New(ctx context.Context, cfg config.Config) (MemStorage, error) { // TODO: обработать возврат ошиок
 	snapshot, err := NewSnapshot(ctx, cfg)
 	if err != nil {
-		return MemStorage{}
+		return MemStorage{}, err
 	}
 
-	metrics := make(map[string]models.Metric, 0)
-	metrics, err = snapshot.Import(ctx, &metrics)
-	if err != nil {
-		return MemStorage{}
+	var metrics map[string]models.Metric
+	list, ok := snapshot.Import(ctx)
+	if !ok {
+		metrics = make(map[string]models.Metric, 0)
+	} else {
+		metrics = list
 	}
-
-	fmt.Println(metrics)
 
 	go snapshot.Exporting(ctx, cfg, &metrics)
-
 
 	return MemStorage{
 		items: metrics,
 		snapshot: snapshot,
-	}
+	}, nil
 }
 
 func (ms *MemStorage) Set(metric models.Metric) (models.Metric, error) {
-	ms.Lock()
-	defer ms.Unlock()
+	ms.snc.Lock()
+	defer ms.snc.Unlock()
 
 	ms.items[metric.Key()] = metric
 
@@ -49,8 +47,8 @@ func (ms *MemStorage) Set(metric models.Metric) (models.Metric, error) {
 }
 
 func (ms *MemStorage) Get(key string) (models.Metricer, error) {
-	ms.Lock()
-	defer ms.Unlock()
+	ms.snc.Lock()
+	defer ms.snc.Unlock()
 
 	if value, ok := ms.items[key]; ok {
 		return value, nil
@@ -60,8 +58,8 @@ func (ms *MemStorage) Get(key string) (models.Metricer, error) {
 }
 
 func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
-	ms.Lock()
-	defer ms.Unlock()
+	ms.snc.Lock()
+	defer ms.snc.Unlock()
 
 	result := make(map[string]models.Metricer, len(ms.items))
 

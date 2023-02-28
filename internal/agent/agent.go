@@ -109,7 +109,7 @@ func (m *Monitor) reporting(ctx context.Context, chanError chan error) {
 	for {
 		select {
 		case <-ticker.C:
-			err := m.reportV2()
+			err := m.report()
 			if err != nil {
 				chanError <- err
 			}

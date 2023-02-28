@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
-	"log"
 	"time"
 )
 
@@ -33,17 +32,13 @@ func NewSnapshot(ctx context.Context, cfg config.Config) (*Snapshot, error) {
 	}, nil
 }
 
-func (s *Snapshot) Import(ctx context.Context, metrics *map[string]models.Metric) (map[string]models.Metric, error) {
+func (s *Snapshot) Import(ctx context.Context) (map[string]models.Metric, bool) {
 	list, err := s.FromFile.ReadList()
 	if err != nil {
-		log.Println(err)
-		log.Println(list)
+		return nil, false
 	}
 
-	log.Println(err)
-	log.Println(list)
-
-	return list, nil
+	return list, true
 }
 
 func (s *Snapshot) Exporting(ctx context.Context, cfg config.Config, metrics *map[string]models.Metric) {
