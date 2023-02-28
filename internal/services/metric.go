@@ -35,7 +35,7 @@ func (ms *MetricService) Get(key string) (models.Metricer, error) {
 	return metric, nil
 }
 
-func (ms *MetricService) GetAll() (map[string]models.Metricer, error) {
+func (ms *MetricService) GetAll() (map[string]models.Metric, error) {
 	metrics, err := ms.repository.GetAll()
 	if err != nil {
 		fmt.Println("Get error: ", err)
@@ -45,27 +45,20 @@ func (ms *MetricService) GetAll() (map[string]models.Metricer, error) {
 	return metrics, nil
 }
 
-func (ms *MetricService) Update(metric models.Metricer) (models.Metricer, error) {
+func (ms *MetricService) Update(metric models.Metric) (models.Metric, error) {
 	var err error
 
-	m, _ := metric.(models.Metric)
-	switch Value := m.MValue.(type) { // TODO: подумать как сделать код элегантнее
+	switch Value := metric.MValue.(type) { // TODO: подумать как сделать код элегантнее
 	case types.Counter:
-		entity, err := ms.repository.Get(m.MKey)
+		entity, err := ms.repository.Get(metric.MKey)
 		if err != nil {
 			break
 		}
 
-		oldMetric, ok := entity.(models.Metric)
-		if !ok {
-			return nil, err
-		}
-
-		counter := oldMetric.MValue.(types.Counter)
+		counter := entity.MValue.(types.Counter)
 
 		Value.Add(counter)
-		m.MValue = Value
-		metric = m
+		metric.MValue = Value
 	}
 
 	metric, err = ms.repository.Update(metric)

@@ -1,7 +1,11 @@
 package memstorage
 
 import (
+	"context"
 	"errors"
+	"github.com/caarlos0/env/v6"
+	"github.com/jbakhtin/rtagent/internal/config"
+	"log"
 	"sync"
 
 	"github.com/jbakhtin/rtagent/internal/models"
@@ -9,16 +13,43 @@ import (
 
 type MemStorage struct {
 	sync.RWMutex
-	items map[string]models.Metricer
+	items map[string]models.Metric
+	snapshot Snapshot
 }
 
 func New() MemStorage {
+	ctx := context.TODO()
+	var cfg config.Config
+	err := env.Parse(&cfg)
+	if err != nil {
+		log.Fatal(err)
+
+	}
+
+	snapshot, err := NewSnapshot(ctx, cfg)
+	if err != nil {
+		log.Fatal(err)
+		return MemStorage{}
+	}
+
+	var metrics map[string]models.Metric
+	list, ok := snapshot.Import(ctx)
+	if !ok {
+		metrics = make(map[string]models.Metric, 0)
+	} else {
+		metrics = list
+	}
+	//metrics = make(map[string]models.Metric, 0)
+
+	go snapshot.Exporting(ctx, cfg, &metrics)
+
 	return MemStorage{
-		items: make(map[string]models.Metricer, 0),
+		items: metrics,
+		snapshot: *snapshot,
 	}
 }
 
-func (ms *MemStorage) Set(metric models.Metricer) (models.Metricer, error) {
+func (ms *MemStorage) Set(metric models.Metric) (models.Metric, error) {
 	ms.Lock()
 	defer ms.Unlock()
 
@@ -27,7 +58,7 @@ func (ms *MemStorage) Set(metric models.Metricer) (models.Metricer, error) {
 	return metric, nil
 }
 
-func (ms *MemStorage) Get(key string) (models.Metricer, error) {
+func (ms *MemStorage) Get(key string) (models.Metric, error) {
 	ms.Lock()
 	defer ms.Unlock()
 
@@ -35,14 +66,14 @@ func (ms *MemStorage) Get(key string) (models.Metricer, error) {
 		return value, nil
 	}
 
-	return nil, errors.New("record not found")
+	return models.Metric{}, errors.New("record not found")
 }
 
-func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
+func (ms *MemStorage) GetAll() (map[string]models.Metric, error) {
 	ms.Lock()
 	defer ms.Unlock()
 
-	result := make(map[string]models.Metricer, len(ms.items))
+	result := make(map[string]models.Metric, len(ms.items))
 
 	// Deep copy
 	for k, v := range ms.items {
