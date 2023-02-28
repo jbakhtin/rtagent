@@ -22,14 +22,15 @@ func New(ctx context.Context, cfg config.Config) (MemStorage, error) { // TODO: 
 	}
 
 	var metrics map[string]models.Metric
-	list, ok := snapshot.Import(ctx)
-	if !ok {
-		metrics = make(map[string]models.Metric, 0)
-	} else {
-		metrics = list
-	}
+	//list, ok := snapshot.Import(ctx)
+	//if !ok {
+	//	metrics = make(map[string]models.Metric, 0)
+	//} else {
+	//	metrics = list
+	//}
+	metrics = make(map[string]models.Metric, 0)
 
-	go snapshot.Exporting(ctx, cfg, &metrics)
+	//go snapshot.Exporting(ctx, cfg, &metrics)
 
 	return MemStorage{
 		items: metrics,

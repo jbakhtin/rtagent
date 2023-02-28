@@ -22,13 +22,14 @@ func main() {
 	s, err := server.New(cfg)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, _ := context.WithCancel(context.Background())
 	if err = s.Start(ctx, cfg); err != nil {
 		log.Println(err)
-		cancel()
+		//cancel()
 	}
 	log.Println("сервер остановлен")
-	cancel()
+	//cancel()
 }
