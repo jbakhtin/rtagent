@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/services"
 	"github.com/jbakhtin/rtagent/internal/types"
@@ -15,6 +17,7 @@ import (
 
 type HandlerMetric struct {
 	service *services.MetricService
+	cfg config.Config
 }
 
 var listOfMetricHTMLTemplate = `
@@ -23,14 +26,15 @@ var listOfMetricHTMLTemplate = `
 	{{end}}
 `
 
-func NewHandlerMetric() (*HandlerMetric, error){
-	service, err := services.NewMetricService()
+func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, error){
+	service, err := services.NewMetricService(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &HandlerMetric{
 		service: service,
+		cfg: cfg,
 	}, nil
 }
 

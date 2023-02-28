@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"net/http"
@@ -20,10 +21,10 @@ func New(cfg config.Config) (Server, error) {
 	}, nil
 }
 
-func (s Server) Start() error {
+func (s Server) Start(ctx context.Context, cfg config.Config) error {
 	r := chi.NewRouter()
 
-	handlerMetric, err := handlers.NewHandlerMetric()
+	handlerMetric, err := handlers.NewHandlerMetric(ctx, cfg)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,9 @@
 package services
 
 import (
+	"context"
 	"fmt"
+	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/repositories/storages/inmemory"
 	"github.com/jbakhtin/rtagent/internal/types"
 
@@ -11,17 +13,19 @@ import (
 
 type MetricService struct {
 	repository interfaces.MetricRepository
+	cfg config.Config
 }
 
-func NewMetricService() (*MetricService, error) {
+func NewMetricService(ctx context.Context, cfg config.Config) (*MetricService, error) {
 	// Инициализируе нужное хранилище
-	repository, err := inmemory.NewMetricRepository()
+	repository, err := inmemory.NewMetricRepository(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &MetricService{
 		repository: repository,
+		cfg: cfg,
 	}, nil
 }
 
@@ -45,27 +49,26 @@ func (ms *MetricService) GetAll() (map[string]models.Metricer, error) {
 	return metrics, nil
 }
 
-func (ms *MetricService) Update(metric models.Metricer) (models.Metricer, error) {
+func (ms *MetricService) Update(metric models.Metric) (models.Metric, error) {
 	var err error
 
-	m, _ := metric.(models.Metric)
-	switch Value := m.MValue.(type) { // TODO: подумать как сделать код элегантнее
+	switch Value := metric.MValue.(type) { // TODO: подумать как сделать код элегантнее
 	case types.Counter:
-		entity, err := ms.repository.Get(m.MKey)
+		entity, err := ms.repository.Get(metric.MKey)
 		if err != nil {
 			break
 		}
 
 		oldMetric, ok := entity.(models.Metric)
 		if !ok {
-			return nil, err
+			return models.Metric{}, err
 		}
 
 		counter := oldMetric.MValue.(types.Counter)
 
 		Value.Add(counter)
-		m.MValue = Value
-		metric = m
+		metric.MValue = Value
+		metric = metric
 	}
 
 	metric, err = ms.repository.Update(metric)

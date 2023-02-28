@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/caarlos0/env/v6"
 	"github.com/jbakhtin/rtagent/internal/config"
@@ -8,9 +9,6 @@ import (
 
 	"github.com/jbakhtin/rtagent/internal/server"
 )
-
-const serverDomain = "127.0.0.1"
-const serverPort = "8080"
 
 func main() {
 	var cfg config.Config
@@ -26,7 +24,9 @@ func main() {
 		fmt.Println(err)
 	}
 
-	if err = s.Start(); err != nil {
+	ctx, cencel := context.WithCancel(context.Background())
+	if err = s.Start(ctx, cfg); err != nil {
 		fmt.Println(err)
 	}
+	cencel()
 }
