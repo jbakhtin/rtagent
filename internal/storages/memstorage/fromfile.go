@@ -3,6 +3,7 @@ package memstorage
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"os"
@@ -33,17 +34,19 @@ func NewReader(cfg config.Config) (*fromFile, error) {
 }
 
 func (ff *fromFile) ReadList() (map[string]models.Metric, error) {
+	event := make(map[string]models.Metric, 10)
 	// читаем данные до символа переноса строки
 	data, err := ff.reader.ReadBytes('\n')
 	if err != nil {
-		return nil, err
+		fmt.Println(err)
+		return event, err
 	}
 
 	// преобразуем данные из JSON-представления в структуру
-	event := make(map[string]models.Metric, 10)
 	err = json.Unmarshal(data, &event)
 	if err != nil {
-		return nil, err
+		fmt.Println(err)
+		return event, err
 	}
 
 	return event, nil

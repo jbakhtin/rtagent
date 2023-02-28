@@ -3,6 +3,7 @@ package memstorage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"sync"
 
@@ -21,16 +22,16 @@ func New(ctx context.Context, cfg config.Config) MemStorage { // TODO: обра�
 		return MemStorage{}
 	}
 
-	metrics, err := snapshot.Import(ctx)
+	var metrics map[string]models.Metric
+	metrics, err = snapshot.Import(ctx, &metrics)
 	if err != nil {
 		return MemStorage{}
 	}
 
-	if metrics == nil {
-		metrics = make(map[string]models.Metric, 0)
-	}
+	fmt.Println(metrics)
 
 	go snapshot.Exporting(ctx, cfg, &metrics)
+
 
 	return MemStorage{
 		items: metrics,

@@ -68,7 +68,6 @@ func (ms *MetricService) Update(metric models.Metric) (models.Metric, error) {
 
 		Value.Add(counter)
 		metric.MValue = Value
-		metric = metric
 	}
 
 	metric, err = ms.repository.Update(metric)

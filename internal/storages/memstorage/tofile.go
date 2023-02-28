@@ -44,11 +44,19 @@ func (tf *toFile) WriteList(event *map[string]models.Metric) error {
 
 	// добавляем перенос строки
 	err = tf.file.Truncate(0)
-	_, err = tf.file.Seek(0, 0)
-	if err := tf.writer.WriteByte('\n'); err != nil {
+	if err != nil {
 		return err
 	}
-
+	_, err = tf.file.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+	if err = tf.writer.WriteByte('\n'); err != nil {
+		return err
+	}
+	if err != nil {
+		return err
+	}
 	// записываем буфер в файл
 	return tf.writer.Flush()
 }

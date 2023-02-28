@@ -32,14 +32,17 @@ func NewSnapshot(ctx context.Context, cfg config.Config) (*Snapshot, error) {
 	}, nil
 }
 
-func (s *Snapshot) Import(ctx context.Context) (map[string]models.Metric, error) {
-	var metrics map[string]models.Metric
-	metrics, err := s.FromFile.ReadList()
+func (s *Snapshot) Import(ctx context.Context, metrics *map[string]models.Metric) (map[string]models.Metric, error) {
+	list, err := s.FromFile.ReadList()
 	if err != nil {
 		fmt.Println(err)
+		fmt.Println(list)
 	}
 
-	return metrics, nil
+	fmt.Println(err)
+	fmt.Println(list)
+
+	return list, nil
 }
 
 func (s *Snapshot) Exporting(ctx context.Context, cfg config.Config, metrics *map[string]models.Metric) {
