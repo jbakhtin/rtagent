@@ -22,7 +22,7 @@ type fromFile struct {
 func NewReader(cfg config.Config) (*fromFile, error) {
 
 	// открываем файл для чтения
-	file, err := os.OpenFile(cfg.StoreFile, os.O_RDWR, 0777)
+	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return nil, err
 	}
