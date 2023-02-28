@@ -22,7 +22,7 @@ func New(ctx context.Context, cfg config.Config) MemStorage { // TODO: обра�
 		return MemStorage{}
 	}
 
-	var metrics map[string]models.Metric
+	metrics := make(map[string]models.Metric, 0)
 	metrics, err = snapshot.Import(ctx, &metrics)
 	if err != nil {
 		return MemStorage{}
