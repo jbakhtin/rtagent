@@ -5,7 +5,8 @@ import (
 "encoding/json"
 "github.com/jbakhtin/rtagent/internal/config"
 "github.com/jbakhtin/rtagent/internal/models"
-"os"
+	"log"
+	"os"
 )
 
 type Reader interface {
@@ -19,11 +20,21 @@ type fromFile struct {
 }
 
 func NewReader(cfg config.Config) (*fromFile, error) {
+	var file *os.File
+	var err error
 
 	// открываем файл для чтения
-	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
-	if err != nil {
-		return nil, err
+	file, err = os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
+	if os.IsNotExist(err) {
+		err = os.Mkdir("tmp", 0777)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		file, err = os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	return &fromFile{

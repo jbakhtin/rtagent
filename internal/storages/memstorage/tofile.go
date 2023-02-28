@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
+	"log"
 	"os"
 )
 
@@ -19,9 +20,20 @@ type toFile struct {
 }
 
 func NewWriter(cfg config.Config) (*toFile, error) {
-	file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE, 0777)
-	if err != nil {
-		return nil, err
+	var file *os.File
+	var err error
+
+	file, err = os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE, 0777)
+	if os.IsNotExist(err) {
+		err = os.Mkdir("tmp", 0777)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		file, err = os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE, 0777)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	return &toFile{
