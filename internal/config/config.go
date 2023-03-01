@@ -25,12 +25,12 @@ func (c *Config) InitFromENV() error {
 }
 
 func (c *Config) InitFromFlag() error {
-	c.PollInterval = *flag.Duration("pollInterval", 2, "a Duration")
-	c.ReportInterval = *flag.Duration("reportInterval", 10, "a Duration")
-	c.StoreInterval = *flag.Duration("storeInterval", 300, "a Duration")
-	c.StoreFile = *flag.String("storeFile", "tmp/devops-metrics-db.json", "a String")
-	c.Address = *flag.String("dddress", "127.0.0.1:8080", "a String")
-	c.Restore = *flag.Bool("restore", true, "a Bool")
+	c.PollInterval = *flag.Duration("p", 2, "a Duration")
+	c.ReportInterval = *flag.Duration("r", 10, "a Duration")
+	c.StoreInterval = *flag.Duration("i", 300, "a Duration")
+	c.StoreFile = *flag.String("f", "tmp/devops-metrics-db.json", "a String")
+	c.Address = *flag.String("a", "127.0.0.1:8080", "a String")
+	c.Restore = *flag.Bool("r", true, "a Bool")
 
 	return nil
 }
