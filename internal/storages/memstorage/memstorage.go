@@ -3,7 +3,6 @@ package memstorage
 import (
 	"context"
 	"errors"
-	"github.com/caarlos0/env/v6"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"log"
 	"sync"
@@ -12,24 +11,16 @@ import (
 )
 
 type MemStorage struct {
-	sync.RWMutex
-	items map[string]models.Metric
+	mx *sync.RWMutex
 	snapshot Snapshot
+	items map[string]models.Metric
 }
 
-func New() MemStorage {
-	ctx := context.TODO()
-	var cfg config.Config
-	err := env.Parse(&cfg)
-	if err != nil {
-		log.Fatal(err)
-
-	}
-
+func New(ctx context.Context, cfg config.Config) (MemStorage, error) {
 	snapshot, err := NewSnapshot(ctx, cfg)
 	if err != nil {
 		log.Fatal(err)
-		return MemStorage{}
+		return MemStorage{}, err
 	}
 
 	var metrics map[string]models.Metric
@@ -39,19 +30,19 @@ func New() MemStorage {
 	} else {
 		metrics = list
 	}
-	//metrics = make(map[string]models.Metric, 0)
 
 	go snapshot.Exporting(ctx, cfg, &metrics)
 
 	return MemStorage{
 		items: metrics,
 		snapshot: *snapshot,
-	}
+		mx: &sync.RWMutex{},
+	}, nil
 }
 
 func (ms *MemStorage) Set(metric models.Metric) (models.Metric, error) {
-	ms.Lock()
-	defer ms.Unlock()
+	ms.mx.Lock()
+	defer ms.mx.Unlock()
 
 	ms.items[metric.Key()] = metric
 
@@ -59,8 +50,8 @@ func (ms *MemStorage) Set(metric models.Metric) (models.Metric, error) {
 }
 
 func (ms *MemStorage) Get(key string) (models.Metric, error) {
-	ms.Lock()
-	defer ms.Unlock()
+	ms.mx.Lock()
+	defer ms.mx.Unlock()
 
 	if value, ok := ms.items[key]; ok {
 		return value, nil
@@ -70,8 +61,8 @@ func (ms *MemStorage) Get(key string) (models.Metric, error) {
 }
 
 func (ms *MemStorage) GetAll() (map[string]models.Metric, error) {
-	ms.Lock()
-	defer ms.Unlock()
+	ms.mx.Lock()
+	defer ms.mx.Unlock()
 
 	result := make(map[string]models.Metric, len(ms.items))
 

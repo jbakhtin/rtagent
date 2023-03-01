@@ -52,6 +52,8 @@ func (s *Snapshot) Exporting(ctx context.Context, cfg config.Config, metrics *ma
 			if err != nil {
 				return
 			}
+			_ = s.ToFile.Close()
+			_ = s.FromFile.Close()
 			return
 		case <-ticker.C:
 			err := s.ToFile.WriteList(metrics)

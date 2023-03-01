@@ -72,6 +72,6 @@ func (tf *toFile) WriteList(event *map[string]models.Metric) error {
 
 func (tf *toFile) Close() error {
 	// закрываем файл
-	//return tf.file.Close()
+	return tf.file.Close()
 	return nil
 }
