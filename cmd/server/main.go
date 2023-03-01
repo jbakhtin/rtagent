@@ -3,10 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/caarlos0/env/v6"
 	"github.com/jbakhtin/rtagent/internal/config"
-	"log"
-
 	"github.com/jbakhtin/rtagent/internal/server"
 )
 
@@ -15,9 +12,11 @@ const serverPort = "8080"
 
 func main() {
 	var cfg config.Config
-	err := env.Parse(&cfg)
+	err := cfg.InitFromFlag()
+	err = cfg.InitFromENV()
 	if err != nil {
-		log.Println(err)
+		fmt.Println(err)
+		return
 	}
 
 	// TODO: добавить логер для сервера
