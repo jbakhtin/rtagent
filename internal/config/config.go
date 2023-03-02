@@ -7,12 +7,12 @@ import (
 )
 
 type Config struct {
-	PollInterval   time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
-	Address        string        `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
-	StoreFile      string        `env:"STORE_FILE" envDefault:"tmp/devops-metrics-db.json"`
-	StoreInterval  time.Duration `env:"STORE_INTERVAL" envDefault:"40s"`
-	Restore        bool          `env:"RESTORE" envDefault:"true"`
+	PollInterval   time.Duration `env:"POLL_INTERVAL"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
+	Address        string        `env:"ADDRESS"`
+	StoreFile      string        `env:"STORE_FILE"`
+	StoreInterval  time.Duration `env:"STORE_INTERVAL"`
+	Restore        bool          `env:"RESTORE"`
 }
 
 type Builder struct {
@@ -34,7 +34,7 @@ func (cb *Builder) WithPollInterval(pollInterval time.Duration) *Builder{
 }
 
 func (cb *Builder) WithPollIntervalFromFlag() *Builder{
-	cb.config.PollInterval = *flag.Duration("p", 2, "test")
+	cb.config.PollInterval = *flag.Duration("p", time.Second * 2, "test")
 
 	return cb
 }
@@ -47,7 +47,7 @@ func (cb *Builder) WithReportInterval(reportInterval time.Duration) *Builder {
 }
 
 func (cb *Builder) WithReportIntervalFromFlag() *Builder {
-	cb.config.ReportInterval = *flag.Duration("r", 10, "test")
+	cb.config.ReportInterval = *flag.Duration("r", time.Second * 10, "test")
 
 	return cb
 }
@@ -86,7 +86,7 @@ func (cb *Builder) WithStoreInterval(storeInterval time.Duration) *Builder {
 }
 
 func (cb *Builder) WithStoreIntervalFromFlag() *Builder {
-	cb.config.StoreInterval = *flag.Duration("i", 300, "test")
+	cb.config.StoreInterval = *flag.Duration("i", time.Second * 300, "test")
 
 	return cb
 }

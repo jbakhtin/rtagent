@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"github.com/caarlos0/env/v6"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/stretchr/testify/require"
 	"log"
@@ -26,8 +25,13 @@ func TestHandlerMetric_Get(t *testing.T) {
 	}
 
 	ctx := context.TODO()
-	cfg := config.Config{}
-	err := env.Parse(&cfg)
+	cfg, err := config.NewConfigBuilder().
+		WithAddressFromFlag().
+		WithRestoreFromFlag().
+		WithStoreFileFromFlag().
+		WithStoreIntervalFromFlag().
+		WithAllFromEnv().
+		Build()
 	if err != nil {
 		log.Println(err)
 	}
@@ -56,12 +60,6 @@ func TestHandlerMetric_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.TODO()
-			cfg := config.Config{}
-			err := env.Parse(&cfg)
-			if err != nil {
-				log.Println(err)
-			}
 			h, err := NewHandlerMetric(ctx, cfg)
 			if err != nil {
 				require.NoError(t, err)

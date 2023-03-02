@@ -15,8 +15,11 @@ func main() {
 		WithAddressFromFlag().
 		WithRestoreFromFlag().
 		WithStoreFileFromFlag().
+		WithStoreIntervalFromFlag().
 		WithAllFromEnv().
 		Build()
+
+	fmt.Println(cfg)
 
 	if err != nil {
 		fmt.Println(err)
