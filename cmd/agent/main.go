@@ -3,10 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/config"
-	"log"
 	"time"
 
-	"github.com/caarlos0/env/v6"
 	"go.uber.org/zap"
 
 	"github.com/jbakhtin/rtagent/internal/agent"
@@ -20,11 +18,12 @@ const (
 )
 
 func main() {
-	var cfg config.Config
-	err := env.Parse(&cfg)
-	if err != nil {
-		log.Println(err)
-	}
+	cfg, err := config.NewConfigBuilder().
+		WithAddressFromFlag().
+		WithPollIntervalFromFlag().
+		WithReportIntervalFromFlag().
+		WithAllFromEnv().
+		Build()
 
 	logger, err := zap.NewDevelopment()
 	if err != nil {

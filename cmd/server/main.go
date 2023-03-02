@@ -11,9 +11,13 @@ const serverDomain = "127.0.0.1"
 const serverPort = "8080"
 
 func main() {
-	var cfg config.Config
-	err := cfg.InitFromFlag()
-	err = cfg.InitFromENV()
+	cfg, err := config.NewConfigBuilder().
+		WithAddressFromFlag().
+		WithRestoreFromFlag().
+		WithStoreFileFromFlag().
+		WithAllFromEnv().
+		Build()
+
 	if err != nil {
 		fmt.Println(err)
 		return
