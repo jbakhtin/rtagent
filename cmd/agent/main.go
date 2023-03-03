@@ -19,9 +19,7 @@ const (
 
 func main() {
 	cfg, err := config.NewConfigBuilder().
-		WithAddressFromFlag().
-		WithPollIntervalFromFlag().
-		WithReportIntervalFromFlag().
+		WithAllFromFlagsA().
 		WithAllFromEnv().
 		Build()
 

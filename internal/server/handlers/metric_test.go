@@ -26,10 +26,7 @@ func TestHandlerMetric_Get(t *testing.T) {
 
 	ctx := context.TODO()
 	cfg, err := config.NewConfigBuilder().
-		WithAddressFromFlag().
-		WithRestoreFromFlag().
-		WithStoreFileFromFlag().
-		WithStoreIntervalFromFlag().
+		WithAllFromFlagsS().
 		WithAllFromEnv().
 		Build()
 	if err != nil {

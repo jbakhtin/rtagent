@@ -12,10 +12,7 @@ const serverPort = "8080"
 
 func main() {
 	cfg, err := config.NewConfigBuilder().
-		WithAddressFromFlag().
-		WithRestoreFromFlag().
-		WithStoreFileFromFlag().
-		WithStoreIntervalFromFlag().
+		WithAllFromFlagsS().
 		WithAllFromEnv().
 		Build()
 
