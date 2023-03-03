@@ -26,11 +26,11 @@ func GZIPCompress(next http.Handler) http.Handler {
 			return
 		}
 
-		gzWriter := gzip.NewWriter(w)
-		//if err != nil {
-		//	http.Error(w, err.Error(), http.StatusInternalServerError)
-		//	return
-		//}
+		gzWriter, err := gzip.NewWriterLevel(w, gzip.BestCompression)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		defer gzWriter.Close()
 
 		w.Header().Set("Content-Encoding", "gzip")
