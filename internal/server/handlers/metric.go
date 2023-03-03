@@ -192,6 +192,7 @@ func (h *HandlerMetric) UpdateV2() http.HandlerFunc {
 
 func (h *HandlerMetric) GetAll() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
 		metrics, err := h.service.GetAll()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
