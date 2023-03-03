@@ -27,44 +27,41 @@ func (wr gzipWriter) Write(b []byte) (int, error) {
 }
 
 func GZIPCompress(next http.Handler) http.Handler {
-	gh := func(writer http.ResponseWriter, request *http.Request) {
-		if !isSupportsGZIP(request.Header.Values("Accept-Encoding")) {
-			next.ServeHTTP(writer, request)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !isSupportsGZIP(r.Header.Values("Accept-Encoding")) {
+			next.ServeHTTP(w, r)
 			return
 		}
 
-		gzWriter, err := gzip.NewWriterLevel(writer, gzip.BestSpeed)
+		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		if err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer gzWriter.Close()
+		defer gz.Close()
 
-		writer.Header().Set("Content-Encoding", GZIPType)
-		next.ServeHTTP(gzipWriter{ResponseWriter: writer, Writer: gzWriter}, request)
-
-	}
-	return http.HandlerFunc(gh)
+		//w.Header().Set("Content-Encoding", GZIPType)
+		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
+	})
 }
 
 func GZIPDecompress(next http.Handler) http.Handler {
-	gh := func(writer http.ResponseWriter, request *http.Request) {
-		if !isSupportsGZIP(request.Header.Values("Content-Encoding")) {
-			next.ServeHTTP(writer, request)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !isSupportsGZIP(r.Header.Values("Content-Encoding")) {
+			next.ServeHTTP(w, r)
 			return
 		}
 
-		gzReader, err := gzip.NewReader(request.Body)
+		gzReader, err := gzip.NewReader(r.Body)
 		if err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		defer gzReader.Close()
 
-		request.Body = gzReader //ReadCloser = Reader
+		r.Body = gzReader
 
-		writer.Header().Set("Content-Encoding", GZIPType)
-		next.ServeHTTP(writer, request)
-	}
-	return http.HandlerFunc(gh)
+		//w.Header().Set("Content-Encoding", GZIPType)
+		next.ServeHTTP(w, r)
+	})
 }
