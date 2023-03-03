@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/config"
+	"github.com/jbakhtin/rtagent/internal/server/middlewares"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -34,6 +35,8 @@ func (s Server) Start(ctx context.Context, cfg config.Config) error {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger) // TODO: узнать, можно ли реализовать через zap.Logger
 	r.Use(middleware.Recoverer)
+	r.Use(middlewares.GZIPCompress)
+	r.Use(middlewares.GZIPCompress)
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlerMetric.GetAll())
