@@ -1,69 +1,70 @@
 package middlewares
 
 import (
-	"bytes"
 	"compress/gzip"
-	"io"
 	"net/http"
 	"strings"
 )
 
-type gzipWriter struct {
-	http.ResponseWriter
-	Writer io.Writer
+const GZIPType string = "gzip"
+
+func isSupportsGZIP(encodings []string) bool {
+	for _, encode := range encodings {
+		if strings.Contains(encode, GZIPType) {
+			return true
+		}
+	}
+	return false
 }
 
-func (w gzipWriter) Write(b []byte) (int, error) {
-	// w.Writer будет отвечать за gzip-сжатие, поэтому пишем в него
-	return w.Writer.Write(b)
+type gzipWriter struct {
+	http.ResponseWriter
+	Writer *gzip.Writer
+}
+
+func (wr gzipWriter) Write(b []byte) (int, error) {
+	return wr.Writer.Write(b)
 }
 
 func GZIPCompress(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-			// если gzip не поддерживается, передаём управление
-			// дальше без изменений
-			next.ServeHTTP(w, r)
+	gh := func(writer http.ResponseWriter, request *http.Request) {
+		if !isSupportsGZIP(request.Header.Values("Accept-Encoding")) {
+			next.ServeHTTP(writer, request)
 			return
 		}
 
-		gzWriter, err := gzip.NewWriterLevel(w, gzip.BestCompression)
+		gzWriter, err := gzip.NewWriterLevel(writer, gzip.BestSpeed)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		defer gzWriter.Close()
 
-		w.Header().Set("Content-Encoding", "gzip")
-		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gzWriter}, r)
+		writer.Header().Set("Content-Encoding", GZIPType)
+		next.ServeHTTP(gzipWriter{ResponseWriter: writer, Writer: gzWriter}, request)
 
-	})
+	}
+	return http.HandlerFunc(gh)
 }
 
 func GZIPDecompress(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// проверяем, что клиент поддерживает gzip-сжатие
-		if !strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
-			// если gzip не поддерживается, передаём управление
-			// дальше без изменений
-			next.ServeHTTP(w, r)
+	gh := func(writer http.ResponseWriter, request *http.Request) {
+		if !isSupportsGZIP(request.Header.Values("Content-Encoding")) {
+			next.ServeHTTP(writer, request)
 			return
 		}
 
-		gz, err := gzip.NewReader(r.Body)
+		gzReader, err := gzip.NewReader(request.Body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer gz.Close()
+		defer gzReader.Close()
 
-		body, err := io.ReadAll(gz)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		request.Body = gzReader //ReadCloser = Reader
 
-		r.Body = io.NopCloser(bytes.NewBuffer(body))
-		next.ServeHTTP(w, r)
-	})
+		writer.Header().Set("Content-Encoding", GZIPType)
+		next.ServeHTTP(writer, request)
+	}
+	return http.HandlerFunc(gh)
 }

@@ -35,7 +35,7 @@ func (s Server) Start(ctx context.Context, cfg config.Config) error {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger) // TODO: узнать, можно ли реализовать через zap.Logger
 	r.Use(middleware.Recoverer)
-	r.Use(middlewares.GZIPCompress)
+	r.Use(middlewares.GZIPDecompress)
 	r.Use(middlewares.GZIPCompress)
 
 	r.Route("/", func(r chi.Router) {
