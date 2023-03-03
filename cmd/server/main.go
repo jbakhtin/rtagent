@@ -3,33 +3,36 @@ package main
 import (
 	"context"
 	"fmt"
+
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/server"
+	"go.uber.org/zap"
 )
 
-const serverDomain = "127.0.0.1"
-const serverPort = "8080"
-
 func main() {
-	cfg, err := config.NewConfigBuilder().
-		WithAllFromFlagsS().
-		WithAllFromEnv().
-		Build()
+	logger, err := zap.NewDevelopment()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// TODO: добавить логер для сервера
+	cfg, err := config.NewConfigBuilder().
+		WithAllFromFlagsS().
+		WithAllFromEnv().
+		Build()
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
 
 	s, err := server.New(cfg)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err.Error())
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	if err = s.Start(ctx, cfg); err != nil {
-		fmt.Println(err)
-		cancel()
+		logger.Error(err.Error())
+		cancel() // TODO: реализовать мягкое завершение всех процессов
 	}
 }

@@ -1,21 +1,22 @@
 package memstorage
 
 import (
-"bufio"
-"encoding/json"
-"github.com/jbakhtin/rtagent/internal/config"
-"github.com/jbakhtin/rtagent/internal/models"
+	"bufio"
+	"encoding/json"
 	"log"
 	"os"
+
+	"github.com/jbakhtin/rtagent/internal/config"
+	"github.com/jbakhtin/rtagent/internal/models"
 )
 
 type Reader interface {
 	Read() (*models.Metric, error) // для чтения события
-	Close() error               // для закрытия ресурса (файла)
+	Close() error                  // для закрытия ресурса (файла)
 }
 
 type fromFile struct {
-	file *os.File // файл для записи
+	file   *os.File // файл для записи
 	reader *bufio.Reader
 }
 
@@ -38,7 +39,7 @@ func NewReader(cfg config.Config) (*fromFile, error) {
 	}
 
 	return &fromFile{
-		file: file,
+		file:   file,
 		reader: bufio.NewReader(file),
 	}, nil
 }

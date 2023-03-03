@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"net/http"
+	"strconv"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/services"
 	"github.com/jbakhtin/rtagent/internal/types"
-	"html/template"
-	"net/http"
-	"strconv"
 )
 
 type HandlerMetric struct {
@@ -25,7 +26,7 @@ var listOfMetricHTMLTemplate = `
 	{{end}}
 `
 
-func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, error){
+func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, error) {
 	service, err := services.NewMetricService(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -100,6 +101,7 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mValue := chi.URLParam(r, "value")
 		if mValue == "" {
+			// TODO: вынести ошибки в констаны
 			http.Error(w, "value not valid", http.StatusBadRequest)
 			return
 		}
@@ -134,8 +136,8 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 		}
 
 		metric := models.Metric{
-			MKey: mKey,
-			MType: mType,
+			MKey:   mKey,
+			MType:  mType,
 			MValue: Value,
 		}
 

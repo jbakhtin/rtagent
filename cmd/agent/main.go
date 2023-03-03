@@ -2,40 +2,33 @@ package main
 
 import (
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/config"
-	"time"
 
+	"github.com/jbakhtin/rtagent/internal/config"
 	"go.uber.org/zap"
 
 	"github.com/jbakhtin/rtagent/internal/agent"
 )
 
-const (
-	pollInterval   = time.Second * 2
-	reportInterval = time.Second * 10
-	serverDomain   = "http://127.0.0.1"
-	serverPort     = "8080"
-)
-
 func main() {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		// TODO: что делать с ошибкой, если не получилось инициализировать логер для логирования ошибок? ;)
+		fmt.Println(err)
+		return
+	}
+
 	cfg, err := config.NewConfigBuilder().
 		WithAllFromFlagsA().
 		WithAllFromEnv().
 		Build()
 	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		fmt.Println(err)
+		logger.Error(err.Error())
 		return
 	}
 
 	monitor, err := agent.New(cfg, logger)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err.Error())
 	}
 
 	if err := monitor.Start(); err != nil {

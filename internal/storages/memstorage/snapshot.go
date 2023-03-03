@@ -2,14 +2,14 @@ package memstorage
 
 import (
 	"context"
-	"fmt"
+	"time"
+
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
-	"time"
 )
 
 type Snapshot struct {
-	ToFile *toFile
+	ToFile   *toFile
 	FromFile *fromFile
 
 	metrics *map[string]models.Metricer
@@ -28,7 +28,7 @@ func NewSnapshot(ctx context.Context, cfg config.Config) (*Snapshot, error) {
 
 	return &Snapshot{
 		FromFile: newReader,
-		ToFile: newWriter,
+		ToFile:   newWriter,
 	}, nil
 }
 
@@ -44,10 +44,10 @@ func (s *Snapshot) Import(ctx context.Context) (map[string]models.Metric, bool) 
 func (s *Snapshot) Exporting(ctx context.Context, cfg config.Config, metrics *map[string]models.Metric) {
 	ticker := time.NewTicker(cfg.StoreInterval)
 
+	// TODO: добавить условие для параметра
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("test")
 			err := s.ToFile.WriteList(metrics)
 			if err != nil {
 				return
@@ -63,7 +63,6 @@ func (s *Snapshot) Exporting(ctx context.Context, cfg config.Config, metrics *ma
 		}
 	}
 }
-
 
 func (s *Snapshot) Export(ctx context.Context, metrics map[string]models.Metric) error {
 	err := s.ToFile.WriteList(&metrics)

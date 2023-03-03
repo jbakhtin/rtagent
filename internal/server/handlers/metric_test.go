@@ -3,12 +3,13 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/config"
-	"github.com/stretchr/testify/require"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/jbakhtin/rtagent/internal/config"
+	"github.com/stretchr/testify/require"
 
 	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
 	"github.com/jbakhtin/rtagent/internal/repositories/storages/inmemory"
@@ -21,7 +22,7 @@ func TestHandlerMetric_Get(t *testing.T) {
 		request string
 	}
 	type want struct {
-		statusCode  int
+		statusCode int
 	}
 
 	ctx := context.TODO()
@@ -51,7 +52,7 @@ func TestHandlerMetric_Get(t *testing.T) {
 				request: "http://127.0.0.1:8080",
 			},
 			want{
-				statusCode:  200,
+				statusCode: 200,
 			},
 		},
 	}

@@ -2,6 +2,7 @@ package inmemory
 
 import (
 	"context"
+
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/storages/memstorage"

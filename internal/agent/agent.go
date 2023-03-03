@@ -5,21 +5,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/config"
-	"github.com/jbakhtin/rtagent/internal/models"
-	"github.com/jbakhtin/rtagent/internal/types"
-	"go.uber.org/zap"
-	"golang.org/x/exp/rand"
 	"net/http"
 	"runtime"
 	"sync"
 	"time"
 
+	"github.com/jbakhtin/rtagent/internal/config"
+	"github.com/jbakhtin/rtagent/internal/models"
+	"github.com/jbakhtin/rtagent/internal/types"
+	"go.uber.org/zap"
+	"golang.org/x/exp/rand"
+
 	"github.com/go-resty/resty/v2"
 )
 
 type Monitor struct {
-	sc sync.Mutex
+	sc  sync.Mutex
 	log *zap.Logger
 
 	serverAddress  string
@@ -29,11 +30,11 @@ type Monitor struct {
 	pollCounter types.Counter
 }
 
-func New(ctf config.Config, logger *zap.Logger) (Monitor, error){
+func New(ctf config.Config, logger *zap.Logger) (Monitor, error) {
 	return Monitor{
-		log: logger,
-		serverAddress: fmt.Sprintf("http://%s", ctf.Address), //TODO: переделать зависимость от http/https
-		pollInterval: ctf.PollInterval,
+		log:            logger,
+		serverAddress:  fmt.Sprintf("http://%s", ctf.Address), //TODO: переделать зависимость от http/https
+		pollInterval:   ctf.PollInterval,
 		reportInterval: ctf.ReportInterval,
 	}, nil
 }
@@ -64,15 +65,15 @@ func (m *Monitor) Start() error {
 				m.log.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", 10))
 				cancel()
 			}
-			case <-ctx.Done():
-				m.log.Info("завершаем работу агента")
-				m.log.Info("ожидаем перед окончательным завершением")
-				time.Sleep(m.reportInterval)
-				goto exit
+		case <-ctx.Done():
+			m.log.Info("завершаем работу агента")
+			m.log.Info("ожидаем перед окончательным завершением")
+			time.Sleep(m.reportInterval)
+			goto exit
 		}
 	}
 
-	exit:
+exit:
 	return err
 }
 
@@ -149,14 +150,14 @@ func (m *Monitor) reportV2() error {
 	for key, value := range m.GetStats() {
 		endpoint := fmt.Sprintf("%s/update/", m.serverAddress)
 		metric := models.Metrics{
-			ID: key,
+			ID:    key,
 			MType: value.Type(),
 		}
 		switch v := value.(type) {
-			case types.Counter:
-				metric.Delta = &v
-			case types.Gauge:
-				metric.Value = &v
+		case types.Counter:
+			metric.Delta = &v
+		case types.Gauge:
+			metric.Value = &v
 		}
 
 		buf, err := json.Marshal(metric)

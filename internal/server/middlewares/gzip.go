@@ -6,20 +6,7 @@ import (
 	"strings"
 )
 
-var doNotCompress = [2]string{
-	"text/html",
-}
-
-const GZIPType string = "gzip"
-
-func isSupportsGZIP(encodings []string) bool {
-	for _, encode := range encodings {
-		if strings.Contains(encode, GZIPType) {
-			return true
-		}
-	}
-	return false
-}
+const gzipType string = "gzip"
 
 type gzipWriter struct {
 	http.ResponseWriter
@@ -35,7 +22,7 @@ func GZIPCompressor(next http.Handler) http.Handler {
 		for k := range r.Header {
 			switch k {
 			case "Accept-Encoding":
-				if !strings.Contains(r.Header.Get(k), "gzip") {
+				if !strings.Contains(r.Header.Get(k), gzipType) {
 					next.ServeHTTP(w, r)
 					return
 				}
@@ -47,11 +34,11 @@ func GZIPCompressor(next http.Handler) http.Handler {
 				}
 				defer gz.Close()
 
-				w.Header().Set("Content-Encoding", GZIPType)
+				w.Header().Set("Content-Encoding", gzipType)
 				next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
 				return
 			case "Content-Encoding":
-				if !strings.Contains(r.Header.Get(k), "gzip") {
+				if !strings.Contains(r.Header.Get(k), gzipType) {
 					next.ServeHTTP(w, r)
 					return
 				}
@@ -65,7 +52,7 @@ func GZIPCompressor(next http.Handler) http.Handler {
 
 				r.Body = gzReader
 
-				w.Header().Set("Content-Encoding", GZIPType)
+				w.Header().Set("Content-Encoding", gzipType)
 				next.ServeHTTP(w, r)
 				return
 			}

@@ -2,10 +2,10 @@ package server
 
 import (
 	"context"
-	"fmt"
+	"net/http"
+
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/server/middlewares"
-	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -33,7 +33,9 @@ func (s Server) Start(ctx context.Context, cfg config.Config) error {
 	// middlewares
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger) // TODO: узнать, можно ли реализовать через zap.Logger
+
+	// TODO: узнать, можно ли реализовать через zap.Logger и как его лучше прокинть сюда, что бы логи были централизованы
+	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middlewares.GZIPCompressor)
 
@@ -41,7 +43,8 @@ func (s Server) Start(ctx context.Context, cfg config.Config) error {
 		r.Get("/", handlerMetric.GetAll())
 
 		r.Route("/value/", func(r chi.Router) {
-			r.Post("/", handlerMetric.GetV2()) //TODO: узнать, стоит ли выносить хендлерами v2 в отдельный модуль
+			//TODO: узнать, стоит ли выносить хендлерами v2 в отдельный модуль, и как такое лучше делать
+			r.Post("/", handlerMetric.GetV2())
 			r.Get("/{type}/{key}", handlerMetric.Get())
 		})
 
@@ -50,8 +53,6 @@ func (s Server) Start(ctx context.Context, cfg config.Config) error {
 			r.Post("/{type}/{key}/{value}", handlerMetric.Update())
 		})
 	})
-
-	fmt.Println(s.serverAddress)
 
 	return http.ListenAndServe(s.serverAddress, r)
 }

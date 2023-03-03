@@ -3,17 +3,18 @@ package memstorage
 import (
 	"context"
 	"errors"
-	"github.com/jbakhtin/rtagent/internal/config"
 	"log"
 	"sync"
+
+	"github.com/jbakhtin/rtagent/internal/config"
 
 	"github.com/jbakhtin/rtagent/internal/models"
 )
 
 type MemStorage struct {
-	mx *sync.RWMutex
+	mx       *sync.RWMutex
 	snapshot Snapshot
-	items map[string]models.Metric
+	items    map[string]models.Metric
 }
 
 func New(ctx context.Context, cfg config.Config) (MemStorage, error) {
@@ -34,9 +35,9 @@ func New(ctx context.Context, cfg config.Config) (MemStorage, error) {
 	go snapshot.Exporting(ctx, cfg, &metrics)
 
 	return MemStorage{
-		items: metrics,
+		items:    metrics,
 		snapshot: *snapshot,
-		mx: &sync.RWMutex{},
+		mx:       &sync.RWMutex{},
 	}, nil
 }
 

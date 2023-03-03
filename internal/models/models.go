@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/jbakhtin/rtagent/internal/types"
 )
 
@@ -14,8 +15,8 @@ type Metricer interface {
 
 type (
 	Metric struct {
-		MKey   string      `json:"id,omitempty"`
-		MType  string      `json:"type,omitempty"`
+		MKey   string `json:"id,omitempty"`
+		MType  string `json:"type,omitempty"`
 		MValue interface{}
 	}
 
@@ -30,7 +31,7 @@ type (
 
 func (m *Metric) UnmarshalJSON(data []byte) error {
 	// TODO: переделать в соответсвии с уроком: Спринт 2 -> Стандартные сериализаторы -> 2. Динамический JSON-объект
-	// TODO: обраюотать ошибки если поля переданы неправильно
+	// TODO: обработать ошибки если поля переданы неправильно
 	var aliasValue Metrics
 
 	if err := json.Unmarshal(data, &aliasValue); err != nil {
@@ -42,11 +43,11 @@ func (m *Metric) UnmarshalJSON(data []byte) error {
 
 	switch m.MType {
 	case types.GaugeType:
-		if aliasValue.Value != nil  {
+		if aliasValue.Value != nil {
 			m.MValue = *aliasValue.Value
 		}
 	case types.CounterType:
-		if aliasValue.Delta != nil  {
+		if aliasValue.Delta != nil {
 			m.MValue = *aliasValue.Delta
 		}
 	}
@@ -56,7 +57,7 @@ func (m *Metric) UnmarshalJSON(data []byte) error {
 
 func (m Metric) MarshalJSON() ([]byte, error) {
 	metrics := Metrics{
-		ID: m.MKey,
+		ID:    m.MKey,
 		MType: m.MType,
 	}
 
@@ -77,7 +78,6 @@ func (m Metric) MarshalJSON() ([]byte, error) {
 	return bytes, nil
 }
 
-
 func (m Metric) Type() string {
 	return m.MType
 }
@@ -91,10 +91,11 @@ func (m Metric) StringValue() string {
 	return value
 }
 
+// TODO: куда внести эту структуру?
 // Request
 type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *types.Counter   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *types.Gauge `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	ID    string         `json:"id"`              // имя метрики
+	MType string         `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *types.Counter `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *types.Gauge   `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
