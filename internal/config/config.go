@@ -35,6 +35,7 @@ func (cb *Builder) WithPollInterval(pollInterval time.Duration) *Builder{
 
 func (cb *Builder) WithPollIntervalFromFlag() *Builder{
 	cb.config.PollInterval = *flag.Duration("p", time.Second * 2, "test")
+	flag.Parse()
 
 	return cb
 }
@@ -48,6 +49,7 @@ func (cb *Builder) WithReportInterval(reportInterval time.Duration) *Builder {
 
 func (cb *Builder) WithReportIntervalFromFlag() *Builder {
 	cb.config.ReportInterval = *flag.Duration("r", time.Second * 10, "test")
+	flag.Parse()
 
 	return cb
 }
@@ -61,6 +63,7 @@ func (cb *Builder) WithAddress(address string) *Builder {
 
 func (cb *Builder) WithAddressFromFlag() *Builder {
 	cb.config.Address = *flag.String("a", "localhost:8080", "test")
+	flag.Parse()
 
 	return cb
 }
@@ -74,6 +77,7 @@ func (cb *Builder) WithStoreFile(storeFile string) *Builder {
 
 func (cb *Builder) WithStoreFileFromFlag() *Builder {
 	cb.config.StoreFile = *flag.String("f", "tmp/devops-metrics-db.json", "test")
+	flag.Parse()
 
 	return cb
 }
@@ -87,6 +91,7 @@ func (cb *Builder) WithStoreInterval(storeInterval time.Duration) *Builder {
 
 func (cb *Builder) WithStoreIntervalFromFlag() *Builder {
 	cb.config.StoreInterval = *flag.Duration("i", time.Second * 300, "test")
+	flag.Parse()
 
 	return cb
 }
@@ -100,6 +105,7 @@ func (cb *Builder) WithRestore(restore bool) *Builder {
 
 func (cb *Builder) WithRestoreFromFlag() *Builder {
 	cb.config.Restore = *flag.Bool("r", true, "test")
+	flag.Parse()
 
 	return cb
 }
