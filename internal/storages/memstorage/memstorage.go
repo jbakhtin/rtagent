@@ -32,6 +32,7 @@ func New(ctx context.Context, cfg config.Config) (MemStorage, error) {
 		metrics = list
 	}
 
+	// TODO: собирать ошибки из канала, контролировать рутину
 	go snapshot.Exporting(ctx, cfg, &metrics)
 
 	return MemStorage{

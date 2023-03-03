@@ -29,12 +29,12 @@ func NewWriter(cfg config.Config) (*toFile, error) {
 		// TODO: файл создается только если присутсвует указанная директория, можно ли как то по дургому?
 		err = os.Mkdir("tmp", 0777)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(err) // TODO: выкинуть ошибку через канал
 		}
 
 		file, err = os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE, 0777)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(err) // TODO: выкинуть ошибку через канал
 		}
 	}
 
