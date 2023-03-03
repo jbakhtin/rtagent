@@ -32,14 +32,7 @@ func (wr gzipWriter) Write(b []byte) (int, error) {
 
 func GZIPCompressor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		for k, _ := range r.Header {
-			//for _, contentType := range doNotCompress {
-			//	if strings.Contains(r.Header.Get("Accept"), contentType) {
-			//		next.ServeHTTP(w, r)
-			//		return
-			//	}
-			//}
-
+		for k := range r.Header {
 			switch k {
 			case "Accept-Encoding":
 				if !strings.Contains(r.Header.Get(k), "gzip") {
