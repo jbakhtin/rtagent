@@ -22,6 +22,10 @@ func main() {
 		WithAllFromFlagsA().
 		WithAllFromEnv().
 		Build()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	logger, err := zap.NewDevelopment()
 	if err != nil {

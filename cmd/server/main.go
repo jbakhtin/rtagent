@@ -15,9 +15,6 @@ func main() {
 		WithAllFromFlagsS().
 		WithAllFromEnv().
 		Build()
-
-	fmt.Println(cfg)
-
 	if err != nil {
 		fmt.Println(err)
 		return
