@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"bytes"
 	"compress/gzip"
 	"io"
 	"net/http"
@@ -42,7 +43,7 @@ func GZIPCompress(next http.Handler) http.Handler {
 func GZIPDecompress(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// проверяем, что клиент поддерживает gzip-сжатие
-		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		if !strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
 			// если gzip не поддерживается, передаём управление
 			// дальше без изменений
 			next.ServeHTTP(w, r)
@@ -56,7 +57,13 @@ func GZIPDecompress(next http.Handler) http.Handler {
 		}
 		defer gz.Close()
 
-		w.Header().Set("Content-Encoding", "gzip")
+		body, err := io.ReadAll(gz)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		r.Body = io.NopCloser(bytes.NewBuffer(body))
 		next.ServeHTTP(w, r)
 	})
 }
