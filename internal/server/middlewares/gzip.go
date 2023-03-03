@@ -56,6 +56,7 @@ func GZIPCompressor(next http.Handler) http.Handler {
 
 				w.Header().Set("Content-Encoding", GZIPType)
 				next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
+				return
 			case "Content-Encoding":
 				if !strings.Contains(r.Header.Get(k), "gzip") {
 					next.ServeHTTP(w, r)
@@ -73,7 +74,9 @@ func GZIPCompressor(next http.Handler) http.Handler {
 
 				w.Header().Set("Content-Encoding", GZIPType)
 				next.ServeHTTP(w, r)
+				return
 			}
 		}
+		next.ServeHTTP(w, r)
 	})
 }
