@@ -43,13 +43,12 @@ func (s Server) Start(ctx context.Context, cfg config.Config) error {
 		r.Get("/", handlerMetric.GetAll())
 
 		r.Route("/value/", func(r chi.Router) {
-			//TODO: узнать, стоит ли выносить хендлерами v2 в отдельный модуль, и как такое лучше делать
-			r.Post("/", handlerMetric.GetV2())
+			r.Post("/", handlerMetric.GetJSON()) // ToDo: перенести в отдельный пакет handlerMetricJSON
 			r.Get("/{type}/{key}", handlerMetric.Get())
 		})
 
 		r.Route("/update/", func(r chi.Router) {
-			r.Post("/", handlerMetric.UpdateV2()) // v2
+			r.Post("/", handlerMetric.UpdateJSON())
 			r.Post("/{type}/{key}/{value}", handlerMetric.Update())
 		})
 	})

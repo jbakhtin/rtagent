@@ -65,7 +65,7 @@ func (h *HandlerMetric) Get() http.HandlerFunc {
 	}
 }
 
-func (h *HandlerMetric) GetV2() http.HandlerFunc {
+func (h *HandlerMetric) GetJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -161,7 +161,7 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 	}
 }
 
-func (h *HandlerMetric) UpdateV2() http.HandlerFunc {
+func (h *HandlerMetric) UpdateJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		var metric models.Metric
