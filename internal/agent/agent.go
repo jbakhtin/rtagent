@@ -110,7 +110,7 @@ func (m *Monitor) reporting(ctx context.Context, chanError chan error) {
 	for {
 		select {
 		case <-ticker.C:
-			err := m.reportV2()
+			err := m.reportJSON()
 			if err != nil {
 				chanError <- err
 			}
@@ -146,7 +146,7 @@ func (m *Monitor) report() error {
 	return nil
 }
 
-func (m *Monitor) reportV2() error {
+func (m *Monitor) reportJSON() error {
 	for key, value := range m.GetStats() {
 		endpoint := fmt.Sprintf("%s/update/", m.serverAddress)
 		metric := models.Metrics{
