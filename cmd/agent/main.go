@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/jbakhtin/rtagent/internal/config"
 	"go.uber.org/zap"
@@ -12,8 +12,7 @@ import (
 func main() {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
-		// TODO: что делать с ошибкой, если не получилось инициализировать логер для логирования ошибок? ;)
-		fmt.Println(err)
+		log.Fatal(err)
 		return
 	}
 
