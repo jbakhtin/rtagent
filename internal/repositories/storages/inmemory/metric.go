@@ -2,18 +2,22 @@ package inmemory
 
 import (
 	"context"
-
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
-	"github.com/jbakhtin/rtagent/internal/storages/memstorage"
+	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
 )
 
 type MetricRepository struct {
-	memStorage memstorage.MemStorage
+	memStorage filestorage.FileStorage // TODO: need add interface instead
 }
 
 func NewMetricRepository(ctx context.Context, cfg config.Config) (*MetricRepository, error) {
-	ms, err := memstorage.New(ctx, cfg)
+	ms, err := filestorage.New(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ms.Start(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}

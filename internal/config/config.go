@@ -12,7 +12,7 @@ const (
 	_reportInterval = time.Second * 10
 	_address        = "127.0.0.1:8080"
 	_storeFile      = "tmp/devops-metrics-db.json"
-	_storeInterval  = time.Second * 300
+	_storeInterval  = time.Second * 20
 	_restore        = true
 )
 
