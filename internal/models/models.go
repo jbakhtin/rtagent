@@ -31,7 +31,6 @@ type (
 
 func (m *Metric) UnmarshalJSON(data []byte) error {
 	// TODO: переделать в соответсвии с уроком: Спринт 2 -> Стандартные сериализаторы -> 2. Динамический JSON-объект
-	// TODO: обработать ошибки если поля переданы неправильно
 	var aliasValue Metrics
 
 	if err := json.Unmarshal(data, &aliasValue); err != nil {
@@ -91,8 +90,7 @@ func (m Metric) StringValue() string {
 	return value
 }
 
-// TODO: куда внести эту структуру?
-// Request
+// Request model
 type Metrics struct {
 	ID    string         `json:"id"`              // имя метрики
 	MType string         `json:"type"`            // параметр, принимающий значение gauge или counter
