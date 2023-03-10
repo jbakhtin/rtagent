@@ -32,7 +32,7 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	if err = s.Start(ctx, cfg); err != nil {
-		logger.Error(err.Error())
-		cancel() // TODO: реализовать мягкое завершение всех процессов
+		logger.Info(err.Error())
 	}
+	cancel()
 }
