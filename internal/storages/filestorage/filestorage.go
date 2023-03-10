@@ -62,7 +62,7 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 }
 
 func (fs *FileStorage) Write(ctx context.Context, cfg config.Config) error {
-	file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
+	file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0664)
 	if os.IsNotExist(err) {
 		fs.Logger.Info(err.Error())
 
@@ -72,7 +72,7 @@ func (fs *FileStorage) Write(ctx context.Context, cfg config.Config) error {
 			return err
 		}
 
-		file, err = os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
+		file, err = os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0664)
 		if err != nil {
 			return err
 		}
@@ -107,7 +107,7 @@ func (fs *FileStorage) Write(ctx context.Context, cfg config.Config) error {
 }
 
 func (fs *FileStorage) Read(ctx context.Context, cfg config.Config) error {
-	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
+	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0644)
 	if os.IsNotExist(err) {
 		fs.Logger.Info(err.Error())
 
@@ -117,7 +117,7 @@ func (fs *FileStorage) Read(ctx context.Context, cfg config.Config) error {
 			return err
 		}
 
-		file, err = os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
+		file, err = os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0644)
 		if err != nil {
 			return err
 		}
