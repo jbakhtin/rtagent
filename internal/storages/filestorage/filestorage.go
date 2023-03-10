@@ -13,11 +13,12 @@ import (
 	"github.com/jbakhtin/rtagent/internal/config"
 )
 
+//FileStorage является оберткой над MemStorage и вынесен в отдельный пакет, как полноценное хранилище
 type FileStorage struct {
 	memstorage.MemStorage
 }
 
-func New(ctx context.Context, cfg config.Config) (FileStorage, error) { // TODO: определить интерфейс
+func New(ctx context.Context, cfg config.Config) (FileStorage, error) {
 	memStorage, err := memstorage.NewMemStorage(ctx, cfg)
 	if err != nil {
 		return FileStorage{}, err
