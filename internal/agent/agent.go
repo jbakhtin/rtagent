@@ -20,8 +20,8 @@ import (
 )
 
 type Monitor struct {
-	sc  sync.Mutex
-	log *zap.Logger
+	sc    sync.Mutex
+	loger *zap.Logger
 
 	serverAddress  string
 	pollInterval   time.Duration
@@ -32,7 +32,7 @@ type Monitor struct {
 
 func New(ctf config.Config, logger *zap.Logger) (Monitor, error) {
 	return Monitor{
-		log:            logger,
+		loger:          logger,
 		serverAddress:  fmt.Sprintf("http://%s", ctf.Address), //TODO: переделать зависимость от http/https
 		pollInterval:   ctf.PollInterval,
 		reportInterval: ctf.ReportInterval,
@@ -56,18 +56,18 @@ func (m *Monitor) Start() error {
 		select {
 		case err = <-chanErr:
 			errCount++
-			m.log.Info(err.Error())
+			m.loger.Info(err.Error())
 
 			if errCount > 10 { // TODO: вынести в константу
 				// TODO: реализовать отправку количества ошибко на сервер
 				// TODO: реализовать новый тип метрики - стринг отправлять описание ошибки на сервер
 
-				m.log.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", 10))
+				m.loger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", 10))
 				cancel()
 			}
 		case <-ctx.Done():
-			m.log.Info("завершаем работу агента")
-			m.log.Info("ожидаем перед окончательным завершением")
+			m.loger.Info("завершаем работу агента")
+			m.loger.Info("ожидаем перед окончательным завершением")
 			time.Sleep(m.reportInterval)
 			goto exit
 		}
@@ -89,7 +89,7 @@ func (m *Monitor) polling(ctx context.Context, chanError chan error) {
 				chanError <- err
 			}
 		case <-ctx.Done():
-			m.log.Info("сбор метрик приостановлен")
+			m.loger.Info("сбор метрик приостановлен")
 			return
 		}
 	}
@@ -115,7 +115,7 @@ func (m *Monitor) reporting(ctx context.Context, chanError chan error) {
 				chanError <- err
 			}
 		case <-ctx.Done():
-			m.log.Info("отправка метрики приостановлена")
+			m.loger.Info("отправка метрики приостановлена")
 			return
 		}
 	}
