@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
 	"os"
 	"time"
 
@@ -43,14 +42,18 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 			case <-ctx.Done():
 				err := fs.Write(ctx, cfg)
 				if err != nil {
-					//return err
+					fs.Logger.Error(err.Error())
+				} else {
+					fs.Logger.Info("the data is saved to the disk")
 				}
-				//return nil
+
 			case <-ticker.C:
 				err := fs.Write(ctx, cfg)
 				if err != nil {
-					//return err
+					fs.Logger.Error(err.Error())
 				}
+
+				fs.Logger.Info("the data was save to 'file storage'")
 			}
 		}
 	}()
@@ -61,15 +64,17 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 func (fs *FileStorage) Write(ctx context.Context, cfg config.Config) error {
 	file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 	if os.IsNotExist(err) {
-		// TODO: файл создается только если присутсвует указанная директория, можно ли как то по дургому?
+		fs.Logger.Info(err.Error())
+
+		fs.Logger.Info("try to make dir 'tmp'")
 		err = os.Mkdir("tmp", 0777)
 		if err != nil {
-			log.Fatal(err) // TODO: выкинуть ошибку через канал
+			return err
 		}
 
 		file, err = os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 		if err != nil {
-			log.Fatal(err) // TODO: выкинуть ошибку через канал
+			return err
 		}
 	}
 
@@ -104,14 +109,17 @@ func (fs *FileStorage) Write(ctx context.Context, cfg config.Config) error {
 func (fs *FileStorage) Read(ctx context.Context, cfg config.Config) error {
 	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
 	if os.IsNotExist(err) {
+		fs.Logger.Info(err.Error())
+
+		fs.Logger.Info("try to make dir 'tmp'")
 		err = os.Mkdir("tmp", 0777)
 		if err != nil {
-			log.Fatal(err) // TODO: выкинуть ошибку через канал
+			return err
 		}
 
 		file, err = os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
 		if err != nil {
-			log.Fatal(err) // TODO: выкинуть ошибку через канал
+			return err
 		}
 	}
 	defer file.Close()

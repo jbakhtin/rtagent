@@ -5,20 +5,29 @@ import (
 	"errors"
 	"sync"
 
+	"go.uber.org/zap"
+
 	"github.com/jbakhtin/rtagent/internal/config"
 
 	"github.com/jbakhtin/rtagent/internal/models"
 )
 
 type MemStorage struct {
-	Mx       *sync.RWMutex
-	Items    map[string]models.Metric
+	Mx     *sync.RWMutex
+	Items  map[string]models.Metric
+	Logger *zap.Logger
 }
 
 func NewMemStorage(ctx context.Context, cfg config.Config) (MemStorage, error) {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		return MemStorage{}, err
+	}
+
 	return MemStorage{
-		Items:    make(map[string]models.Metric, 0),
-		Mx:       &sync.RWMutex{},
+		Items:  make(map[string]models.Metric, 0),
+		Mx:     &sync.RWMutex{},
+		Logger: logger,
 	}, nil
 }
 
