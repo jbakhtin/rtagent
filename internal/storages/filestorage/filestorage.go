@@ -4,11 +4,12 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"github.com/jbakhtin/rtagent/internal/storages/memstorage"
 	"io"
 	"log"
 	"os"
 	"time"
+
+	"github.com/jbakhtin/rtagent/internal/storages/memstorage"
 
 	"github.com/jbakhtin/rtagent/internal/config"
 )
@@ -22,7 +23,7 @@ func New(ctx context.Context, cfg config.Config) (FileStorage, error) { // TODO:
 	if err != nil {
 		return FileStorage{}, err
 	}
-	
+
 	return FileStorage{
 		MemStorage: memStorage,
 	}, nil
@@ -36,7 +37,7 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 
-	go func () {
+	go func() {
 		for {
 			select {
 			case <-ctx.Done():
@@ -132,7 +133,3 @@ func (fs *FileStorage) Read(ctx context.Context, cfg config.Config) error {
 
 	return nil
 }
-
-
-
-
