@@ -52,8 +52,6 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 				if err != nil {
 					fs.Logger.Error(err.Error())
 				}
-
-				fs.Logger.Info("the data was save to 'file storage'")
 			}
 		}
 	}()

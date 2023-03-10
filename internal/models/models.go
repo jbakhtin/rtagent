@@ -31,7 +31,13 @@ type (
 
 func (m *Metric) UnmarshalJSON(data []byte) error {
 	// TODO: переделать в соответсвии с уроком: Спринт 2 -> Стандартные сериализаторы -> 2. Динамический JSON-объект
-	var aliasValue Metrics
+
+	aliasValue := &struct {
+		ID    string         `json:"id"`
+		MType string         `json:"type"`
+		Delta *types.Counter `json:"delta,omitempty"`
+		Value *types.Gauge   `json:"value,omitempty"`
+	}{}
 
 	if err := json.Unmarshal(data, &aliasValue); err != nil {
 		return err
