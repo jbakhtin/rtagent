@@ -54,7 +54,7 @@ func (m *Monitor) Start() error {
 	var errCount int
 	var err error
 
-	func () {
+	err = func () error{
 		for {
 			select {
 			case err = <-chanErr:
@@ -70,7 +70,11 @@ func (m *Monitor) Start() error {
 				}
 			case <-ctx.Done():
 				m.loger.Info("завершаем работу агента")
-				return
+				err := m.report()
+				if err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	} ()
