@@ -133,7 +133,12 @@ func (fs *FileStorage) Read(ctx context.Context, cfg config.Config) error {
 		return nil
 	}
 
-	err = json.Unmarshal(data, &fs.Items)
+	metrics, err := fs.GetAll()
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(data, &metrics)
 	if err != nil {
 		return err
 	}
