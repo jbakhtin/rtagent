@@ -33,23 +33,21 @@ func (s Server) Start(ctx context.Context, cfg config.Config) error {
 	// middlewares
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-
-	// TODO: узнать, можно ли реализовать через zap.Logger и как его лучше прокинть сюда, что бы логи были централизованы
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middlewares.GZIPCompressor)
 
 	r.Route("/", func(r chi.Router) {
-		r.Get("/", handlerMetric.GetAll())
+		r.Get("/", handlerMetric.GetAllMetricsAsHTML())
 
 		r.Route("/value/", func(r chi.Router) {
-			r.Post("/", handlerMetric.GetJSON()) // ToDo: перенести в отдельный пакет handlerMetricJSON
-			r.Get("/{type}/{key}", handlerMetric.Get())
+			r.Post("/", handlerMetric.GetMetricAsJSON()) // ToDo: перенести в отдельный пакет handlerMetricJSON
+			r.Get("/{type}/{key}", handlerMetric.GetMetricValue())
 		})
 
 		r.Route("/update/", func(r chi.Router) {
-			r.Post("/", handlerMetric.UpdateJSON())
-			r.Post("/{type}/{key}/{value}", handlerMetric.Update())
+			r.Post("/", handlerMetric.UpdateMetricByJSON())
+			r.Post("/{type}/{key}/{value}", handlerMetric.UpdateMetric())
 		})
 	})
 

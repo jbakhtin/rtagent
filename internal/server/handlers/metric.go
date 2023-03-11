@@ -37,7 +37,7 @@ func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, e
 	}, nil
 }
 
-func (h *HandlerMetric) Get() http.HandlerFunc {
+func (h *HandlerMetric) GetMetricValue() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mKey := chi.URLParam(r, "key")
 		if mKey == "" {
@@ -65,7 +65,7 @@ func (h *HandlerMetric) Get() http.HandlerFunc {
 	}
 }
 
-func (h *HandlerMetric) GetJSON() http.HandlerFunc {
+func (h *HandlerMetric) GetMetricAsJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -97,7 +97,7 @@ func (h *HandlerMetric) GetJSON() http.HandlerFunc {
 	}
 }
 
-func (h *HandlerMetric) Update() http.HandlerFunc {
+func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mValue := chi.URLParam(r, "value")
 		if mValue == "" {
@@ -161,7 +161,7 @@ func (h *HandlerMetric) Update() http.HandlerFunc {
 	}
 }
 
-func (h *HandlerMetric) UpdateJSON() http.HandlerFunc {
+func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		var metric models.Metric
@@ -192,7 +192,7 @@ func (h *HandlerMetric) UpdateJSON() http.HandlerFunc {
 	}
 }
 
-func (h *HandlerMetric) GetAll() http.HandlerFunc {
+func (h *HandlerMetric) GetAllMetricsAsHTML() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		metrics, err := h.service.GetAll()

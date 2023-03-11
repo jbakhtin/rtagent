@@ -65,7 +65,7 @@ func TestHandlerMetric_Get(t *testing.T) {
 
 			request := httptest.NewRequest(http.MethodGet, tt.fields.request, nil)
 			w := httptest.NewRecorder()
-			hf := h.GetAll()
+			hf := h.GetAllMetricsAsHTML()
 			hf(w, request)
 			result := w.Result()
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
