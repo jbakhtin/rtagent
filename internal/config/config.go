@@ -8,33 +8,33 @@ import (
 )
 
 const (
-	_pollInterval         = time.Second * 2
-	_reportInterval       = time.Second * 10
-	_address              = "127.0.0.1:8080"
-	_storeFile            = "tmp/devops-metrics-db.json"
-	_storeInterval        = time.Second * 300
-	_restore              = true
+	_pollInterval               = time.Second * 2
+	_reportInterval             = time.Second * 10
+	_address                    = "127.0.0.1:8080"
+	_storeFile                  = "tmp/devops-metrics-db.json"
+	_storeInterval              = time.Second * 300
+	_restore                    = true
 	_acceptableCountAgentErrors = 10
 )
 
 const (
-	_pollIntervalLabel   = "Период чтения состояния метрик"
-	_reportIntervalLabel = "Период отпраки состояния метрик на сервер"
-	_addressLabel        = "Адрес сервера"
-	_storeFileLabel      = "Файл хранеия слепков состояния MemStorage"
-	_storeIntervalLabel  = "Период создания слепков MemStorage в сукундах"
-	_restoreLabel        = "Загрузить последнеий слепок MemStorage перед стартом сервиса"
+	_pollIntervalLabel               = "Период чтения состояния метрик"
+	_reportIntervalLabel             = "Период отправки состояния метрик на сервер"
+	_addressLabel                    = "Адрес сервера"
+	_storeFileLabel                  = "Файл хранения слепков состояния MemStorage"
+	_storeIntervalLabel              = "Период создания слепков MemStorage в секундах"
+	_restoreLabel                    = "Загрузить последний слепок MemStorage перед стартом сервиса"
 	_acceptableCountAgentErrorsLabel = "Допустимое количество ошибок от агента"
 )
 
 type Config struct {
-	PollInterval   time.Duration `env:"POLL_INTERVAL"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
-	Address        string        `env:"ADDRESS"`
-	StoreFile      string        `env:"STORE_FILE"`
-	StoreInterval  time.Duration `env:"STORE_INTERVAL"`
-	Restore        bool          `env:"RESTORE"`
-	AcceptableCountAgentErrors        int          `env:"ACCEPTABLE_COUNT_AGENT_ERRORS"`
+	PollInterval               time.Duration `env:"POLL_INTERVAL"`
+	ReportInterval             time.Duration `env:"REPORT_INTERVAL"`
+	Address                    string        `env:"ADDRESS"`
+	StoreFile                  string        `env:"STORE_FILE"`
+	StoreInterval              time.Duration `env:"STORE_INTERVAL"`
+	Restore                    bool          `env:"RESTORE"`
+	AcceptableCountAgentErrors int           `env:"ACCEPTABLE_COUNT_AGENT_ERRORS"`
 }
 
 type Builder struct {
