@@ -8,12 +8,13 @@ import (
 )
 
 const (
-	_pollInterval   = time.Second * 2
-	_reportInterval = time.Second * 10
-	_address        = "127.0.0.1:8080"
-	_storeFile      = "tmp/devops-metrics-db.json"
-	_storeInterval  = time.Second * 20
-	_restore        = true
+	_pollInterval         = time.Second * 2
+	_reportInterval       = time.Second * 10
+	_address              = "127.0.0.1:8080"
+	_storeFile            = "tmp/devops-metrics-db.json"
+	_storeInterval        = time.Second * 20
+	_restore              = true
+	_acceptableCountAgentErrors = 10
 )
 
 const (
@@ -23,6 +24,7 @@ const (
 	_storeFileLabel      = "Файл хранеия слепков состояния MemStorage"
 	_storeIntervalLabel  = "Период создания слепков MemStorage в сукундах"
 	_restoreLabel        = "Загрузить последнеий слепок MemStorage перед стартом сервиса"
+	_acceptableCountAgentErrorsLabel = "Допустимое количество ошибок от агента"
 )
 
 type Config struct {
@@ -32,6 +34,7 @@ type Config struct {
 	StoreFile      string        `env:"STORE_FILE"`
 	StoreInterval  time.Duration `env:"STORE_INTERVAL"`
 	Restore        bool          `env:"RESTORE"`
+	AcceptableCountAgentErrors        int          `env:"ACCEPTABLE_COUNT_AGENT_ERRORS"`
 }
 
 type Builder struct {
@@ -48,6 +51,7 @@ func NewConfigBuilder() *Builder {
 			_storeFile,
 			_storeInterval,
 			_restore,
+			_acceptableCountAgentErrors,
 		},
 		nil,
 	}
@@ -77,11 +81,13 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	pollInterval := flag.Duration("p", _pollInterval, _pollIntervalLabel)
 	reportInterval := flag.Duration("r", _reportInterval, _reportIntervalLabel)
 	address := flag.String("a", _address, _addressLabel)
+	acceptableCountAgentErrors := flag.Int("e", _acceptableCountAgentErrors, _acceptableCountAgentErrorsLabel)
 	flag.Parse()
 
 	cb.config.PollInterval = *pollInterval
 	cb.config.ReportInterval = *reportInterval
 	cb.config.Address = *address
+	cb.config.AcceptableCountAgentErrors = *acceptableCountAgentErrors
 
 	return cb
 }
@@ -97,34 +103,4 @@ func (cb *Builder) WithAllFromEnv() *Builder {
 
 func (cb *Builder) Build() (Config, error) {
 	return cb.config, cb.err
-}
-
-func (cb *Builder) WithReportInterval(reportInterval time.Duration) *Builder {
-	cb.config.ReportInterval = reportInterval
-
-	return cb
-}
-
-func (cb *Builder) WithAddress(address string) *Builder {
-	cb.config.Address = address
-
-	return cb
-}
-
-func (cb *Builder) WithStoreFile(storeFile string) *Builder {
-	cb.config.StoreFile = storeFile
-
-	return cb
-}
-
-func (cb *Builder) WithStoreInterval(storeInterval time.Duration) *Builder {
-	cb.config.StoreInterval = storeInterval
-
-	return cb
-}
-
-func (cb *Builder) WithRestore(restore bool) *Builder {
-	cb.config.Restore = restore
-
-	return cb
 }

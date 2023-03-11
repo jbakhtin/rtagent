@@ -26,16 +26,18 @@ type Monitor struct {
 	serverAddress  string
 	pollInterval   time.Duration
 	reportInterval time.Duration
+	acceptableCountAgentErrors int
 
 	pollCounter types.Counter
 }
 
-func New(ctf config.Config, logger *zap.Logger) (Monitor, error) {
+func New(cfg config.Config, logger *zap.Logger) (Monitor, error) {
 	return Monitor{
 		loger:          logger,
-		serverAddress:  fmt.Sprintf("http://%s", ctf.Address), //TODO: переделать зависимость от http/https
-		pollInterval:   ctf.PollInterval,
-		reportInterval: ctf.ReportInterval,
+		serverAddress:  fmt.Sprintf("http://%s", cfg.Address), //TODO: переделать зависимость от http/https
+		pollInterval:   cfg.PollInterval,
+		reportInterval: cfg.ReportInterval,
+		acceptableCountAgentErrors: cfg.AcceptableCountAgentErrors,
 	}, nil
 }
 
@@ -59,17 +61,15 @@ func (m *Monitor) Start() error {
 				errCount++
 				m.loger.Info(err.Error())
 
-				if errCount > 10 { // TODO: вынести в константу
+				if errCount > m.acceptableCountAgentErrors {
 					// TODO: реализовать отправку количества ошибко на сервер
 					// TODO: реализовать новый тип метрики - стринг отправлять описание ошибки на сервер
 
-					m.loger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", 10))
+					m.loger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.acceptableCountAgentErrors))
 					cancel()
 				}
 			case <-ctx.Done():
 				m.loger.Info("завершаем работу агента")
-				m.loger.Info("ожидаем перед окончательным завершением")
-				time.Sleep(m.reportInterval)
 				return
 			}
 		}
