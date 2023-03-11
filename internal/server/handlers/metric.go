@@ -114,7 +114,8 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 
 		mType := chi.URLParam(r, "type")
 
-		var Value interface{}
+		var Value *types.Gauge
+		var Delta *types.Counter
 		switch mType {
 		case types.GaugeType:
 			floatV, err := strconv.ParseFloat(mValue, 64)
@@ -122,14 +123,16 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			Value = types.Gauge(floatV)
+			value := types.Gauge(floatV)
+			Value = &value
 		case types.CounterType:
 			intV, err := strconv.ParseInt(mValue, 10, 0)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			Value = types.Counter(intV)
+			value := types.Counter(intV)
+			Delta = &value
 		default:
 			http.Error(w, "type not valid", http.StatusNotImplemented)
 			return
@@ -138,7 +141,8 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 		metric := models.Metric{
 			MKey:   mKey,
 			MType:  mType,
-			MValue: Value,
+			Value: Value,
+			Delta: Delta,
 		}
 
 		test, err := h.service.Update(metric)

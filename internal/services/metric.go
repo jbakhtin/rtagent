@@ -50,17 +50,14 @@ func (ms *MetricService) GetAll() (map[string]models.Metric, error) {
 func (ms *MetricService) Update(metric models.Metric) (models.Metric, error) {
 	var err error
 
-	switch Value := metric.MValue.(type) { // TODO: подумать как сделать код элегантнее
-	case types.Counter:
+	switch metric.MType {
+	case types.CounterType:
 		entity, err := ms.repository.Get(metric.MKey)
 		if err != nil {
 			break
 		}
 
-		counter := entity.MValue.(types.Counter)
-
-		Value.Add(counter)
-		metric.MValue = Value
+		metric.Delta.Add(*entity.Delta)
 	}
 
 	metric, err = ms.repository.Update(metric)
