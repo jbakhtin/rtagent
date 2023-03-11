@@ -62,6 +62,10 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 
 func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 	file, err := fs.openFile(cfg, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		file.Close()
+		return err
+	}
 	defer file.Close()
 
 	metrics, err := fs.GetAll()
@@ -97,6 +101,10 @@ func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 
 func (fs *FileStorage) Restore(ctx context.Context, cfg config.Config) error {
 	file, err := fs.openFile(cfg, os.O_RDONLY|os.O_CREATE, 0644)
+	if err != nil {
+		file.Close()
+		return err
+	}
 	defer file.Close()
 
 	reader := bufio.NewReader(file)
