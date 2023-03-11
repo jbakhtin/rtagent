@@ -61,21 +61,8 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 }
 
 func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
-	file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-	if os.IsNotExist(err) {
-		fs.Logger.Info(err.Error())
-
-		fs.Logger.Info("try to make dir 'tmp'")
-		err = os.Mkdir("tmp", 0644)
-		if err != nil {
-			return err
-		}
-
-		file, err = os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
-		if err != nil {
-			return err
-		}
-	}
+	file, err := fs.openFile(cfg, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	defer file.Close()
 
 	metrics, err := fs.GetAll()
 	if err != nil {
@@ -111,21 +98,7 @@ func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 }
 
 func (fs *FileStorage) Restore(ctx context.Context, cfg config.Config) error {
-	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0644)
-	if os.IsNotExist(err) {
-		fs.Logger.Info(err.Error())
-
-		fs.Logger.Info("try to make dir 'tmp'")
-		err = os.Mkdir("tmp", 0644)
-		if err != nil {
-			return err
-		}
-
-		file, err = os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0644)
-		if err != nil {
-			return err
-		}
-	}
+	file, err := fs.openFile(cfg, os.O_RDONLY|os.O_CREATE, 0644)
 	defer file.Close()
 
 	reader := bufio.NewReader(file)
@@ -144,4 +117,24 @@ func (fs *FileStorage) Restore(ctx context.Context, cfg config.Config) error {
 	}
 
 	return nil
+}
+
+func (fs *FileStorage) openFile(cfg config.Config, flag int, perm os.FileMode) (*os.File, error) {
+	file, err := os.OpenFile(cfg.StoreFile, flag, perm)
+	if os.IsNotExist(err) {
+		fs.Logger.Info(err.Error())
+
+		fs.Logger.Info("try to make dir 'tmp'")
+		err = os.Mkdir("tmp", perm)
+		if err != nil {
+			return nil, err
+		}
+
+		file, err = os.OpenFile(cfg.StoreFile, flag, perm)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return file, nil
 }
