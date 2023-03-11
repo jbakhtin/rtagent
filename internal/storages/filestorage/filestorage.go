@@ -77,7 +77,12 @@ func (fs *FileStorage) Write(ctx context.Context, cfg config.Config) error {
 		}
 	}
 
-	data, err := json.Marshal(fs.Items)
+	metrics, err := fs.GetAll()
+	if err != nil {
+		return err
+	}
+
+	data, err := json.Marshal(metrics)
 	if err != nil {
 		return err
 	}
@@ -133,12 +138,7 @@ func (fs *FileStorage) Read(ctx context.Context, cfg config.Config) error {
 		return nil
 	}
 
-	metrics, err := fs.GetAll()
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(data, &metrics)
+	err = json.Unmarshal(data, &fs.Items)
 	if err != nil {
 		return err
 	}
