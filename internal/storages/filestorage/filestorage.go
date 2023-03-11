@@ -32,7 +32,7 @@ func New(ctx context.Context, cfg config.Config) (FileStorage, error) {
 func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 	ticker := time.NewTicker(cfg.StoreInterval)
 
-	err := fs.Read(ctx, cfg)
+	err := fs.Restore(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 		for {
 			select {
 			case <-ctx.Done():
-				err := fs.Write(ctx, cfg)
+				err := fs.Backup(ctx, cfg)
 				if err != nil {
 					fs.Logger.Error(err.Error())
 				} else {
@@ -49,7 +49,7 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 				}
 
 			case <-ticker.C:
-				err := fs.Write(ctx, cfg)
+				err := fs.Backup(ctx, cfg)
 				if err != nil {
 					fs.Logger.Error(err.Error())
 				}
@@ -60,18 +60,18 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 	return nil
 }
 
-func (fs *FileStorage) Write(ctx context.Context, cfg config.Config) error {
-	file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0664)
+func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
+	file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if os.IsNotExist(err) {
 		fs.Logger.Info(err.Error())
 
 		fs.Logger.Info("try to make dir 'tmp'")
-		err = os.Mkdir("tmp", 0777)
+		err = os.Mkdir("tmp", 0644)
 		if err != nil {
 			return err
 		}
 
-		file, err = os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0664)
+		file, err = os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			return err
 		}
@@ -110,13 +110,13 @@ func (fs *FileStorage) Write(ctx context.Context, cfg config.Config) error {
 	return writer.Flush()
 }
 
-func (fs *FileStorage) Read(ctx context.Context, cfg config.Config) error {
+func (fs *FileStorage) Restore(ctx context.Context, cfg config.Config) error {
 	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0644)
 	if os.IsNotExist(err) {
 		fs.Logger.Info(err.Error())
 
 		fs.Logger.Info("try to make dir 'tmp'")
-		err = os.Mkdir("tmp", 0777)
+		err = os.Mkdir("tmp", 0644)
 		if err != nil {
 			return err
 		}
