@@ -79,8 +79,6 @@ func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 
-	// Удаляем содержимое файла перед перезаписью
-	// TODO: Не удалось решить данную проблему дргим способом, например ...|os.O_TRUNC
 	err = file.Truncate(0)
 	if err != nil {
 		return err
