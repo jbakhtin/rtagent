@@ -52,28 +52,29 @@ func (m *Monitor) Start() error {
 	var errCount int
 	var err error
 
-	for {
-		select {
-		case err = <-chanErr:
-			errCount++
-			m.loger.Info(err.Error())
+	func () {
+		for {
+			select {
+			case err = <-chanErr:
+				errCount++
+				m.loger.Info(err.Error())
 
-			if errCount > 10 { // TODO: вынести в константу
-				// TODO: реализовать отправку количества ошибко на сервер
-				// TODO: реализовать новый тип метрики - стринг отправлять описание ошибки на сервер
+				if errCount > 10 { // TODO: вынести в константу
+					// TODO: реализовать отправку количества ошибко на сервер
+					// TODO: реализовать новый тип метрики - стринг отправлять описание ошибки на сервер
 
-				m.loger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", 10))
-				cancel()
+					m.loger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", 10))
+					cancel()
+				}
+			case <-ctx.Done():
+				m.loger.Info("завершаем работу агента")
+				m.loger.Info("ожидаем перед окончательным завершением")
+				time.Sleep(m.reportInterval)
+				return
 			}
-		case <-ctx.Done():
-			m.loger.Info("завершаем работу агента")
-			m.loger.Info("ожидаем перед окончательным завершением")
-			time.Sleep(m.reportInterval)
-			goto exit
 		}
-	}
+	} ()
 
-exit:
 	return err
 }
 
