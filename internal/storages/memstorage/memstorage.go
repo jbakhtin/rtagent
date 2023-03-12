@@ -1,7 +1,6 @@
 package memstorage
 
 import (
-	"context"
 	"errors"
 	"sync"
 
@@ -18,7 +17,7 @@ type MemStorage struct {
 	Logger *zap.Logger
 }
 
-func NewMemStorage(ctx context.Context, cfg config.Config) (MemStorage, error) {
+func NewMemStorage(cfg config.Config) (MemStorage, error) {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
 		return MemStorage{}, err

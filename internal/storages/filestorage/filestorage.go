@@ -18,8 +18,8 @@ type FileStorage struct {
 	memstorage.MemStorage
 }
 
-func New(ctx context.Context, cfg config.Config) (FileStorage, error) {
-	memStorage, err := memstorage.NewMemStorage(ctx, cfg)
+func New(cfg config.Config) (FileStorage, error) {
+	memStorage, err := memstorage.NewMemStorage(cfg)
 	if err != nil {
 		return FileStorage{}, err
 	}
@@ -47,6 +47,8 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 				} else {
 					fs.Logger.Info("the data is saved to the disk")
 				}
+				fs.Logger.Info("stop file storage loop")
+				return
 
 			case <-ticker.C:
 				err := fs.Backup(ctx, cfg)

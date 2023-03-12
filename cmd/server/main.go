@@ -3,13 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
-
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/server"
 	"go.uber.org/zap"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
+	ctxOS, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	done := make(chan bool, 1)
+
 	logger, err := zap.NewDevelopment()
 	if err != nil {
 		fmt.Println(err)
@@ -30,9 +35,26 @@ func main() {
 		logger.Error(err.Error())
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	if err = s.Start(ctx, cfg); err != nil {
-		logger.Info(err.Error())
-	}
-	cancel()
+	ctxServer, cancel := context.WithCancel(context.Background())
+	go func() {
+		if err = s.Start(ctxServer, cfg); err != nil {
+			logger.Info(err.Error())
+		}
+	}()
+
+	// Gracefully shut down
+	go func() {
+		<-ctxOS.Done()
+		err := s.Shutdown(ctxServer)
+		if err != nil {
+			logger.Info(err.Error())
+		}
+
+		cancel()
+		time.Sleep(2 * time.Second)
+
+		close(done)
+	}()
+
+	<-done
 }

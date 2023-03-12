@@ -12,7 +12,7 @@ type MetricRepository struct {
 }
 
 func NewMetricRepository(ctx context.Context, cfg config.Config) (*MetricRepository, error) {
-	ms, err := filestorage.New(ctx, cfg)
+	ms, err := filestorage.New(cfg)
 	if err != nil {
 		return nil, err
 	}

@@ -12,17 +12,21 @@ import (
 	"github.com/jbakhtin/rtagent/internal/server/handlers"
 )
 
-type Server struct {
-	serverAddress string
+type MainServer struct {
+	*http.Server
 }
 
-func New(cfg config.Config) (Server, error) {
-	return Server{
-		serverAddress: cfg.Address,
+func New(cfg config.Config) (MainServer, error) {
+	server := &http.Server{
+		Addr: cfg.Address,
+	}
+
+	return MainServer{
+		Server: server,
 	}, nil
 }
 
-func (s Server) Start(ctx context.Context, cfg config.Config) error {
+func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 	r := chi.NewRouter()
 
 	handlerMetric, err := handlers.NewHandlerMetric(ctx, cfg)
@@ -51,5 +55,5 @@ func (s Server) Start(ctx context.Context, cfg config.Config) error {
 		})
 	})
 
-	return http.ListenAndServe(s.serverAddress, r)
+	return http.ListenAndServe(ms.Addr, r)
 }
