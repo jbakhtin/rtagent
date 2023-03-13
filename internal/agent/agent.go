@@ -170,7 +170,7 @@ func (m *Monitor) reportJSON(cfg config.Config) error {
 		if err != nil {
 			return err
 		}
-		metric.Hash = hash
+		metric.Hash = &hash
 
 		buf, err := json.Marshal(metric)
 		if err != nil {

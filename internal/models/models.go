@@ -19,7 +19,7 @@ type Metric struct {
 	MType string         `json:"type"`            // параметр, принимающий значение gauge или counter
 	Delta *types.Counter `json:"delta,omitempty"` // значение метрики в случае передачи counter
 	Value *types.Gauge   `json:"value,omitempty"` // значение метрики в случае передачи gauge
-	Hash  string         `json:"hash,omitempty"`  //  значение хэша от MKey:MType:Delta|Value
+	Hash  *string        `json:"hash,omitempty"`  //  значение хэша от MKey:MType:Delta|Value
 }
 
 func (m Metric) Type() string {
@@ -46,9 +46,9 @@ func (m Metric) CalcHash(key []byte) (string, error) {
 
 	switch m.MType {
 	case types.CounterType:
-		h.Write([]byte(fmt.Sprintf("%s:%s:%v", m.MKey, m.MType, &m.Delta)))
+		h.Write([]byte(fmt.Sprintf("%s:%s:%v", m.MKey, m.MType, *m.Delta)))
 	case types.GaugeType:
-		h.Write([]byte(fmt.Sprintf("%s:%s:%v", m.MKey, m.MType, &m.Value)))
+		h.Write([]byte(fmt.Sprintf("%s:%s:%v", m.MKey, m.MType, *m.Value)))
 	}
 
 	dst := h.Sum(nil)

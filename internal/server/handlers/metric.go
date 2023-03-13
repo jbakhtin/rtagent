@@ -165,7 +165,7 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 	}
 }
 
-func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
+func (h *HandlerMetric) UpdateMetricByJSON(cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		var metric models.Metric
@@ -173,6 +173,24 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotImplemented)
 			return
+		}
+
+		if cfg.KeyApp != "" && metric.Hash == nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if cfg.KeyApp != "" && metric.Hash != nil {
+			hash, err := metric.CalcHash([]byte(cfg.KeyApp))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if hash != *metric.Hash {
+				http.Error(w, "not authorised", http.StatusBadRequest)
+				return
+			}
 		}
 
 		test, err := h.service.Update(metric)

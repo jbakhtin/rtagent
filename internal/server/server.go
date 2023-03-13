@@ -50,7 +50,7 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 		})
 
 		r.Route("/update/", func(r chi.Router) {
-			r.Post("/", handlerMetric.UpdateMetricByJSON())
+			r.Post("/", handlerMetric.UpdateMetricByJSON(cfg))
 			r.Post("/{type}/{key}/{value}", handlerMetric.UpdateMetric())
 		})
 	})
