@@ -30,7 +30,7 @@ func main() {
 		logger.Error(err.Error())
 	}
 
-	if err := monitor.Start(); err != nil {
+	if err := monitor.Start(cfg); err != nil {
 		logger.Error(err.Error())
 	}
 }

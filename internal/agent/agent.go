@@ -43,14 +43,14 @@ func New(cfg config.Config, logger *zap.Logger) (Monitor, error) {
 }
 
 // Start - запустить мониторинг
-func (m *Monitor) Start() error {
+func (m *Monitor) Start(cfg config.Config) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	chanErr := make(chan error)
 
-	go m.polling(ctx, chanErr)
-	go m.reporting(ctx, chanErr)
+	go m.polling(ctx, cfg, chanErr)
+	go m.reporting(ctx, cfg, chanErr)
 
 	var errCount int
 	var err error
@@ -71,7 +71,7 @@ func (m *Monitor) Start() error {
 				}
 			case <-ctx.Done():
 				m.loger.Info("завершаем работу агента")
-				err := m.report()
+				err := m.report(cfg)
 				if err != nil {
 					return err
 				}
@@ -84,13 +84,13 @@ func (m *Monitor) Start() error {
 }
 
 // pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
-func (m *Monitor) polling(ctx context.Context, chanError chan error) {
+func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan error) {
 	ticker := time.NewTicker(m.pollInterval)
 
 	for {
 		select {
 		case <-ticker.C:
-			err := m.poll()
+			err := m.poll(cfg)
 			if err != nil {
 				chanError <- err
 			}
@@ -101,7 +101,7 @@ func (m *Monitor) polling(ctx context.Context, chanError chan error) {
 	}
 }
 
-func (m *Monitor) poll() error {
+func (m *Monitor) poll(cfg config.Config) error {
 	m.sc.Lock()
 	defer m.sc.Unlock()
 
@@ -110,13 +110,13 @@ func (m *Monitor) poll() error {
 }
 
 // reporting - инициирует отправку данных с заданным интервалом monitor.reportInterval
-func (m *Monitor) reporting(ctx context.Context, chanError chan error) {
+func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError chan error) {
 	ticker := time.NewTicker(m.reportInterval)
 
 	for {
 		select {
 		case <-ticker.C:
-			err := m.reportJSON()
+			err := m.reportJSON(cfg)
 			if err != nil {
 				chanError <- err
 			}
@@ -128,11 +128,11 @@ func (m *Monitor) reporting(ctx context.Context, chanError chan error) {
 }
 
 // report - отправить данные
-func (m *Monitor) report() error {
+func (m *Monitor) report(cfg config.Config) error {
 	m.sc.Lock()
 	defer m.sc.Unlock()
 
-	for key, value := range m.GetStats() {
+	for key, value := range m.getStats() {
 		endpoint := fmt.Sprintf("%s/update/{type}/{key}/{value}", m.serverAddress)
 		client := resty.New()
 		_, err := client.R().SetHeaders(map[string]string{
@@ -152,8 +152,8 @@ func (m *Monitor) report() error {
 	return nil
 }
 
-func (m *Monitor) reportJSON() error {
-	for key, value := range m.GetStats() {
+func (m *Monitor) reportJSON(cfg config.Config) error {
+	for key, value := range m.getStats() {
 		endpoint := fmt.Sprintf("%s/update/", m.serverAddress)
 		metric := models.Metric{
 			MKey:    key,
@@ -202,7 +202,7 @@ func (m *Monitor) reportJSON() error {
 }
 
 // GetStats - Поулчить слайс содержщий последние акутальные данные
-func (m *Monitor) GetStats() map[string]types.Metricer {
+func (m *Monitor) getStats() map[string]types.Metricer {
 	memStats := runtime.MemStats{}
 	runtime.ReadMemStats(&memStats)
 

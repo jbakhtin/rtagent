@@ -15,6 +15,7 @@ const (
 	_storeInterval              = time.Second * 300
 	_restore                    = true
 	_acceptableCountAgentErrors = 10
+	_keyApp = ""
 )
 
 const (
@@ -25,6 +26,7 @@ const (
 	_storeIntervalLabel              = "Период создания слепков MemStorage в секундах"
 	_restoreLabel                    = "Загрузить последний слепок MemStorage перед стартом сервиса"
 	_acceptableCountAgentErrorsLabel = "Допустимое количество ошибок от агента"
+	_keyAppLabel = "Ключ приложения"
 )
 
 type Config struct {
@@ -35,6 +37,7 @@ type Config struct {
 	StoreInterval              time.Duration `env:"STORE_INTERVAL"`
 	Restore                    bool          `env:"RESTORE"`
 	AcceptableCountAgentErrors int           `env:"ACCEPTABLE_COUNT_AGENT_ERRORS"`
+	KeyApp string           `env:"KEY_APP"`
 }
 
 type Builder struct {
@@ -52,6 +55,7 @@ func NewConfigBuilder() *Builder {
 			_storeInterval,
 			_restore,
 			_acceptableCountAgentErrors,
+			_keyApp,
 		},
 		nil,
 	}
@@ -62,12 +66,14 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	storeFile := flag.String("f", _storeFile, _storeFileLabel)
 	storeInterval := flag.Duration("i", _storeInterval, _storeIntervalLabel)
 	restore := flag.Bool("r", _restore, _restoreLabel)
+	keyApp := flag.String("k", _keyApp, _keyAppLabel)
 	flag.Parse()
 
 	cb.config.Address = *address
 	cb.config.StoreFile = *storeFile
 	cb.config.StoreInterval = *storeInterval
 	cb.config.Restore = *restore
+	cb.config.KeyApp = *keyApp
 
 	return cb
 }
@@ -82,12 +88,14 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	reportInterval := flag.Duration("r", _reportInterval, _reportIntervalLabel)
 	address := flag.String("a", _address, _addressLabel)
 	acceptableCountAgentErrors := flag.Int("e", _acceptableCountAgentErrors, _acceptableCountAgentErrorsLabel)
+	keyApp := flag.String("k", _keyApp, _keyAppLabel)
 	flag.Parse()
 
 	cb.config.PollInterval = *pollInterval
 	cb.config.ReportInterval = *reportInterval
 	cb.config.Address = *address
 	cb.config.AcceptableCountAgentErrors = *acceptableCountAgentErrors
+	cb.config.KeyApp = *keyApp
 
 	return cb
 }
