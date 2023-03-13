@@ -13,10 +13,11 @@ type Metricer interface {
 }
 
 type Metric struct {
-	MKey    string       `json:"id"`              // имя метрики
+	MKey  string         `json:"id"`              // имя метрики
 	MType string         `json:"type"`            // параметр, принимающий значение gauge или counter
 	Delta *types.Counter `json:"delta,omitempty"` // значение метрики в случае передачи counter
 	Value *types.Gauge   `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	Hash  string         `json:"hash,omitempty"`  //  значение хэша от MKey:MType:Delta|Value
 }
 
 func (m Metric) Type() string {

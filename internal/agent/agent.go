@@ -3,6 +3,7 @@ package agent
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -158,19 +159,26 @@ func (m *Monitor) reportJSON() error {
 			MKey:    key,
 			MType: value.Type(),
 		}
+
+		h := sha256.New()
 		switch v := value.(type) {
 		case types.Counter:
 			metric.Delta = &v
+			h.Write([]byte(fmt.Sprintf("%s:%s:%v", metric.MKey, metric.MType, &metric.Delta)))
 		case types.Gauge:
 			metric.Value = &v
+			h.Write([]byte(fmt.Sprintf("%s:%s:%v", metric.MKey, metric.MType, &metric.Value)))
 		}
+
+		dst := h.Sum(nil)
+		metric.Hash = fmt.Sprintf("%x", dst)
 
 		buf, err := json.Marshal(metric)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println(metric)
+		//fmt.Println(metric)
 
 		request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
 		if err != nil {
