@@ -1,6 +1,8 @@
 package models
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"fmt"
 
 	"github.com/jbakhtin/rtagent/internal/types"
@@ -37,4 +39,19 @@ func (m Metric) StringValue() string {
 	}
 
 	return ""
+}
+
+func (m Metric) CalcHash(key []byte) (string, error) {
+	h := hmac.New(sha256.New, key)
+
+	switch m.MType {
+	case types.CounterType:
+		h.Write([]byte(fmt.Sprintf("%s:%s:%v", m.MKey, m.MType, &m.Delta)))
+	case types.GaugeType:
+		h.Write([]byte(fmt.Sprintf("%s:%s:%v", m.MKey, m.MType, &m.Value)))
+	}
+
+	dst := h.Sum(nil)
+	return fmt.Sprintf("%x", dst), nil
+
 }
