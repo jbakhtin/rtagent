@@ -5,13 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jbakhtin/rtagent/internal/server/handlers"
 	"net/http"
 	"runtime"
 	"sync"
 	"time"
 
 	"github.com/jbakhtin/rtagent/internal/config"
-	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"go.uber.org/zap"
 	"golang.org/x/exp/rand"
@@ -154,7 +154,7 @@ func (m *Monitor) report() error {
 func (m *Monitor) reportJSON() error {
 	for key, value := range m.GetStats() {
 		endpoint := fmt.Sprintf("%s/update/", m.serverAddress)
-		metric := models.Metric{
+		metric := handlers.Metrics{
 			MKey:    key,
 			MType: value.Type(),
 		}
