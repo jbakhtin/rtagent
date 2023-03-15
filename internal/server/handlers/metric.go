@@ -5,15 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"html/template"
-	"net/http"
-	"strconv"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/services"
 	"github.com/jbakhtin/rtagent/internal/types"
+	"html/template"
+	"net/http"
 )
 
 type HandlerMetric struct {
@@ -69,7 +67,7 @@ func (h *HandlerMetric) GetMetricAsJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		var metrics models.Metric
+		var metrics Metrics
 		err := json.NewDecoder(r.Body).Decode(&metrics)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
@@ -101,7 +99,6 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mValue := chi.URLParam(r, "value")
 		if mValue == "" {
-			// TODO: вынести ошибки в констаны
 			http.Error(w, "value not valid", http.StatusBadRequest)
 			return
 		}
@@ -112,67 +109,53 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 			return
 		}
 
-		mType := chi.URLParam(r, "type")
+		var metric models.Metricer
+		var err error
 
-		var Value *types.Gauge
-		var Delta *types.Counter
+		mType := chi.URLParam(r, "type")
 		switch mType {
 		case types.GaugeType:
-			floatV, err := strconv.ParseFloat(mValue, 64)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			value := types.Gauge(floatV)
-			Value = &value
+			metric , err = models.NewGauge(mType, mKey, mValue)
 		case types.CounterType:
-			intV, err := strconv.ParseInt(mValue, 10, 0)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			value := types.Counter(intV)
-			Delta = &value
+			metric , err = models.NewCounter(mType, mKey, mValue)
 		default:
 			http.Error(w, "type not valid", http.StatusNotImplemented)
 			return
 		}
-
-		metric := models.Metric{
-			MKey:   mKey,
-			MType:  mType,
-			Value: Value,
-			Delta: Delta,
+		if err != nil {
+			http.Error(w, "type not valid", http.StatusBadRequest)
+			return
 		}
 
-		test, err := h.service.Update(metric)
+		_, err = h.service.Update(metric)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		jsonMetric, err := json.Marshal(test)
-		fmt.Println(jsonMetric)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		_, err = w.Write(jsonMetric)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
 func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		var metric models.Metric
-		err := json.NewDecoder(r.Body).Decode(&metric)
+		var metrics Metrics
+		err := json.NewDecoder(r.Body).Decode(&metrics)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotImplemented)
 			return
+		}
+
+		var metric models.Metricer
+		switch metrics.MType {
+		case types.GaugeType:
+			metric, err = models.NewGauge(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Value))
+		case types.CounterType:
+			metric, err = models.NewGauge(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Delta))
+		}
+		if err != nil {
+			fmt.Println(err)
 		}
 
 		test, err := h.service.Update(metric)

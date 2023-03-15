@@ -13,7 +13,7 @@ import (
 
 type MemStorage struct {
 	Mx     *sync.RWMutex
-	Items  map[string]models.Metric
+	Items  map[string]models.Metricer
 	Logger *zap.Logger
 }
 
@@ -24,13 +24,13 @@ func NewMemStorage(cfg config.Config) (MemStorage, error) {
 	}
 
 	return MemStorage{
-		Items:  make(map[string]models.Metric, 0),
+		Items:  make(map[string]models.Metricer, 0),
 		Mx:     &sync.RWMutex{},
 		Logger: logger,
 	}, nil
 }
 
-func (ms *MemStorage) Set(metric models.Metric) (models.Metric, error) {
+func (ms *MemStorage) Set(metric models.Metricer) (models.Metricer, error) {
 	ms.Mx.Lock()
 	defer ms.Mx.Unlock()
 
@@ -39,7 +39,7 @@ func (ms *MemStorage) Set(metric models.Metric) (models.Metric, error) {
 	return metric, nil
 }
 
-func (ms *MemStorage) Get(key string) (models.Metric, error) {
+func (ms *MemStorage) Get(key string) (models.Metricer, error) {
 	ms.Mx.Lock()
 	defer ms.Mx.Unlock()
 
@@ -47,14 +47,14 @@ func (ms *MemStorage) Get(key string) (models.Metric, error) {
 		return value, nil
 	}
 
-	return models.Metric{}, errors.New("record not found")
+	return nil, errors.New("record not found")
 }
 
-func (ms *MemStorage) GetAll() (map[string]models.Metric, error) {
+func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
 	ms.Mx.Lock()
 	defer ms.Mx.Unlock()
 
-	result := make(map[string]models.Metric, len(ms.Items))
+	result := make(map[string]models.Metricer, len(ms.Items))
 
 	// Deep copy
 	for k, v := range ms.Items {
