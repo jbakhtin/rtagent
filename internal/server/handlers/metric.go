@@ -152,7 +152,7 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 		case types.GaugeType:
 			metric, err = models.NewGauge(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Value))
 		case types.CounterType:
-			metric, err = models.NewGauge(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Delta))
+			metric, err = models.NewCounter(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Delta))
 		}
 		if err != nil {
 			fmt.Println(err)
