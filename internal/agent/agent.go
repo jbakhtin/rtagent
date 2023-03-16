@@ -170,8 +170,6 @@ func (m *Monitor) reportJSON() error {
 			return err
 		}
 
-		fmt.Println(metric)
-
 		request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
 		if err != nil {
 			return err

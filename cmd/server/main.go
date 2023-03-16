@@ -40,20 +40,14 @@ func main() {
 	}()
 
 	ctxOS, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
-	done := make(chan bool, 1)
+
 	// Gracefully shut down
-	go func() {
-		<-ctxOS.Done()
-		err := s.Shutdown(ctxServer)
-		if err != nil {
-			logger.Info(err.Error())
-		}
+	<-ctxOS.Done()
+	err = s.Shutdown(ctxServer)
+	if err != nil {
+		logger.Info(err.Error())
+	}
 
-		cancel()
-		time.Sleep(2 * time.Second)
-
-		close(done)
-	}()
-
-	<-done
+	cancel()
+	time.Sleep(2 * time.Second)
 }
