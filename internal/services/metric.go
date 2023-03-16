@@ -9,8 +9,14 @@ import (
 	"github.com/jbakhtin/rtagent/internal/models"
 )
 
+type MetricRepository interface {
+	GetAll() (map[string]models.Metricer, error)
+	Get(key string) (models.Metricer, error)
+	Set(models.Metricer) (models.Metricer, error)
+}
+
 type MetricService struct {
-	repository filestorage.FileStorage
+	repository MetricRepository
 }
 
 func NewMetricService(ctx context.Context, cfg config.Config) (*MetricService, error) {
@@ -25,7 +31,7 @@ func NewMetricService(ctx context.Context, cfg config.Config) (*MetricService, e
 	}
 
 	return &MetricService{
-		repository: ms,
+		repository: &ms,
 	}, nil
 }
 
