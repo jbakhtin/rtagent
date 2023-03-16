@@ -156,16 +156,7 @@ func (m *Monitor) report() error {
 func (m *Monitor) reportJSON() error {
 	for key, value := range m.GetStats() {
 		endpoint := fmt.Sprintf("%s/update/", m.serverAddress)
-		metric := models.Metrics{
-			MKey:    key,
-			MType: value.Type(),
-		}
-		switch v := value.(type) {
-		case types.Counter:
-			metric.Delta = &v
-		case types.Gauge:
-			metric.Value = &v
-		}
+		metric := models.ToJSON(key, value)
 
 		buf, err := json.Marshal(metric)
 		if err != nil {

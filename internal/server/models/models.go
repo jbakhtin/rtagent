@@ -9,6 +9,20 @@ type Metrics struct {
 	Value *types.Gauge   `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
+func ToJSON(id string, value types.Metricer) Metrics {
+	metric := Metrics{
+		MKey:    id,
+		MType: value.Type(),
+	}
+	switch v := value.(type) {
+	case types.Counter:
+		metric.Delta = &v
+	case types.Gauge:
+		metric.Value = &v
+	}
+
+	return metric
+}
 
 
 
