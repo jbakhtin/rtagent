@@ -4,6 +4,10 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/jbakhtin/rtagent/internal/models"
+	models2 "github.com/jbakhtin/rtagent/internal/server/models"
+	"github.com/jbakhtin/rtagent/internal/types"
 	"io"
 	"os"
 	"time"
@@ -75,7 +79,13 @@ func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 
-	data, err := json.Marshal(metrics)
+	var JSONMetrics []models2.Metrics
+
+	for _, v := range metrics {
+		JSONMetrics = append(JSONMetrics, v.ToJSON())
+	}
+
+	data, err := json.Marshal(JSONMetrics)
 	if err != nil {
 		return err
 	}
@@ -119,9 +129,19 @@ func (fs *FileStorage) Restore(ctx context.Context, cfg config.Config) error {
 		return nil
 	}
 
-	err = json.Unmarshal(data, &fs.Items)
+	JSONMetrics := make([]models2.Metrics, 0)
+	err = json.Unmarshal(data, &JSONMetrics)
 	if err != nil {
 		return err
+	}
+
+	for _, JSONMetric := range JSONMetrics {
+		switch JSONMetric.MType {
+		case types.GaugeType:
+			fs.Items[JSONMetric.MKey], err = models.NewGauge(JSONMetric.MType, JSONMetric.MKey, fmt.Sprintf("%v", *JSONMetric.Value))
+		case types.CounterType:
+			fs.Items[JSONMetric.MKey], err = models.NewCounter(JSONMetric.MType, JSONMetric.MKey, fmt.Sprintf("%v", *JSONMetric.Delta))
+		}
 	}
 
 	return nil
