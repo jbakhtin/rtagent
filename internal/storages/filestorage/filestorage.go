@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/jbakhtin/rtagent/internal/models"
 	models2 "github.com/jbakhtin/rtagent/internal/server/models"
 	"github.com/jbakhtin/rtagent/internal/types"
@@ -138,14 +137,20 @@ func (fs *FileStorage) Restore(ctx context.Context, cfg config.Config) error {
 	for _, JSONMetric := range JSONMetrics {
 		switch JSONMetric.MType {
 		case types.GaugeType:
-			fs.Items[JSONMetric.MKey], err = models.NewGauge(JSONMetric.MType, JSONMetric.MKey, fmt.Sprintf("%v", *JSONMetric.Value))
-			if err != nil {
-				return err
+			fs.Items[JSONMetric.MKey] = models.Gauge{
+				Description: models.Description{
+					MKey:  JSONMetric.MType,
+					MType: JSONMetric.MKey,
+				},
+				MValue: *JSONMetric.Value,
 			}
 		case types.CounterType:
-			fs.Items[JSONMetric.MKey], err = models.NewCounter(JSONMetric.MType, JSONMetric.MKey, fmt.Sprintf("%v", *JSONMetric.Delta))
-			if err != nil {
-				return err
+			fs.Items[JSONMetric.MKey] = models.Counter{
+				Description: models.Description{
+					MKey:  JSONMetric.MType,
+					MType: JSONMetric.MKey,
+				},
+				MValue: *JSONMetric.Delta,
 			}
 		}
 	}

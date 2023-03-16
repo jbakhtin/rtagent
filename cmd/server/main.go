@@ -12,9 +12,6 @@ import (
 )
 
 func main() {
-	ctxOS, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
-	done := make(chan bool, 1)
-
 	logger, err := zap.NewDevelopment()
 	if err != nil {
 		fmt.Println(err)
@@ -42,6 +39,8 @@ func main() {
 		}
 	}()
 
+	ctxOS, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	done := make(chan bool, 1)
 	// Gracefully shut down
 	go func() {
 		<-ctxOS.Done()
