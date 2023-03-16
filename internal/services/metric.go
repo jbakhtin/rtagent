@@ -3,9 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/repositories/storages/inmemory"
-
 	"github.com/jbakhtin/rtagent/internal/config"
+	"github.com/jbakhtin/rtagent/internal/repositories/storages/infile"
 
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
@@ -16,7 +15,7 @@ type MetricService struct {
 }
 
 func NewMetricService(ctx context.Context, cfg config.Config) (*MetricService, error) {
-	repository, err := inmemory.NewMetricRepository(ctx, cfg)
+	repository, err := infile.NewMetricRepository(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
