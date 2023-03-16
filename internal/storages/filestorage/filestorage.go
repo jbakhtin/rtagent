@@ -34,6 +34,7 @@ func New(cfg config.Config) (FileStorage, error) {
 
 func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 	ticker := time.NewTicker(cfg.StoreInterval)
+	defer ticker.Stop()
 
 	err := fs.Restore(ctx, cfg)
 	if err != nil {

@@ -4,24 +4,28 @@ import (
 	"context"
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/config"
-	"github.com/jbakhtin/rtagent/internal/repositories/storages/infile"
+	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
 
 	"github.com/jbakhtin/rtagent/internal/models"
-	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
 )
 
 type MetricService struct {
-	repository interfaces.MetricRepository
+	repository filestorage.FileStorage
 }
 
 func NewMetricService(ctx context.Context, cfg config.Config) (*MetricService, error) {
-	repository, err := infile.NewMetricRepository(ctx, cfg)
+	ms, err := filestorage.New(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ms.Start(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &MetricService{
-		repository: repository,
+		repository: ms,
 	}, nil
 }
 
@@ -64,7 +68,7 @@ func (ms *MetricService) Update(metric models.Metricer) (models.Metricer, error)
 		metric = m
 	}
 
-	metric, err = ms.repository.Update(metric)
+	metric, err = ms.repository.Set(metric)
 	if err != nil {
 		fmt.Println("Update error: ", err)
 		return metric, err

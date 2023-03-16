@@ -85,6 +85,7 @@ func (m *Monitor) Start() error {
 // pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
 func (m *Monitor) polling(ctx context.Context, chanError chan error) {
 	ticker := time.NewTicker(m.pollInterval)
+	defer ticker.Stop()
 
 	for {
 		select {
@@ -111,6 +112,7 @@ func (m *Monitor) poll() error {
 // reporting - инициирует отправку данных с заданным интервалом monitor.reportInterval
 func (m *Monitor) reporting(ctx context.Context, chanError chan error) {
 	ticker := time.NewTicker(m.reportInterval)
+	defer ticker.Stop()
 
 	for {
 		select {
