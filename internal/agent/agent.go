@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/server/handlers"
+	"github.com/jbakhtin/rtagent/internal/server/models"
 	"net/http"
 	"runtime"
 	"sync"
@@ -154,7 +154,7 @@ func (m *Monitor) report() error {
 func (m *Monitor) reportJSON() error {
 	for key, value := range m.GetStats() {
 		endpoint := fmt.Sprintf("%s/update/", m.serverAddress)
-		metric := handlers.Metrics{
+		metric := models.Metrics{
 			MKey:    key,
 			MType: value.Type(),
 		}
