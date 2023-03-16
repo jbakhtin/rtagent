@@ -139,16 +139,16 @@ func (fs *FileStorage) Restore(ctx context.Context, cfg config.Config) error {
 		case types.GaugeType:
 			fs.Items[JSONMetric.MKey] = models.Gauge{
 				Description: models.Description{
-					MKey:  JSONMetric.MType,
-					MType: JSONMetric.MKey,
+					MKey:  JSONMetric.MKey,
+					MType: JSONMetric.MType,
 				},
 				MValue: *JSONMetric.Value,
 			}
 		case types.CounterType:
 			fs.Items[JSONMetric.MKey] = models.Counter{
 				Description: models.Description{
-					MKey:  JSONMetric.MType,
-					MType: JSONMetric.MKey,
+					MKey:  JSONMetric.MKey,
+					MType: JSONMetric.MType,
 				},
 				MValue: *JSONMetric.Delta,
 			}
