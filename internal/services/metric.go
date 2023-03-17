@@ -1,26 +1,37 @@
 package services
 
 import (
+	"context"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/repositories/storages/inmemory"
+	"github.com/jbakhtin/rtagent/internal/config"
+	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
 
 	"github.com/jbakhtin/rtagent/internal/models"
-	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
 )
 
-type MetricService struct {
-	repository interfaces.MetricRepository
+type MetricRepository interface {
+	GetAll() (map[string]models.Metricer, error)
+	Get(key string) (models.Metricer, error)
+	Set(models.Metricer) (models.Metricer, error)
 }
 
-func NewMetricService() (*MetricService, error) {
-	// Инициализируе нужное хранилище
-	repository, err := inmemory.NewMetricRepository()
+type MetricService struct {
+	repository MetricRepository
+}
+
+func NewMetricService(ctx context.Context, cfg config.Config) (*MetricService, error) {
+	ms, err := filestorage.New(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ms.Start(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &MetricService{
-		repository: repository,
+		repository: &ms,
 	}, nil
 }
 
@@ -47,7 +58,7 @@ func (ms *MetricService) GetAll() (map[string]models.Metricer, error) {
 func (ms *MetricService) Update(metric models.Metricer) (models.Metricer, error) {
 	var err error
 
-	switch m := metric.(type) { // TODO: продумать про переиспользование старых переменных (52, 57)
+	switch m := metric.(type) {
 	case models.Counter:
 		entity, err := ms.repository.Get(m.MKey)
 		if err != nil {
@@ -63,7 +74,7 @@ func (ms *MetricService) Update(metric models.Metricer) (models.Metricer, error)
 		metric = m
 	}
 
-	metric, err = ms.repository.Update(metric)
+	metric, err = ms.repository.Set(metric)
 	if err != nil {
 		fmt.Println("Update error: ", err)
 		return metric, err

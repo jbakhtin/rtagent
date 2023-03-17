@@ -26,3 +26,4 @@ vendor/
 
 # sandbox
 /cmd/sandbox/
+/tmp/*

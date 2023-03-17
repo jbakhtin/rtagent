@@ -1,28 +1,35 @@
 package main
 
 import (
-	"fmt"
-	"time"
+	"github.com/jbakhtin/rtagent/internal/config"
+	"go.uber.org/zap"
+	"log"
 
 	"github.com/jbakhtin/rtagent/internal/agent"
 )
 
-const (
-	pollInterval   = time.Second * 2
-	reportInterval = time.Second * 10
-	serverDomain   = "http://127.0.0.1"
-	serverPort     = "8080"
-)
-
 func main() {
-	serverAddress := fmt.Sprintf("%s:%s", serverDomain, serverPort)
-
-	monitor, err := agent.New(serverAddress, pollInterval, reportInterval)
+	logger, err := zap.NewDevelopment()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
+		return
+	}
+
+	cfg, err := config.NewConfigBuilder().
+		WithAllFromFlagsA().
+		WithAllFromEnv().
+		Build()
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	monitor, err := agent.New(cfg, logger)
+	if err != nil {
+		logger.Error(err.Error())
 	}
 
 	if err := monitor.Start(); err != nil {
-		fmt.Println(err)
+		logger.Error(err.Error())
 	}
 }

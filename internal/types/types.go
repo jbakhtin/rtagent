@@ -21,3 +21,11 @@ func (g Gauge) Type() string {
 func (c Counter) Type() string {
 	return CounterType
 }
+
+func (c *Counter) Increment() {
+	*c++
+}
+
+func (c *Counter) Add(value Counter) {
+	*c += value
+}

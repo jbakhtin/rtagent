@@ -1,23 +1,53 @@
 package main
 
 import (
+	"context"
 	"fmt"
-
+	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/server"
+	"go.uber.org/zap"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
-const serverDomain = "127.0.0.1"
-const serverPort = "8080"
-
 func main() {
-	serverAddress := fmt.Sprintf("%s:%s", serverDomain, serverPort)
-
-	s, err := server.New(serverAddress)
+	logger, err := zap.NewDevelopment()
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
-	if err = s.Start(); err != nil {
-		fmt.Println(err) // TODO: реализовать логирование ошибок
+	cfg, err := config.NewConfigBuilder().
+		WithAllFromFlagsS().
+		WithAllFromEnv().
+		Build()
+	if err != nil {
+		logger.Error(err.Error())
+		return
 	}
+
+	s, err := server.New(cfg)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+
+	ctxServer, cancel := context.WithCancel(context.Background())
+	go func() {
+		if err = s.Start(ctxServer, cfg); err != nil {
+			logger.Info(err.Error())
+		}
+	}()
+
+	ctxOS, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+	// Gracefully shut down
+	<-ctxOS.Done()
+	err = s.Shutdown(ctxServer)
+	if err != nil {
+		logger.Info(err.Error())
+	}
+
+	cancel()
+	time.Sleep(2 * time.Second)
 }

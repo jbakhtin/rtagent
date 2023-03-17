@@ -4,34 +4,46 @@ import (
 	"errors"
 	"sync"
 
+	"go.uber.org/zap"
+
+	"github.com/jbakhtin/rtagent/internal/config"
+
 	"github.com/jbakhtin/rtagent/internal/models"
 )
 
 type MemStorage struct {
-	sync.RWMutex
-	items map[string]models.Metricer
+	Mx     *sync.RWMutex
+	Items  map[string]models.Metricer
+	Logger *zap.Logger
 }
 
-func New() MemStorage {
-	return MemStorage{
-		items: make(map[string]models.Metricer, 0),
+func NewMemStorage(cfg config.Config) (MemStorage, error) {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		return MemStorage{}, err
 	}
+
+	return MemStorage{
+		Items:  make(map[string]models.Metricer, 0),
+		Mx:     &sync.RWMutex{},
+		Logger: logger,
+	}, nil
 }
 
 func (ms *MemStorage) Set(metric models.Metricer) (models.Metricer, error) {
-	ms.Lock()
-	defer ms.Unlock()
+	ms.Mx.Lock()
+	defer ms.Mx.Unlock()
 
-	ms.items[metric.Key()] = metric
+	ms.Items[metric.Key()] = metric
 
 	return metric, nil
 }
 
 func (ms *MemStorage) Get(key string) (models.Metricer, error) {
-	ms.Lock()
-	defer ms.Unlock()
+	ms.Mx.Lock()
+	defer ms.Mx.Unlock()
 
-	if value, ok := ms.items[key]; ok {
+	if value, ok := ms.Items[key]; ok {
 		return value, nil
 	}
 
@@ -39,13 +51,13 @@ func (ms *MemStorage) Get(key string) (models.Metricer, error) {
 }
 
 func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
-	ms.Lock()
-	defer ms.Unlock()
+	ms.Mx.Lock()
+	defer ms.Mx.Unlock()
 
-	result := make(map[string]models.Metricer, len(ms.items))
+	result := make(map[string]models.Metricer, len(ms.Items))
 
 	// Deep copy
-	for k, v := range ms.items {
+	for k, v := range ms.Items {
 		result[k] = v
 	}
 

@@ -1,27 +1,40 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
-	"github.com/stretchr/testify/require"
+	"github.com/jbakhtin/rtagent/internal/services"
+	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/jbakhtin/rtagent/internal/repositories/interfaces"
-	"github.com/jbakhtin/rtagent/internal/repositories/storages/inmemory"
+	"github.com/jbakhtin/rtagent/internal/config"
+	"github.com/stretchr/testify/require"
+	
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHandlerMetric_Get(t *testing.T) {
 	type fields struct {
-		repo    interfaces.MetricRepository
+		repo    services.MetricRepository
 		request string
 	}
 	type want struct {
-		statusCode  int
+		statusCode int
 	}
 
-	storage, err := inmemory.NewMetricRepository()
+	ctx := context.TODO()
+	cfg, err := config.NewConfigBuilder().
+		WithAllFromFlagsS().
+		WithAllFromEnv().
+		Build()
+	if err != nil {
+		log.Println(err)
+	}
+
+	storage, err := filestorage.New(cfg)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -35,24 +48,24 @@ func TestHandlerMetric_Get(t *testing.T) {
 		{
 			"Get all metrics. Test 1",
 			fields{
-				repo:    storage,
+				repo:    &storage,
 				request: "http://127.0.0.1:8080",
 			},
 			want{
-				statusCode:  200,
+				statusCode: 200,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h, err := NewHandlerMetric()
+			h, err := NewHandlerMetric(ctx, cfg)
 			if err != nil {
 				require.NoError(t, err)
 			}
 
 			request := httptest.NewRequest(http.MethodGet, tt.fields.request, nil)
 			w := httptest.NewRecorder()
-			hf := h.GetAll()
+			hf := h.GetAllMetricsAsHTML()
 			hf(w, request)
 			result := w.Result()
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)

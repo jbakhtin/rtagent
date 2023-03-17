@@ -2,14 +2,17 @@ package models
 
 import (
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/types"
+	"github.com/jbakhtin/rtagent/internal/server/models"
 	"strconv"
+
+	"github.com/jbakhtin/rtagent/internal/types"
 )
 
 type Metricer interface {
 	Type() string
 	Key() string
 	StringValue() string
+	ToJSON() models.Metrics
 }
 
 type (
@@ -46,7 +49,6 @@ func NewGauge(mType, mKey, mValue string) (Gauge, error){
 	}, nil
 }
 
-
 func (g Gauge) Type() string {
 	return g.MType
 }
@@ -56,8 +58,15 @@ func (g Gauge) Key() string {
 }
 
 func (g Gauge) StringValue() string {
-	value := fmt.Sprintf("%v", g.MValue)
-	return value
+	return fmt.Sprintf("%v", g.MValue)
+}
+
+func (g Gauge) ToJSON() models.Metrics {
+	return models.Metrics{
+		MKey:  g.MKey,
+		MType: g.MType,
+		Value: &g.MValue,
+	}
 }
 
 // Counter ----
@@ -88,6 +97,14 @@ func (c Counter) Key() string {
 func (c Counter) StringValue() string {
 	value := fmt.Sprintf("%v", c.MValue)
 	return value
+}
+
+func (c Counter) ToJSON() models.Metrics {
+	return models.Metrics{
+		MKey:  c.MKey,
+		MType: c.MType,
+		Delta: &c.MValue,
+	}
 }
 
 func (c *Counter) Increment() {

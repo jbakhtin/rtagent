@@ -1,43 +1,83 @@
 package agent
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/types"
-	"golang.org/x/exp/rand"
+	"github.com/jbakhtin/rtagent/internal/server/models"
+	"net/http"
 	"runtime"
+	"sync"
 	"time"
+
+	"github.com/jbakhtin/rtagent/internal/config"
+	"github.com/jbakhtin/rtagent/internal/types"
+	"go.uber.org/zap"
+	"golang.org/x/exp/rand"
 
 	"github.com/go-resty/resty/v2"
 )
 
 type Monitor struct {
+	sc    sync.Mutex
+	loger *zap.Logger
+
 	serverAddress  string
 	pollInterval   time.Duration
 	reportInterval time.Duration
+	acceptableCountAgentErrors int
 
 	pollCounter types.Counter
 }
 
-func New(serverAddress string, pollInterval, reportInterval time.Duration) (Monitor, error){
+func New(cfg config.Config, logger *zap.Logger) (Monitor, error) {
 	return Monitor{
-		serverAddress:serverAddress,
-		pollInterval: pollInterval,
-		reportInterval: reportInterval,
+		loger:          logger,
+		serverAddress:  fmt.Sprintf("http://%s", cfg.Address), //TODO: переделать зависимость от http/https
+		pollInterval:   cfg.PollInterval,
+		reportInterval: cfg.ReportInterval,
+		acceptableCountAgentErrors: cfg.AcceptableCountAgentErrors,
 	}, nil
 }
 
 // Start - запустить мониторинг
-func (m Monitor) Start() error {
+func (m *Monitor) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	chanErr := make(chan error)
 
 	go m.polling(ctx, chanErr)
 	go m.reporting(ctx, chanErr)
-	err := <-chanErr
-	// TODO: реализовать счетчик  ошибок, если ошибок 10-20 - завершаем работу
-	cancel()
+
+	var errCount int
+	var err error
+
+	err = func () error{
+		for {
+			select {
+			case err = <-chanErr:
+				errCount++
+				m.loger.Info(err.Error())
+
+				if errCount > m.acceptableCountAgentErrors {
+					// TODO: реализовать отправку количества ошибко на сервер
+					// TODO: реализовать новый тип метрики - стринг отправлять описание ошибки на сервер
+
+					m.loger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.acceptableCountAgentErrors))
+					cancel()
+				}
+			case <-ctx.Done():
+				m.loger.Info("завершаем работу агента")
+				err := m.report()
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+		}
+	} ()
 
 	return err
 }
@@ -45,6 +85,7 @@ func (m Monitor) Start() error {
 // pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
 func (m *Monitor) polling(ctx context.Context, chanError chan error) {
 	ticker := time.NewTicker(m.pollInterval)
+	defer ticker.Stop()
 
 	for {
 		select {
@@ -54,13 +95,16 @@ func (m *Monitor) polling(ctx context.Context, chanError chan error) {
 				chanError <- err
 			}
 		case <-ctx.Done():
-			fmt.Println("Сбор метрик приостановлен!")
+			m.loger.Info("сбор метрик приостановлен")
 			return
 		}
 	}
 }
 
 func (m *Monitor) poll() error {
+	m.sc.Lock()
+	defer m.sc.Unlock()
+
 	m.pollCounter++
 	return nil
 }
@@ -68,16 +112,17 @@ func (m *Monitor) poll() error {
 // reporting - инициирует отправку данных с заданным интервалом monitor.reportInterval
 func (m *Monitor) reporting(ctx context.Context, chanError chan error) {
 	ticker := time.NewTicker(m.reportInterval)
+	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			err := m.report()
+			err := m.reportJSON()
 			if err != nil {
 				chanError <- err
 			}
 		case <-ctx.Done():
-			fmt.Println("Отправка метрики приостановлена!")
+			m.loger.Info("отправка метрики приостановлена")
 			return
 		}
 	}
@@ -85,6 +130,9 @@ func (m *Monitor) reporting(ctx context.Context, chanError chan error) {
 
 // report - отправить данные
 func (m *Monitor) report() error {
+	m.sc.Lock()
+	defer m.sc.Unlock()
+
 	for key, value := range m.GetStats() {
 		endpoint := fmt.Sprintf("%s/update/{type}/{key}/{value}", m.serverAddress)
 		client := resty.New()
@@ -96,7 +144,6 @@ func (m *Monitor) report() error {
 			"value": fmt.Sprint(value),
 		}).Post(endpoint)
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 	}
@@ -106,8 +153,39 @@ func (m *Monitor) report() error {
 	return nil
 }
 
+func (m *Monitor) reportJSON() error {
+	for key, value := range m.GetStats() {
+		endpoint := fmt.Sprintf("%s/update/", m.serverAddress)
+		metric := models.ToJSON(key, value)
+
+		buf, err := json.Marshal(metric)
+		if err != nil {
+			return err
+		}
+
+		request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
+		if err != nil {
+			return err
+		}
+		request.Header.Set("Content-Type", "application/json")
+
+		client := http.Client{}
+		response, err := client.Do(request)
+		if err != nil {
+			return err
+		}
+
+		if err = response.Body.Close(); err != nil {
+			return err
+		}
+	}
+
+	m.pollCounter = 0
+	return nil
+}
+
 // GetStats - Поулчить слайс содержщий последние акутальные данные
-func (m Monitor) GetStats() map[string]types.Metricer {
+func (m *Monitor) GetStats() map[string]types.Metricer {
 	memStats := runtime.MemStats{}
 	runtime.ReadMemStats(&memStats)
 
@@ -119,6 +197,7 @@ func (m Monitor) GetStats() map[string]types.Metricer {
 	result["HeapAlloc"] = types.Gauge(memStats.HeapAlloc)
 	result["BuckHashSys"] = types.Gauge(memStats.BuckHashSys)
 	result["GCSys"] = types.Gauge(memStats.GCSys)
+	result["GCCPUFraction"] = types.Gauge(memStats.GCCPUFraction)
 	result["HeapIdle"] = types.Gauge(memStats.HeapIdle)
 	result["HeapInuse"] = types.Gauge(memStats.HeapInuse)
 	result["HeapObjects"] = types.Gauge(memStats.HeapObjects)
