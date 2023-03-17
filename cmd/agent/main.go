@@ -24,7 +24,6 @@ func main() {
 		return
 	}
 
-	// TODO: правильно ли прокидывать логер в структуру? как лучше?
 	monitor, err := agent.New(cfg, logger)
 	if err != nil {
 		logger.Error(err.Error())

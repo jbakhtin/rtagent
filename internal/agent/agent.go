@@ -5,13 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jbakhtin/rtagent/internal/server/models"
 	"net/http"
 	"runtime"
 	"sync"
 	"time"
 
 	"github.com/jbakhtin/rtagent/internal/config"
-	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"go.uber.org/zap"
 	"golang.org/x/exp/rand"
@@ -85,6 +85,7 @@ func (m *Monitor) Start(cfg config.Config) error {
 // pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
 func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan error) {
 	ticker := time.NewTicker(m.pollInterval)
+	defer ticker.Stop()
 
 	for {
 		select {
@@ -111,6 +112,7 @@ func (m *Monitor) poll(cfg config.Config) error {
 // reporting - инициирует отправку данных с заданным интервалом monitor.reportInterval
 func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError chan error) {
 	ticker := time.NewTicker(m.reportInterval)
+	defer ticker.Stop()
 
 	for {
 		select {
@@ -154,30 +156,26 @@ func (m *Monitor) report(cfg config.Config) error {
 func (m *Monitor) reportJSON(cfg config.Config) error {
 	for key, value := range m.getStats() {
 		endpoint := fmt.Sprintf("%s/update/", m.serverAddress)
-		metric := models.Metric{
-			MKey:    key,
-			MType: value.Type(),
+		metric, err := models.ToJSON(cfg, key, value)
+		if err != nil {
+			return err
 		}
 
-		switch v := value.(type) {
-		case types.Counter:
-			metric.Delta = &v
-		case types.Gauge:
-			metric.Value = &v
+		metric.Hash, err = metric.CalcHash([]byte(cfg.KeyApp))
+		if err != nil {
+			return err
 		}
 
 		hash, err := metric.CalcHash([]byte(cfg.KeyApp))
 		if err != nil {
 			return err
 		}
-		metric.Hash = &hash
+		metric.Hash = hash
 
 		buf, err := json.Marshal(metric)
 		if err != nil {
 			return err
 		}
-
-		//fmt.Println(metric)
 
 		request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
 		if err != nil {

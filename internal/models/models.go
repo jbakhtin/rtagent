@@ -1,9 +1,9 @@
 package models
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
 	"fmt"
+	"github.com/jbakhtin/rtagent/internal/server/models"
+	"strconv"
 
 	"github.com/jbakhtin/rtagent/internal/types"
 )
@@ -12,46 +12,105 @@ type Metricer interface {
 	Type() string
 	Key() string
 	StringValue() string
+	ToJSON() models.Metrics
 }
 
-type Metric struct {
-	MKey  string         `json:"id"`              // имя метрики
-	MType string         `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *types.Counter `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *types.Gauge   `json:"value,omitempty"` // значение метрики в случае передачи gauge
-	Hash  *string        `json:"hash,omitempty"`  //  значение хэша от MKey:MType:Delta|Value
-}
-
-func (m Metric) Type() string {
-	return m.MType
-}
-
-func (m Metric) Key() string {
-	return m.MKey
-}
-
-func (m Metric) StringValue() string {
-	switch m.MType {
-	case types.CounterType:
-		return fmt.Sprintf("%v", *m.Delta)
-	case types.GaugeType:
-		return fmt.Sprintf("%v", *m.Value)
+type (
+	Description struct {
+		MKey string
+		MType string
 	}
 
-	return ""
-}
-
-func (m Metric) CalcHash(key []byte) (string, error) {
-	h := hmac.New(sha256.New, key)
-
-	switch m.MType {
-	case types.CounterType:
-		h.Write([]byte(fmt.Sprintf("%s:%s:%v", m.MKey, m.MType, *m.Delta)))
-	case types.GaugeType:
-		h.Write([]byte(fmt.Sprintf("%s:%s:%v", m.MKey, m.MType, *m.Value)))
+	Gauge struct {
+		Description
+		MValue types.Gauge
 	}
 
-	dst := h.Sum(nil)
-	return fmt.Sprintf("%x", dst), nil
+	Counter struct {
+		Description
+		MValue types.Counter
+	}
+)
 
+// Gauge ----
+
+func NewGauge(mType, mKey, mValue string) (Gauge, error){
+	value, err := strconv.ParseFloat(mValue, 64)
+	if err != nil {
+		return Gauge{}, err
+	}
+
+	return Gauge{
+		Description: Description {
+			MKey: mKey,
+			MType: mType,
+		},
+		MValue: types.Gauge(value),
+	}, nil
+}
+
+func (g Gauge) Type() string {
+	return g.MType
+}
+
+func (g Gauge) Key() string {
+	return g.MKey
+}
+
+func (g Gauge) StringValue() string {
+	return fmt.Sprintf("%v", g.MValue)
+}
+
+func (g Gauge) ToJSON() models.Metrics {
+	return models.Metrics{
+		MKey:  g.MKey,
+		MType: g.MType,
+		Value: &g.MValue,
+	}
+}
+
+// Counter ----
+
+func NewCounter(mType, mKey, mValue string) (Counter, error){
+	value, err := strconv.ParseInt(mValue, 10, 0)
+	if err != nil {
+		return Counter{}, err
+	}
+
+	return Counter{
+		Description: Description {
+			MKey: mKey,
+			MType: mType,
+		},
+		MValue: types.Counter(value),
+	}, nil
+}
+
+func (c Counter) Type() string {
+	return c.MType
+}
+
+func (c Counter) Key() string {
+	return c.MKey
+}
+
+func (c Counter) StringValue() string {
+	value := fmt.Sprintf("%v", c.MValue)
+	return value
+}
+
+func (c Counter) ToJSON() models.Metrics {
+	return models.Metrics{
+		MKey:  c.MKey,
+		MType: c.MType,
+		Delta: &c.MValue,
+	}
+}
+
+func (c *Counter) Increment() {
+	c.MValue++
+}
+
+func (c *Counter) Add(value types.Counter) {
+	c.MValue += value
 }
