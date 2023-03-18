@@ -48,6 +48,6 @@ func (m Metrics) CalcHash(key []byte) (string, error) {
 		h.Write([]byte(fmt.Sprintf("%s:%s:%v", m.MKey, m.MType, *m.Value)))
 	}
 
-	dst := h.Sum(nil)
+	dst := h.Sum(key)
 	return fmt.Sprintf("%x", dst), nil
 }
