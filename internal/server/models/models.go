@@ -43,11 +43,11 @@ func (m Metrics) CalcHash(key []byte) (string, error) {
 
 	switch m.MType {
 	case types.CounterType:
-		h.Write([]byte(fmt.Sprintf("%s:%s:%v", m.MKey, m.MType, *m.Delta)))
+		h.Write([]byte(fmt.Sprintf("%s:%s:%d", m.MKey, m.MType, *m.Delta)))
 	case types.GaugeType:
-		h.Write([]byte(fmt.Sprintf("%s:%s:%v", m.MKey, m.MType, *m.Value)))
+		h.Write([]byte(fmt.Sprintf("%s:%s:%f", m.MKey, m.MType, *m.Value)))
 	}
 
-	dst := h.Sum(key)
+	dst := h.Sum(nil)
 	return fmt.Sprintf("%x", dst), nil
 }
