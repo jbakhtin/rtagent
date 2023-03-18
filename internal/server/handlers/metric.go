@@ -155,7 +155,7 @@ func (h *HandlerMetric) UpdateMetricByJSON(cfg config.Config) http.HandlerFunc {
 			}
 
 			if hash != metrics.Hash {
-				http.Error(w, "not authorised", http.StatusBadRequest)
+				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
 		}
@@ -176,7 +176,13 @@ func (h *HandlerMetric) UpdateMetricByJSON(cfg config.Config) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		JSONMetric, err := test.ToJSON([]byte(cfg.KeyApp))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		jsonMetric, err := json.Marshal(JSONMetric)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
