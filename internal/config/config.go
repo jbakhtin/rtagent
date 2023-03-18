@@ -15,7 +15,8 @@ const (
 	_storeInterval              = time.Second * 300
 	_restore                    = true
 	_acceptableCountAgentErrors = 10
-	_keyApp = ""
+	_keyApp                     = ""
+	_databaseDSN                = ""
 )
 
 const (
@@ -26,7 +27,8 @@ const (
 	_storeIntervalLabel              = "Период создания слепков MemStorage в секундах"
 	_restoreLabel                    = "Загрузить последний слепок MemStorage перед стартом сервиса"
 	_acceptableCountAgentErrorsLabel = "Допустимое количество ошибок от агента"
-	_keyAppLabel = "Ключ приложения"
+	_keyAppLabel                     = "Ключ приложения"
+	_databaseDSNLabel                = "Подключение к БД"
 )
 
 type Config struct {
@@ -37,7 +39,8 @@ type Config struct {
 	StoreInterval              time.Duration `env:"STORE_INTERVAL"`
 	Restore                    bool          `env:"RESTORE"`
 	AcceptableCountAgentErrors int           `env:"ACCEPTABLE_COUNT_AGENT_ERRORS"`
-	KeyApp string           `env:"KEY"`
+	KeyApp                     string        `env:"KEY"`
+	DatabaseDSN                string        `env:"DATABASE_DSN"`
 }
 
 type Builder struct {
@@ -56,6 +59,7 @@ func NewConfigBuilder() *Builder {
 			_restore,
 			_acceptableCountAgentErrors,
 			_keyApp,
+			_databaseDSN,
 		},
 		nil,
 	}
@@ -67,6 +71,7 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	storeInterval := flag.Duration("i", _storeInterval, _storeIntervalLabel)
 	restore := flag.Bool("r", _restore, _restoreLabel)
 	keyApp := flag.String("k", _keyApp, _keyAppLabel)
+	databaseDSN := flag.String("d", _databaseDSN, _databaseDSNLabel)
 	flag.Parse()
 
 	cb.config.Address = *address
@@ -74,6 +79,7 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	cb.config.StoreInterval = *storeInterval
 	cb.config.Restore = *restore
 	cb.config.KeyApp = *keyApp
+	cb.config.DatabaseDSN = *databaseDSN
 
 	return cb
 }

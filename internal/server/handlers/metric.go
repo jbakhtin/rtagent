@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	models2 "github.com/jbakhtin/rtagent/internal/server/models"
@@ -115,9 +116,9 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 		mType := chi.URLParam(r, "type")
 		switch mType {
 		case types.GaugeType:
-			metric , err = models.NewGauge(mType, mKey, mValue)
+			metric, err = models.NewGauge(mType, mKey, mValue)
 		case types.CounterType:
-			metric , err = models.NewCounter(mType, mKey, mValue)
+			metric, err = models.NewCounter(mType, mKey, mValue)
 		default:
 			http.Error(w, "type not valid", http.StatusNotImplemented)
 			return
@@ -220,5 +221,18 @@ func (h *HandlerMetric) GetAllMetricsAsHTML() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+	}
+}
+
+func (h *HandlerMetric) TestDBConnection(cfg config.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		conn, err := pgx.Connect(context.Background(), cfg.DatabaseDSN)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer conn.Close(context.Background())
+
+		w.WriteHeader(http.StatusOK)
 	}
 }

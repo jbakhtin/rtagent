@@ -43,6 +43,7 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlerMetric.GetAllMetricsAsHTML())
+		r.Get("/ping", handlerMetric.TestDBConnection(cfg))
 
 		r.Route("/value/", func(r chi.Router) {
 			r.Post("/", handlerMetric.GetMetricAsJSON(cfg)) // ToDo: перенести в отдельный пакет handlerMetricJSON
