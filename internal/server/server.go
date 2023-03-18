@@ -45,7 +45,7 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 		r.Get("/", handlerMetric.GetAllMetricsAsHTML())
 
 		r.Route("/value/", func(r chi.Router) {
-			r.Post("/", handlerMetric.GetMetricAsJSON()) // ToDo: перенести в отдельный пакет handlerMetricJSON
+			r.Post("/", handlerMetric.GetMetricAsJSON(cfg)) // ToDo: перенести в отдельный пакет handlerMetricJSON
 			r.Get("/{type}/{key}", handlerMetric.GetMetricValue())
 		})
 

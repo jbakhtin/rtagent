@@ -82,7 +82,8 @@ func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 	var JSONMetrics []models2.Metrics
 
 	for _, v := range metrics {
-		JSONMetrics = append(JSONMetrics, v.ToJSON())
+		JSONMetric, _ := v.ToJSON([]byte(cfg.KeyApp))
+		JSONMetrics = append(JSONMetrics, JSONMetric)
 	}
 
 	data, err := json.Marshal(JSONMetrics)

@@ -37,7 +37,7 @@ type Config struct {
 	StoreInterval              time.Duration `env:"STORE_INTERVAL"`
 	Restore                    bool          `env:"RESTORE"`
 	AcceptableCountAgentErrors int           `env:"ACCEPTABLE_COUNT_AGENT_ERRORS"`
-	KeyApp string           `env:"KEY_APP"`
+	KeyApp string           `env:"KEY"`
 }
 
 type Builder struct {

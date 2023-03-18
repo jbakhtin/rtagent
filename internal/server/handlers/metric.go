@@ -5,15 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"html/template"
-	"net/http"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	models2 "github.com/jbakhtin/rtagent/internal/server/models"
 	"github.com/jbakhtin/rtagent/internal/services"
 	"github.com/jbakhtin/rtagent/internal/types"
+	"html/template"
+	"net/http"
 )
 
 type HandlerMetric struct {
@@ -65,7 +64,7 @@ func (h *HandlerMetric) GetMetricValue() http.HandlerFunc {
 	}
 }
 
-func (h *HandlerMetric) GetMetricAsJSON() http.HandlerFunc {
+func (h *HandlerMetric) GetMetricAsJSON(cfg config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -82,7 +81,8 @@ func (h *HandlerMetric) GetMetricAsJSON() http.HandlerFunc {
 			return
 		}
 
-		jsonMetric, err := json.Marshal(metric.ToJSON())
+		JSONMetric, _ := metric.ToJSON([]byte(cfg.KeyApp))
+		jsonMetric, err := json.Marshal(JSONMetric)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -147,12 +147,7 @@ func (h *HandlerMetric) UpdateMetricByJSON(cfg config.Config) http.HandlerFunc {
 			return
 		}
 
-		if cfg.KeyApp != "" && metrics.Hash == "" {
-			http.Error(w, "hash not found ", http.StatusBadRequest)
-			return
-		}
-
-		if cfg.KeyApp != ""  {
+		if cfg.KeyApp != "" {
 			hash, err := metrics.CalcHash([]byte(cfg.KeyApp))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -181,8 +176,8 @@ func (h *HandlerMetric) UpdateMetricByJSON(cfg config.Config) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		jsonMetric, err := json.Marshal(test.ToJSON())
+		JSONMetric, err := test.ToJSON([]byte(cfg.KeyApp))
+		jsonMetric, err := json.Marshal(JSONMetric)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
