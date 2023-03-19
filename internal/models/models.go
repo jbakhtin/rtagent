@@ -116,9 +116,11 @@ func (c Counter) ToJSON(key  []byte) (models.Metrics, error) {
 		Delta: &c.MValue,
 	}
 
-	JSONMetric.Hash, err = JSONMetric.CalcHash(key)
-	if err != nil {
-		return models.Metrics{}, err
+	if len(key) != 0 {
+		JSONMetric.Hash, err = JSONMetric.CalcHash(key)
+		if err != nil {
+			return models.Metrics{}, err
+		}
 	}
 
 	return JSONMetric, nil

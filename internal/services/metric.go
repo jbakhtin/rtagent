@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
+	"github.com/jbakhtin/rtagent/internal/storages/postgres"
 
 	"github.com/jbakhtin/rtagent/internal/models"
 )
@@ -20,6 +21,17 @@ type MetricService struct {
 }
 
 func NewMetricService(ctx context.Context, cfg config.Config) (*MetricService, error) {
+	if cfg.DatabaseDSN != "" {
+		ms, err := postgres.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+
+		return &MetricService{
+			repository: &ms,
+		}, nil
+	}
+
 	ms, err := filestorage.New(cfg)
 	if err != nil {
 		return nil, err

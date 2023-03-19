@@ -169,7 +169,8 @@ func (h *HandlerMetric) UpdateMetricByJSON(cfg config.Config) http.HandlerFunc {
 			metric, err = models.NewCounter(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Delta))
 		}
 		if err != nil {
-			fmt.Println(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		test, err := h.service.Update(metric)
@@ -232,6 +233,14 @@ func (h *HandlerMetric) TestDBConnection(cfg config.Config) http.HandlerFunc {
 			return
 		}
 		defer conn.Close(context.Background())
+
+		var id string
+		var value string
+		err = conn.QueryRow(context.Background(), "select id, value from metrics where id=$1", "Alloc").Scan(&id, &value)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 
 		w.WriteHeader(http.StatusOK)
 	}
