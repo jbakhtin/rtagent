@@ -41,6 +41,9 @@ func New(cfg config.Config) (MemStorage, error) {
 		return MemStorage{}, err
 	}
 
+	logger.Info(cfg.DatabaseDSN)
+	logger.Info("test")
+
 	return MemStorage{
 		DatabaseDSN: cfg.DatabaseDSN,
 		Logger:      logger,
