@@ -2,12 +2,17 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
+	"embed"
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/types"
+	"github.com/pressly/goose/v3"
 	"go.uber.org/zap"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 const (
@@ -30,6 +35,9 @@ const (
 	`
 )
 
+//go:embed migrations/20230319143358_create_metrics_table.sql
+var embedMigrations embed.FS
+
 type MemStorage struct {
 	DatabaseDSN string
 	Logger      *zap.Logger
@@ -41,8 +49,17 @@ func New(cfg config.Config) (MemStorage, error) {
 		return MemStorage{}, err
 	}
 
-	logger.Info(cfg.DatabaseDSN)
-	logger.Info("test")
+	db, err := sql.Open("pgx", cfg.DatabaseDSN)
+
+	goose.SetBaseFS(embedMigrations)
+
+	if err := goose.SetDialect("postgres"); err != nil {
+		return MemStorage{}, err
+	}
+
+	if err := goose.Up(db, "migrations"); err != nil {
+		return MemStorage{}, err
+	}
 
 	return MemStorage{
 		DatabaseDSN: cfg.DatabaseDSN,
