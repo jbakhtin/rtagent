@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
-	"github.com/jackc/pgx/v5"
+	_ "github.com/jackc/pgx/v5"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/types"
@@ -23,6 +23,7 @@ const (
 		DO UPDATE SET value = $3
 		RETURNING id, type, value;
 	`
+
 	insertCounter = `
 		INSERT INTO metrics (id, type, delta)
 		VALUES($1, $2, $3)
@@ -41,11 +42,12 @@ const (
 	`
 )
 
-//go:embed migrations/20230319143358_create_metrics_table.sql
+//go:embed migrations/*.sql
 var embedMigrations embed.FS
 
 type DBStorage struct {
 	DatabaseDSN string
+	Driver      string
 	Logger      *zap.Logger
 }
 
@@ -55,7 +57,7 @@ func New(driver string, cfg config.Config) (DBStorage, error) {
 		return DBStorage{}, err
 	}
 
-	db, err := sql.Open(driver, cfg.DatabaseDSN)
+	db, err := sql.Open(driver, cfg.DatabaseDSN) // TODO: можно ли открыть соединение один раз при старте приложения и закрыть при остановке?
 	if err != nil {
 		return DBStorage{}, err
 	}
@@ -73,29 +75,29 @@ func New(driver string, cfg config.Config) (DBStorage, error) {
 	return DBStorage{
 		DatabaseDSN: cfg.DatabaseDSN,
 		Logger:      logger,
+		Driver:      driver,
 	}, nil
 }
 
 func (dbs *DBStorage) Set(metric models.Metricer) (models.Metricer, error) {
-	conn, err := pgx.Connect(context.Background(), dbs.DatabaseDSN)
+	db, err := sql.Open(dbs.Driver, dbs.DatabaseDSN)
 	if err != nil {
-		dbs.Logger.Info(err.Error())
 		return nil, err
 	}
-	defer conn.Close(context.Background())
+	defer db.Close()
 
 	var newMetric models.Metricer
 	switch m := metric.(type) {
 	case models.Gauge:
 		var newM models.Gauge
-		err = conn.QueryRow(context.Background(), insertGauge, m.MKey, m.MType, m.MValue).Scan(&newM.MKey, &newM.MType, &newM.MValue)
+		err = db.QueryRow(insertGauge, m.MKey, m.MType, m.MValue).Scan(&newM.MKey, &newM.MType, &newM.MValue)
 		if err != nil {
 			return nil, err
 		}
 		newMetric = newM
 	case models.Counter:
 		var newM models.Counter
-		err = conn.QueryRow(context.Background(), insertCounter, m.MKey, m.MType, m.MValue).Scan(&newM.MKey, &newM.MType, &newM.MValue)
+		err = db.QueryRow(insertCounter, m.MKey, m.MType, m.MValue).Scan(&newM.MKey, &newM.MType, &newM.MValue)
 		if err != nil {
 			return nil, err
 		}
@@ -106,18 +108,17 @@ func (dbs *DBStorage) Set(metric models.Metricer) (models.Metricer, error) {
 }
 
 func (dbs *DBStorage) Get(key string) (models.Metricer, error) {
-	conn, err := pgx.Connect(context.Background(), dbs.DatabaseDSN)
+	db, err := sql.Open(dbs.Driver, dbs.DatabaseDSN)
 	if err != nil {
-		dbs.Logger.Info(err.Error())
 		return nil, err
 	}
-	defer conn.Close(context.Background())
+	defer db.Close()
 
 	var id string
 	var mType string
 	var delta *types.Counter
 	var value *types.Gauge
-	err = conn.QueryRow(context.Background(), getByID, key).Scan(&id, &mType, &delta, &value)
+	err = db.QueryRow(getByID, key).Scan(&id, &mType, &delta, &value)
 	if err != nil {
 		dbs.Logger.Info(err.Error())
 		return nil, err
@@ -138,16 +139,19 @@ func (dbs *DBStorage) Get(key string) (models.Metricer, error) {
 }
 
 func (dbs *DBStorage) GetAll() (map[string]models.Metricer, error) {
-	conn, err := pgx.Connect(context.Background(), dbs.DatabaseDSN)
+	db, err := sql.Open(dbs.Driver, dbs.DatabaseDSN)
 	if err != nil {
-		dbs.Logger.Info(err.Error())
 		return nil, err
 	}
-	defer conn.Close(context.Background())
+	defer db.Close()
 
-	rows, err := conn.Query(context.Background(), getAll)
+	rows, err := db.Query(getAll) // TODO: need limit
 	if err != nil {
-		dbs.Logger.Info(err.Error())
+		return nil, err
+	}
+
+	err = rows.Err()
+	if err != nil {
 		return nil, err
 	}
 
@@ -186,43 +190,37 @@ func (dbs *DBStorage) SetBatch(ctx context.Context, metrics []models.Metricer) (
 		return nil, err
 	}
 
-	// шаг 1 — объявляем транзакцию
 	tx, err := db.Begin()
 	if err != nil {
 		return nil, err
 	}
-	// шаг 1.1 — если возникает ошибка, откатываем изменения
+
 	defer tx.Rollback()
 
-	// шаг 2 — готовим инструкцию
 	stmtGauge, err := tx.PrepareContext(ctx, insertGauge)
 	if err != nil {
 		return nil, err
 	}
+	defer stmtGauge.Close()
 
 	stmtCounter, err := tx.PrepareContext(ctx, insertCounter)
 	if err != nil {
 		return nil, err
 	}
-	// шаг 2.1 — не забываем закрыть инструкцию, когда она больше не нужна
-	defer stmtGauge.Close()
 	defer stmtCounter.Close()
 
 	for _, v := range metrics {
-		// шаг 3 — указываем, что каждое видео будет добавлено в транзакцию
 		switch metric := v.(type) {
 		case models.Gauge:
 			if _, err = stmtGauge.ExecContext(ctx, metric.MKey, metric.MType, metric.MValue); err != nil {
 				return nil, err
 			}
 		case models.Counter:
-			fmt.Println(metric)
 			if _, err = stmtCounter.ExecContext(ctx, metric.MKey, metric.MType, metric.MValue); err != nil {
 				return nil, err
 			}
 		}
 	}
-	// шаг 4 — сохраняем изменения
 	tx.Commit()
 
 	return metrics, nil
