@@ -35,6 +35,19 @@ func (ms *MemStorage) Set(metric models.Metricer) (models.Metricer, error) {
 	ms.Mx.Lock()
 	defer ms.Mx.Unlock()
 
+	switch m := metric.(type) {
+	case models.Counter:
+		entity := ms.Items[metric.Key()]
+
+		oldMetric, ok := entity.(models.Counter)
+		if !ok {
+			break
+		}
+
+		m.Add(oldMetric.MValue)
+		metric = m
+	}
+
 	ms.Items[metric.Key()] = metric
 
 	return metric, nil

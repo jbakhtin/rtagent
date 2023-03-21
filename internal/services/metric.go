@@ -71,22 +71,6 @@ func (ms *MetricService) GetAll() (map[string]models.Metricer, error) {
 func (ms *MetricService) Update(metric models.Metricer) (models.Metricer, error) {
 	var err error
 
-	switch m := metric.(type) {
-	case models.Counter:
-		entity, err := ms.repository.Get(m.MKey)
-		if err != nil {
-			break
-		}
-
-		oldMetric, ok := entity.(models.Counter)
-		if !ok {
-			return nil, err
-		}
-
-		m.Add(oldMetric.MValue)
-		metric = m
-	}
-
 	metric, err = ms.repository.Set(metric)
 	if err != nil {
 		fmt.Println("Update error: ", err)
