@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/services"
 	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
 	"log"
 	"net/http"
@@ -18,7 +17,7 @@ import (
 
 func TestHandlerMetric_Get(t *testing.T) {
 	type fields struct {
-		repo    services.MetricRepository
+		repo    MetricRepository
 		request string
 	}
 	type want struct {

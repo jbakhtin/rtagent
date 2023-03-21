@@ -10,14 +10,22 @@ import (
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	models2 "github.com/jbakhtin/rtagent/internal/server/models"
-	"github.com/jbakhtin/rtagent/internal/services"
+	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
+	"github.com/jbakhtin/rtagent/internal/storages/postgres"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"html/template"
 	"net/http"
 )
 
+type MetricRepository interface {
+	GetAll() (map[string]models.Metricer, error)
+	Get(key string) (models.Metricer, error)
+	Set(models.Metricer) (models.Metricer, error)
+	SetBatch(context.Context, []models.Metricer) ([]models.Metricer, error)
+}
+
 type HandlerMetric struct {
-	service *services.MetricService
+	repository MetricRepository
 }
 
 var listOfMetricHTMLTemplate = `
@@ -27,13 +35,29 @@ var listOfMetricHTMLTemplate = `
 `
 
 func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, error) {
-	service, err := services.NewMetricService(ctx, cfg)
+	if cfg.DatabaseDSN != "" {
+		ms, err := postgres.New(cfg)
+		if err != nil {
+			return nil, err
+		}
+
+		return &HandlerMetric{
+			repository: &ms,
+		}, nil
+	}
+
+	ms, err := filestorage.New(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ms.Start(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &HandlerMetric{
-		service: service,
+		repository: &ms,
 	}, nil
 }
 
@@ -51,7 +75,7 @@ func (h *HandlerMetric) GetMetricValue() http.HandlerFunc {
 			return
 		}
 
-		metric, err := h.service.Get(mKey)
+		metric, err := h.repository.Get(mKey)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -76,7 +100,7 @@ func (h *HandlerMetric) GetMetricAsJSON(cfg config.Config) http.HandlerFunc {
 			return
 		}
 
-		metric, err := h.service.Get(metrics.MKey)
+		metric, err := h.repository.Get(metrics.MKey)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -128,7 +152,7 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 			return
 		}
 
-		_, err = h.service.Update(metric)
+		_, err = h.repository.Set(metric)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -173,7 +197,7 @@ func (h *HandlerMetric) UpdateMetricByJSON(cfg config.Config) http.HandlerFunc {
 			return
 		}
 
-		test, err := h.service.Update(metric)
+		test, err := h.repository.Set(metric)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -203,7 +227,7 @@ func (h *HandlerMetric) UpdateMetricByJSON(cfg config.Config) http.HandlerFunc {
 func (h *HandlerMetric) GetAllMetricsAsHTML() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		metrics, err := h.service.GetAll()
+		metrics, err := h.repository.GetAll()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -283,7 +307,7 @@ func (h *HandlerMetric) UpdateMetricsByJSON(cfg config.Config) http.HandlerFunc 
 			mMetrics[i] = metric
 		}
 
-		_, err = h.service.UpdateBatch(mMetrics)
+		_, err = h.repository.SetBatch(context.TODO(), mMetrics)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
