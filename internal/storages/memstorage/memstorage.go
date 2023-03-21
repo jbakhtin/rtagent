@@ -1,6 +1,7 @@
 package memstorage
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -62,4 +63,8 @@ func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
 	}
 
 	return result, nil
+}
+
+func (ms *MemStorage) SetBatch(ctx context.Context, metrics []models.Metricer) ([]models.Metricer, error){
+	return metrics, nil
 }

@@ -245,3 +245,50 @@ func (h *HandlerMetric) TestDBConnection(cfg config.Config) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 	}
 }
+
+func (h *HandlerMetric) UpdateMetricsByJSON(cfg config.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		var metrics []models2.Metrics
+		err := json.NewDecoder(r.Body).Decode(&metrics)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotImplemented)
+			return
+		}
+
+		mMetrics := make([]models.Metricer, len(metrics))
+		for i, m := range metrics {
+			if cfg.KeyApp != "" {
+				hash, err := m.CalcHash([]byte(cfg.KeyApp))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				if hash != m.Hash {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+			}
+
+			var metric models.Metricer
+			switch m.MType {
+			case types.GaugeType:
+				metric, err = models.NewGauge(m.MType, m.MKey, fmt.Sprintf("%v", *m.Value))
+			case types.CounterType:
+				metric, err = models.NewCounter(m.MType, m.MKey, fmt.Sprintf("%v", *m.Delta))
+			}
+
+			mMetrics[i] = metric
+		}
+
+		_, err = h.service.UpdateBatch(mMetrics)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}

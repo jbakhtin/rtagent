@@ -14,6 +14,7 @@ type MetricRepository interface {
 	GetAll() (map[string]models.Metricer, error)
 	Get(key string) (models.Metricer, error)
 	Set(models.Metricer) (models.Metricer, error)
+	SetBatch(context.Context, []models.Metricer) ([]models.Metricer, error)
 }
 
 type MetricService struct {
@@ -93,4 +94,34 @@ func (ms *MetricService) Update(metric models.Metricer) (models.Metricer, error)
 	}
 
 	return metric, nil
+}
+
+func (ms *MetricService) UpdateBatch(metrics []models.Metricer) ([]models.Metricer, error) {
+	var err error
+
+	for i, metric := range metrics {
+		switch m := metric.(type) {
+		case models.Counter:
+			entity, err := ms.repository.Get(m.MKey)
+			if err != nil {
+				break
+			}
+
+			oldMetric, ok := entity.(models.Counter)
+			if !ok {
+				return nil, err
+			}
+
+			m.Add(oldMetric.MValue)
+			metrics[i] = m
+		}
+	}
+
+	metrics, err = ms.repository.SetBatch(context.TODO(), metrics)
+	if err != nil {
+		fmt.Println("Update error: ", err)
+		return nil, err
+	}
+
+	return metrics, nil
 }

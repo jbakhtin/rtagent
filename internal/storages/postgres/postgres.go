@@ -165,3 +165,42 @@ func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
 
 	return metrics, nil
 }
+
+func (pg *MemStorage) SetBatch(ctx context.Context, metrics []models.Metricer) ([]models.Metricer, error){
+
+	db, err := sql.Open("pgx", pg.DatabaseDSN)
+
+	// шаг 1 — объявляем транзакцию
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	// шаг 1.1 — если возникает ошибка, откатываем изменения
+	defer tx.Rollback()
+
+	// шаг 2 — готовим инструкцию
+	stmt, err := tx.PrepareContext(ctx, insert)
+	if err != nil {
+		return nil, err
+	}
+	// шаг 2.1 — не забываем закрыть инструкцию, когда она больше не нужна
+	defer stmt.Close()
+
+	for _, v := range metrics {
+		// шаг 3 — указываем, что каждое видео будет добавлено в транзакцию
+		switch metric := v.(type) {
+		case models.Gauge:
+			if _, err = stmt.ExecContext(ctx, metric.MKey, metric.MType, nil, metric.MValue); err != nil {
+				return nil, err
+			}
+		case models.Counter:
+			if _, err = stmt.ExecContext(ctx, metric.MKey, metric.MType, metric.MValue, nil); err != nil {
+				return nil, err
+			}
+		}
+	}
+	// шаг 4 — сохраняем изменения
+	tx.Commit()
+
+	return metrics, nil
+}

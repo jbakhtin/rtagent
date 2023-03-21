@@ -54,6 +54,8 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 			r.Post("/", handlerMetric.UpdateMetricByJSON(cfg))
 			r.Post("/{type}/{key}/{value}", handlerMetric.UpdateMetric())
 		})
+
+		r.Post("/updates/", handlerMetric.UpdateMetricsByJSON(cfg))
 	})
 
 	return http.ListenAndServe(ms.Addr, r)

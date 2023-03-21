@@ -117,7 +117,7 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 	for {
 		select {
 		case <-ticker.C:
-			err := m.reportJSON(cfg)
+			err := m.reportBatch(cfg)
 			if err != nil {
 				chanError <- err
 			}
@@ -192,6 +192,52 @@ func (m *Monitor) reportJSON(cfg config.Config) error {
 		if err = response.Body.Close(); err != nil {
 			return err
 		}
+	}
+
+	m.pollCounter = 0
+	return nil
+}
+
+func (m *Monitor) reportBatch(cfg config.Config) error {
+	stats := m.getStats()
+	metrics := make([]models.Metrics, len(stats))
+
+	counter := 0
+	for key, value := range stats {
+		metric, err := models.ToJSON(cfg, key, value)
+		if err != nil {
+			return err
+		}
+
+		metric.Hash, err = metric.CalcHash([]byte(cfg.KeyApp))
+		if err != nil {
+			return err
+		}
+
+		metrics[counter] = metric
+		counter++
+	}
+
+	endpoint := fmt.Sprintf("%s/updates/", m.serverAddress)
+	buf, err := json.Marshal(metrics)
+	if err != nil {
+		return err
+	}
+
+	request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/json")
+
+	client := http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+
+	if err = response.Body.Close(); err != nil {
+		return err
 	}
 
 	m.pollCounter = 0
