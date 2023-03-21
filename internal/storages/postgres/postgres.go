@@ -44,42 +44,42 @@ const (
 //go:embed migrations/20230319143358_create_metrics_table.sql
 var embedMigrations embed.FS
 
-type MemStorage struct {
+type DBStorage struct {
 	DatabaseDSN string
 	Logger      *zap.Logger
 }
 
-func New(cfg config.Config) (MemStorage, error) {
+func New(driver string, cfg config.Config) (DBStorage, error) {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
-		return MemStorage{}, err
+		return DBStorage{}, err
 	}
 
-	db, err := sql.Open("pgx", cfg.DatabaseDSN)
+	db, err := sql.Open(driver, cfg.DatabaseDSN)
 	if err != nil {
-		return MemStorage{}, err
+		return DBStorage{}, err
 	}
 
 	goose.SetBaseFS(embedMigrations)
 
 	if err := goose.SetDialect("postgres"); err != nil {
-		return MemStorage{}, err
+		return DBStorage{}, err
 	}
 
 	if err := goose.Up(db, "migrations"); err != nil {
-		return MemStorage{}, err
+		return DBStorage{}, err
 	}
 
-	return MemStorage{
+	return DBStorage{
 		DatabaseDSN: cfg.DatabaseDSN,
 		Logger:      logger,
 	}, nil
 }
 
-func (ms *MemStorage) Set(metric models.Metricer) (models.Metricer, error) {
-	conn, err := pgx.Connect(context.Background(), ms.DatabaseDSN)
+func (dbs *DBStorage) Set(metric models.Metricer) (models.Metricer, error) {
+	conn, err := pgx.Connect(context.Background(), dbs.DatabaseDSN)
 	if err != nil {
-		ms.Logger.Info(err.Error())
+		dbs.Logger.Info(err.Error())
 		return nil, err
 	}
 	defer conn.Close(context.Background())
@@ -105,10 +105,10 @@ func (ms *MemStorage) Set(metric models.Metricer) (models.Metricer, error) {
 	return newMetric, nil
 }
 
-func (ms *MemStorage) Get(key string) (models.Metricer, error) {
-	conn, err := pgx.Connect(context.Background(), ms.DatabaseDSN)
+func (dbs *DBStorage) Get(key string) (models.Metricer, error) {
+	conn, err := pgx.Connect(context.Background(), dbs.DatabaseDSN)
 	if err != nil {
-		ms.Logger.Info(err.Error())
+		dbs.Logger.Info(err.Error())
 		return nil, err
 	}
 	defer conn.Close(context.Background())
@@ -119,7 +119,7 @@ func (ms *MemStorage) Get(key string) (models.Metricer, error) {
 	var value *types.Gauge
 	err = conn.QueryRow(context.Background(), getByID, key).Scan(&id, &mType, &delta, &value)
 	if err != nil {
-		ms.Logger.Info(err.Error())
+		dbs.Logger.Info(err.Error())
 		return nil, err
 	}
 
@@ -137,17 +137,17 @@ func (ms *MemStorage) Get(key string) (models.Metricer, error) {
 	return metric, nil
 }
 
-func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
-	conn, err := pgx.Connect(context.Background(), ms.DatabaseDSN)
+func (dbs *DBStorage) GetAll() (map[string]models.Metricer, error) {
+	conn, err := pgx.Connect(context.Background(), dbs.DatabaseDSN)
 	if err != nil {
-		ms.Logger.Info(err.Error())
+		dbs.Logger.Info(err.Error())
 		return nil, err
 	}
 	defer conn.Close(context.Background())
 
 	rows, err := conn.Query(context.Background(), getAll)
 	if err != nil {
-		ms.Logger.Info(err.Error())
+		dbs.Logger.Info(err.Error())
 		return nil, err
 	}
 
@@ -180,9 +180,11 @@ func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
 	return metrics, nil
 }
 
-func (pg *MemStorage) SetBatch(ctx context.Context, metrics []models.Metricer) ([]models.Metricer, error){
-
-	db, err := sql.Open("pgx", pg.DatabaseDSN)
+func (dbs *DBStorage) SetBatch(ctx context.Context, metrics []models.Metricer) ([]models.Metricer, error){
+	db, err := sql.Open("pgx", dbs.DatabaseDSN)
+	if err != nil {
+		return nil, err
+	}
 
 	// шаг 1 — объявляем транзакцию
 	tx, err := db.Begin()
@@ -194,6 +196,10 @@ func (pg *MemStorage) SetBatch(ctx context.Context, metrics []models.Metricer) (
 
 	// шаг 2 — готовим инструкцию
 	stmtGauge, err := tx.PrepareContext(ctx, insertGauge)
+	if err != nil {
+		return nil, err
+	}
+
 	stmtCounter, err := tx.PrepareContext(ctx, insertCounter)
 	if err != nil {
 		return nil, err
