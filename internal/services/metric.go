@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
 	"github.com/jbakhtin/rtagent/internal/storages/postgres"
@@ -23,7 +22,7 @@ type MetricService struct {
 
 func NewMetricService(ctx context.Context, cfg config.Config) (*MetricService, error) {
 	if cfg.DatabaseDSN != "" {
-		ms, err := postgres.New(cfg)
+		ms, err := postgres.New("pgx", cfg) //TODO: move to cfg
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +50,6 @@ func NewMetricService(ctx context.Context, cfg config.Config) (*MetricService, e
 func (ms *MetricService) Get(key string) (models.Metricer, error) {
 	metric, err := ms.repository.Get(key)
 	if err != nil {
-		fmt.Println("Find error: ", err)
 		return metric, err
 	}
 
@@ -61,7 +59,6 @@ func (ms *MetricService) Get(key string) (models.Metricer, error) {
 func (ms *MetricService) GetAll() (map[string]models.Metricer, error) {
 	metrics, err := ms.repository.GetAll()
 	if err != nil {
-		fmt.Println("Get error: ", err)
 		return metrics, err
 	}
 
@@ -73,7 +70,6 @@ func (ms *MetricService) Update(metric models.Metricer) (models.Metricer, error)
 
 	metric, err = ms.repository.Set(metric)
 	if err != nil {
-		fmt.Println("Update error: ", err)
 		return metric, err
 	}
 
@@ -85,7 +81,6 @@ func (ms *MetricService) UpdateBatch(metrics []models.Metricer) ([]models.Metric
 
 	metrics, err = ms.repository.SetBatch(context.TODO(), metrics)
 	if err != nil {
-		fmt.Println("Update error: ", err)
 		return nil, err
 	}
 

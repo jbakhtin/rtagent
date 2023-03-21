@@ -276,8 +276,16 @@ func (h *HandlerMetric) UpdateMetricsByJSON(cfg config.Config) http.HandlerFunc 
 			switch m.MType {
 			case types.GaugeType:
 				metric, err = models.NewGauge(m.MType, m.MKey, fmt.Sprintf("%v", *m.Value))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			case types.CounterType:
 				metric, err = models.NewCounter(m.MType, m.MKey, fmt.Sprintf("%v", *m.Delta))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			}
 
 			mMetrics[i] = metric
