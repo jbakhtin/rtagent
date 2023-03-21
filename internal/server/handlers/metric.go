@@ -289,6 +289,19 @@ func (h *HandlerMetric) UpdateMetricsByJSON(cfg config.Config) http.HandlerFunc 
 			return
 		}
 
+		array := make([]models.Metricer, 0)
+
+		jsonMetric, err := json.Marshal(array)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		_, err = w.Write(jsonMetric)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
 	}
 }
