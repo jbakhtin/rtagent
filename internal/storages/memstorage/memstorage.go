@@ -66,5 +66,12 @@ func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
 }
 
 func (ms *MemStorage) SetBatch(ctx context.Context, metrics []models.Metricer) ([]models.Metricer, error){
+	ms.Mx.Lock()
+	defer ms.Mx.Unlock()
+
+	for _, v := range metrics {
+		ms.Items[v.Key()] = v
+	}
+
 	return metrics, nil
 }
