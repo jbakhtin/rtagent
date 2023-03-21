@@ -16,13 +16,19 @@ import (
 )
 
 const (
-	insert = `
-		INSERT INTO metrics (id, type, delta, value)
-		VALUES($1, $2, $3, $4)
+	insertGauge = `
+		INSERT INTO metrics (id, type, value)
+		VALUES($1, $2, $3)
 		ON CONFLICT (id, type) 
-		DO UPDATE SET delta = $3, value = $4
-		WHERE metrics.id = $1
-		RETURNING id;
+		DO UPDATE SET value = $3
+		RETURNING id, type, value;
+	`
+	insertCounter = `
+		INSERT INTO metrics (id, type, delta)
+		VALUES($1, $2, $3)
+		ON CONFLICT (id, type) 
+		DO UPDATE SET delta = (metrics.delta + ($3))
+		RETURNING id, type, delta;
 	`
 
 	getByID = `
@@ -78,17 +84,25 @@ func (ms *MemStorage) Set(metric models.Metricer) (models.Metricer, error) {
 	}
 	defer conn.Close(context.Background())
 
-	var id string
-	JSONMetric, err := metric.ToJSON(nil)
-	if err != nil {
-		return nil, err
-	}
-	err = conn.QueryRow(context.Background(), insert, JSONMetric.MKey, JSONMetric.MType, JSONMetric.Delta, JSONMetric.Value).Scan(&id)
-	if err != nil {
-		return nil, err
+	var newMetric models.Metricer
+	switch m := metric.(type) {
+	case models.Gauge:
+		var newM models.Gauge
+		err = conn.QueryRow(context.Background(), insertGauge, m.MKey, m.MType, m.MValue).Scan(&newM.MKey, &newM.MType, &newM.MValue)
+		if err != nil {
+			return nil, err
+		}
+		newMetric = newM
+	case models.Counter:
+		var newM models.Counter
+		err = conn.QueryRow(context.Background(), insertCounter, m.MKey, m.MType, m.MValue).Scan(&newM.MKey, &newM.MType, &newM.MValue)
+		if err != nil {
+			return nil, err
+		}
+		newMetric = newM
 	}
 
-	return metric, nil
+	return newMetric, nil
 }
 
 func (ms *MemStorage) Get(key string) (models.Metricer, error) {
@@ -179,22 +193,25 @@ func (pg *MemStorage) SetBatch(ctx context.Context, metrics []models.Metricer) (
 	defer tx.Rollback()
 
 	// шаг 2 — готовим инструкцию
-	stmt, err := tx.PrepareContext(ctx, insert)
+	stmtGauge, err := tx.PrepareContext(ctx, insertGauge)
+	stmtCounter, err := tx.PrepareContext(ctx, insertCounter)
 	if err != nil {
 		return nil, err
 	}
 	// шаг 2.1 — не забываем закрыть инструкцию, когда она больше не нужна
-	defer stmt.Close()
+	defer stmtGauge.Close()
+	defer stmtCounter.Close()
 
 	for _, v := range metrics {
 		// шаг 3 — указываем, что каждое видео будет добавлено в транзакцию
 		switch metric := v.(type) {
 		case models.Gauge:
-			if _, err = stmt.ExecContext(ctx, metric.MKey, metric.MType, nil, metric.MValue); err != nil {
+			if _, err = stmtGauge.ExecContext(ctx, metric.MKey, metric.MType, metric.MValue); err != nil {
 				return nil, err
 			}
 		case models.Counter:
-			if _, err = stmt.ExecContext(ctx, metric.MKey, metric.MType, metric.MValue, nil); err != nil {
+			fmt.Println(metric)
+			if _, err = stmtCounter.ExecContext(ctx, metric.MKey, metric.MType, metric.MValue); err != nil {
 				return nil, err
 			}
 		}
