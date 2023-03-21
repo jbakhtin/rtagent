@@ -25,7 +25,7 @@ const (
 		RETURNING id;
 	`
 
-	getById = `
+	getByID = `
 		SELECT id, type, delta, value FROM metrics
 		WHERE metrics.id = $1
 	`
@@ -50,6 +50,9 @@ func New(cfg config.Config) (MemStorage, error) {
 	}
 
 	db, err := sql.Open("pgx", cfg.DatabaseDSN)
+	if err != nil {
+		return MemStorage{}, err
+	}
 
 	goose.SetBaseFS(embedMigrations)
 
@@ -77,9 +80,11 @@ func (ms *MemStorage) Set(metric models.Metricer) (models.Metricer, error) {
 
 	var id string
 	JSONMetric, err := metric.ToJSON(nil)
+	if err != nil {
+		return nil, err
+	}
 	err = conn.QueryRow(context.Background(), insert, JSONMetric.MKey, JSONMetric.MType, JSONMetric.Delta, JSONMetric.Value).Scan(&id)
 	if err != nil {
-		ms.Logger.Info(err.Error())
 		return nil, err
 	}
 
@@ -98,7 +103,7 @@ func (ms *MemStorage) Get(key string) (models.Metricer, error) {
 	var mType string
 	var delta *types.Counter
 	var value *types.Gauge
-	err = conn.QueryRow(context.Background(), getById, key).Scan(&id, &mType, &delta, &value)
+	err = conn.QueryRow(context.Background(), getByID, key).Scan(&id, &mType, &delta, &value)
 	if err != nil {
 		ms.Logger.Info(err.Error())
 		return nil, err
@@ -110,6 +115,9 @@ func (ms *MemStorage) Get(key string) (models.Metricer, error) {
 		metric, err = models.NewGauge(mType, id, fmt.Sprintf("%v", *value))
 	case types.CounterType:
 		metric, err = models.NewCounter(mType, id, fmt.Sprintf("%v", *delta))
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	return metric, nil
@@ -139,7 +147,6 @@ func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
 	for rows.Next() {
 		err = rows.Scan(&id, &mType, &delta, &value)
 		if err != nil {
-			ms.Logger.Info(err.Error())
 			return nil, err
 		}
 
@@ -148,6 +155,9 @@ func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
 			metric, err = models.NewGauge(mType, id, fmt.Sprintf("%v", *value))
 		case types.CounterType:
 			metric, err = models.NewCounter(mType, id, fmt.Sprintf("%v", *delta))
+		}
+		if err != nil {
+			return nil, err
 		}
 
 		metrics[metric.Key()] = metric
