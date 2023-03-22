@@ -37,7 +37,7 @@ var listOfMetricHTMLTemplate = `
 
 func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, error) {
 	if cfg.DatabaseDSN != "" {
-		ms, err := dbstorage.New("pgx", cfg) // TODO: move to cfg
+		ms, err := dbstorage.New(cfg) // TODO: move to cfg
 		if err != nil {
 			return nil, err
 		}

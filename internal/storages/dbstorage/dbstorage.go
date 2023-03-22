@@ -52,13 +52,13 @@ type DBStorage struct {
 	config config.Config
 }
 
-func New(driver string, cfg config.Config) (DBStorage, error) {
+func New(cfg config.Config) (DBStorage, error) {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
 		return DBStorage{}, err
 	}
 
-	db, err := sql.Open(driver, cfg.DatabaseDSN)
+	db, err := sql.Open(cfg.DatabaseDriver, cfg.DatabaseDSN)
 	if err != nil {
 		return DBStorage{}, err
 	}

@@ -17,6 +17,7 @@ const (
 	_acceptableCountAgentErrors = 10
 	_keyApp                     = ""
 	_databaseDSN                = ""
+	_databaseDriver             = "pgx"
 )
 
 const (
@@ -28,7 +29,8 @@ const (
 	_restoreLabel                    = "Загрузить последний слепок MemStorage перед стартом сервиса"
 	_acceptableCountAgentErrorsLabel = "Допустимое количество ошибок от агента"
 	_keyAppLabel                     = "Ключ приложения"
-	_databaseDSNLabel                = "Подключение к БД"
+	_databaseDSNLabel                = "DSN БД"
+	_databaseDriverLabel             = "Драйвер подключения к БД"
 )
 
 type Config struct {
@@ -41,6 +43,7 @@ type Config struct {
 	AcceptableCountAgentErrors int           `env:"ACCEPTABLE_COUNT_AGENT_ERRORS"`
 	KeyApp                     string        `env:"KEY"`
 	DatabaseDSN                string        `env:"DATABASE_DSN"`
+	DatabaseDriver             string        `env:"DATABASE_DRIVER" envDefault:"pgx"`
 }
 
 type Builder struct {
@@ -60,6 +63,7 @@ func NewConfigBuilder() *Builder {
 			_acceptableCountAgentErrors,
 			_keyApp,
 			_databaseDSN,
+			_databaseDriver,
 		},
 		nil,
 	}
@@ -72,6 +76,7 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	restore := flag.Bool("r", _restore, _restoreLabel)
 	keyApp := flag.String("k", _keyApp, _keyAppLabel)
 	databaseDSN := flag.String("d", _databaseDSN, _databaseDSNLabel)
+	databaseDriver := flag.String("dbDriver", _databaseDriver, _databaseDriverLabel)
 	flag.Parse()
 
 	cb.config.Address = *address
@@ -80,6 +85,7 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	cb.config.Restore = *restore
 	cb.config.KeyApp = *keyApp
 	cb.config.DatabaseDSN = *databaseDSN
+	cb.config.DatabaseDriver = *databaseDriver
 
 	return cb
 }
