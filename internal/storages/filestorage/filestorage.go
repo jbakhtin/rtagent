@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/jbakhtin/rtagent/internal/models"
-	models2 "github.com/jbakhtin/rtagent/internal/server/models"
+	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"io"
 	"os"
@@ -79,7 +79,7 @@ func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 
-	var JSONMetrics []models2.Metrics
+	var JSONMetrics []handlerModels.Metrics
 
 	for _, v := range metrics {
 		JSONMetric, _ := v.ToJSON([]byte(cfg.KeyApp))
@@ -130,7 +130,7 @@ func (fs *FileStorage) Restore(ctx context.Context, cfg config.Config) error {
 		return nil
 	}
 
-	JSONMetrics := make([]models2.Metrics, 0)
+	JSONMetrics := make([]handlerModels.Metrics, 0)
 	err = json.Unmarshal(data, &JSONMetrics)
 	if err != nil {
 		return err

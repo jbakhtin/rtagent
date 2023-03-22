@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
-	models2 "github.com/jbakhtin/rtagent/internal/server/models"
+	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
 	"github.com/jbakhtin/rtagent/internal/storages/dbstorage"
 	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
 	"github.com/jbakhtin/rtagent/internal/types"
@@ -96,7 +96,7 @@ func (h *HandlerMetric) GetMetricAsJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		var metrics models2.Metrics
+		var metrics handlerModels.Metrics
 		err := json.NewDecoder(r.Body).Decode(&metrics)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
@@ -168,7 +168,7 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		var metrics models2.Metrics
+		var metrics handlerModels.Metrics
 		err := json.NewDecoder(r.Body).Decode(&metrics)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotImplemented)
@@ -268,7 +268,7 @@ func (h *HandlerMetric) UpdateMetricsByJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		var metrics []models2.Metrics
+		var metrics []handlerModels.Metrics
 		err := json.NewDecoder(r.Body).Decode(&metrics)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotImplemented)

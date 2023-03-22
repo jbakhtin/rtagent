@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/server/models"
+	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
 	"net/http"
 	"runtime"
 	"sync"
@@ -156,7 +156,7 @@ func (m *Monitor) report(cfg config.Config) error {
 func (m *Monitor) reportJSON(cfg config.Config) error {
 	for key, value := range m.getStats() {
 		endpoint := fmt.Sprintf("%s/update/", m.serverAddress)
-		metric, err := models.ToJSON(cfg, key, value)
+		metric, err := handlerModels.ToJSON(cfg, key, value)
 		if err != nil {
 			return err
 		}
@@ -200,11 +200,11 @@ func (m *Monitor) reportJSON(cfg config.Config) error {
 
 func (m *Monitor) reportBatch(cfg config.Config) error {
 	stats := m.getStats()
-	metrics := make([]models.Metrics, len(stats))
+	metrics := make([]handlerModels.Metrics, len(stats))
 
 	counter := 0
 	for key, value := range stats {
-		metric, err := models.ToJSON(cfg, key, value)
+		metric, err := handlerModels.ToJSON(cfg, key, value)
 		if err != nil {
 			return err
 		}
