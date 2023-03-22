@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE metrics(
+CREATE TABLE IF NOT EXISTS metrics(
     id varchar(256),
     type varchar(256),
     delta bigint null,
@@ -8,4 +8,4 @@ CREATE TABLE metrics(
 );
 
 -- +goose Down
-DROP TABLE metrics;
+DROP TABLE IF EXISTS metrics;

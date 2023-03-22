@@ -1,9 +1,10 @@
-package postgres
+package dbstorage
 
 import (
 	"context"
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	_ "github.com/jackc/pgx/v5"
 	"github.com/jbakhtin/rtagent/internal/config"
@@ -46,9 +47,9 @@ const (
 var embedMigrations embed.FS
 
 type DBStorage struct {
-	DatabaseDSN string
-	Driver      string
 	Logger      *zap.Logger
+	*sql.DB
+	config config.Config
 }
 
 func New(driver string, cfg config.Config) (DBStorage, error) {
@@ -57,7 +58,7 @@ func New(driver string, cfg config.Config) (DBStorage, error) {
 		return DBStorage{}, err
 	}
 
-	db, err := sql.Open(driver, cfg.DatabaseDSN) // TODO: можно ли открыть соединение один раз при старте приложения и закрыть при остановке?
+	db, err := sql.Open(driver, cfg.DatabaseDSN)
 	if err != nil {
 		return DBStorage{}, err
 	}
@@ -73,52 +74,41 @@ func New(driver string, cfg config.Config) (DBStorage, error) {
 	}
 
 	return DBStorage{
-		DatabaseDSN: cfg.DatabaseDSN,
 		Logger:      logger,
-		Driver:      driver,
+		DB: db,
+		config: cfg,
 	}, nil
 }
 
 func (dbs *DBStorage) Set(metric models.Metricer) (models.Metricer, error) {
-	db, err := sql.Open(dbs.Driver, dbs.DatabaseDSN)
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	var newMetric models.Metricer
 	switch m := metric.(type) {
 	case models.Gauge:
-		var newM models.Gauge
-		err = db.QueryRow(insertGauge, m.MKey, m.MType, m.MValue).Scan(&newM.MKey, &newM.MType, &newM.MValue)
+		var metricSaved models.Gauge
+		err := dbs.QueryRow(insertGauge, m.MKey, m.MType, m.MValue).
+			Scan(&metricSaved.MKey, &metricSaved.MType, &metricSaved.MValue)
 		if err != nil {
 			return nil, err
 		}
-		newMetric = newM
+		return metricSaved, nil
 	case models.Counter:
-		var newM models.Counter
-		err = db.QueryRow(insertCounter, m.MKey, m.MType, m.MValue).Scan(&newM.MKey, &newM.MType, &newM.MValue)
+		var metricSaved models.Counter
+		err := dbs.QueryRow(insertCounter, m.MKey, m.MType, m.MValue).
+			Scan(&metricSaved.MKey, &metricSaved.MType, &metricSaved.MValue)
 		if err != nil {
 			return nil, err
 		}
-		newMetric = newM
+		return metricSaved, nil
 	}
 
-	return newMetric, nil
+	return nil, errors.New("type not recognized")
 }
 
 func (dbs *DBStorage) Get(key string) (models.Metricer, error) {
-	db, err := sql.Open(dbs.Driver, dbs.DatabaseDSN)
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
 	var id string
 	var mType string
 	var delta *types.Counter
 	var value *types.Gauge
-	err = db.QueryRow(getByID, key).Scan(&id, &mType, &delta, &value)
+	err := dbs.QueryRow(getByID, key).Scan(&id, &mType, &delta, &value)
 	if err != nil {
 		dbs.Logger.Info(err.Error())
 		return nil, err
@@ -139,13 +129,7 @@ func (dbs *DBStorage) Get(key string) (models.Metricer, error) {
 }
 
 func (dbs *DBStorage) GetAll() (map[string]models.Metricer, error) {
-	db, err := sql.Open(dbs.Driver, dbs.DatabaseDSN)
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	rows, err := db.Query(getAll) // TODO: need limit
+	rows, err := dbs.Query(getAll) // TODO: need limit
 	if err != nil {
 		return nil, err
 	}
@@ -184,18 +168,15 @@ func (dbs *DBStorage) GetAll() (map[string]models.Metricer, error) {
 	return metrics, nil
 }
 
-func (dbs *DBStorage) SetBatch(ctx context.Context, metrics []models.Metricer) ([]models.Metricer, error){
-	db, err := sql.Open("pgx", dbs.DatabaseDSN)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := db.Begin()
+func (dbs *DBStorage) SetBatch(metrics []models.Metricer) ([]models.Metricer, error){
+	tx, err := dbs.Begin()
 	if err != nil {
 		return nil, err
 	}
 
 	defer tx.Rollback()
+
+	ctx :=  context.TODO()
 
 	stmtGauge, err := tx.PrepareContext(ctx, insertGauge)
 	if err != nil {
@@ -224,4 +205,8 @@ func (dbs *DBStorage) SetBatch(ctx context.Context, metrics []models.Metricer) (
 	tx.Commit()
 
 	return metrics, nil
+}
+
+func (dbs *DBStorage) TestPing() error {
+	return dbs.Ping()
 }

@@ -43,19 +43,19 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlerMetric.GetAllMetricsAsHTML())
-		r.Get("/ping", handlerMetric.TestDBConnection(cfg))
+		r.Get("/ping", handlerMetric.PingStorage())
 
 		r.Route("/value/", func(r chi.Router) {
-			r.Post("/", handlerMetric.GetMetricAsJSON(cfg)) // ToDo: перенести в отдельный пакет handlerMetricJSON
+			r.Post("/", handlerMetric.GetMetricAsJSON()) // ToDo: перенести в отдельный пакет handlerMetricJSON
 			r.Get("/{type}/{key}", handlerMetric.GetMetricValue())
 		})
 
 		r.Route("/update/", func(r chi.Router) {
-			r.Post("/", handlerMetric.UpdateMetricByJSON(cfg))
+			r.Post("/", handlerMetric.UpdateMetricByJSON())
 			r.Post("/{type}/{key}/{value}", handlerMetric.UpdateMetric())
 		})
 
-		r.Post("/updates/", handlerMetric.UpdateMetricsByJSON(cfg))
+		r.Post("/updates/", handlerMetric.UpdateMetricsByJSON())
 	})
 
 	return http.ListenAndServe(ms.Addr, r)

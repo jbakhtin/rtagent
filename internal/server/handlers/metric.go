@@ -6,12 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	models2 "github.com/jbakhtin/rtagent/internal/server/models"
+	"github.com/jbakhtin/rtagent/internal/storages/dbstorage"
 	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
-	"github.com/jbakhtin/rtagent/internal/storages/postgres"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"html/template"
 	"net/http"
@@ -21,11 +20,13 @@ type MetricRepository interface {
 	GetAll() (map[string]models.Metricer, error)
 	Get(key string) (models.Metricer, error)
 	Set(models.Metricer) (models.Metricer, error)
-	SetBatch(context.Context, []models.Metricer) ([]models.Metricer, error)
+	SetBatch([]models.Metricer) ([]models.Metricer, error)
+	TestPing() error
 }
 
 type HandlerMetric struct {
 	repository MetricRepository
+	config config.Config
 }
 
 var listOfMetricHTMLTemplate = `
@@ -36,13 +37,14 @@ var listOfMetricHTMLTemplate = `
 
 func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, error) {
 	if cfg.DatabaseDSN != "" {
-		ms, err := postgres.New("pgx", cfg) // TODO: move to cfg
+		ms, err := dbstorage.New("pgx", cfg) // TODO: move to cfg
 		if err != nil {
 			return nil, err
 		}
 
 		return &HandlerMetric{
 			repository: &ms,
+			config: cfg,
 		}, nil
 	}
 
@@ -58,6 +60,7 @@ func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, e
 
 	return &HandlerMetric{
 		repository: &ms,
+		config: cfg,
 	}, nil
 }
 
@@ -89,7 +92,7 @@ func (h *HandlerMetric) GetMetricValue() http.HandlerFunc {
 	}
 }
 
-func (h *HandlerMetric) GetMetricAsJSON(cfg config.Config) http.HandlerFunc {
+func (h *HandlerMetric) GetMetricAsJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -106,7 +109,7 @@ func (h *HandlerMetric) GetMetricAsJSON(cfg config.Config) http.HandlerFunc {
 			return
 		}
 
-		JSONMetric, _ := metric.ToJSON([]byte(cfg.KeyApp))
+		JSONMetric, _ := metric.ToJSON([]byte(h.config.KeyApp))
 		jsonMetric, err := json.Marshal(JSONMetric)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
@@ -162,7 +165,7 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 	}
 }
 
-func (h *HandlerMetric) UpdateMetricByJSON(cfg config.Config) http.HandlerFunc {
+func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		var metrics models2.Metrics
@@ -172,8 +175,8 @@ func (h *HandlerMetric) UpdateMetricByJSON(cfg config.Config) http.HandlerFunc {
 			return
 		}
 
-		if cfg.KeyApp != "" {
-			hash, err := metrics.CalcHash([]byte(cfg.KeyApp))
+		if h.config.KeyApp != "" {
+			hash, err := metrics.CalcHash([]byte(h.config.KeyApp))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -203,7 +206,7 @@ func (h *HandlerMetric) UpdateMetricByJSON(cfg config.Config) http.HandlerFunc {
 			return
 		}
 
-		JSONMetric, err := test.ToJSON([]byte(cfg.KeyApp))
+		JSONMetric, err := test.ToJSON([]byte(h.config.KeyApp))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -249,20 +252,11 @@ func (h *HandlerMetric) GetAllMetricsAsHTML() http.HandlerFunc {
 	}
 }
 
-func (h *HandlerMetric) TestDBConnection(cfg config.Config) http.HandlerFunc {
+func (h *HandlerMetric) PingStorage() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		conn, err := pgx.Connect(context.Background(), cfg.DatabaseDSN)
+		err := h.repository.TestPing()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer conn.Close(context.Background())
-
-		var id string
-		var value string
-		err = conn.QueryRow(context.Background(), "select id, value from metrics where id=$1", "Alloc").Scan(&id, &value)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
@@ -270,7 +264,7 @@ func (h *HandlerMetric) TestDBConnection(cfg config.Config) http.HandlerFunc {
 	}
 }
 
-func (h *HandlerMetric) UpdateMetricsByJSON(cfg config.Config) http.HandlerFunc {
+func (h *HandlerMetric) UpdateMetricsByJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -283,8 +277,8 @@ func (h *HandlerMetric) UpdateMetricsByJSON(cfg config.Config) http.HandlerFunc 
 
 		mMetrics := make([]models.Metricer, len(metrics))
 		for i, m := range metrics {
-			if cfg.KeyApp != "" {
-				hash, err := m.CalcHash([]byte(cfg.KeyApp))
+			if h.config.KeyApp != "" {
+				hash, err := m.CalcHash([]byte(h.config.KeyApp))
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
@@ -315,7 +309,7 @@ func (h *HandlerMetric) UpdateMetricsByJSON(cfg config.Config) http.HandlerFunc 
 			mMetrics[i] = metric
 		}
 
-		_, err = h.repository.SetBatch(context.TODO(), mMetrics)
+		_, err = h.repository.SetBatch(mMetrics)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

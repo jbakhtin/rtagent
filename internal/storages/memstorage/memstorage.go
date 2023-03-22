@@ -1,7 +1,6 @@
 package memstorage
 
 import (
-	"context"
 	"errors"
 	"sync"
 
@@ -78,7 +77,7 @@ func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
 	return result, nil
 }
 
-func (ms *MemStorage) SetBatch(ctx context.Context, metrics []models.Metricer) ([]models.Metricer, error){
+func (ms *MemStorage) SetBatch(metrics []models.Metricer) ([]models.Metricer, error){
 	ms.Mx.Lock()
 	defer ms.Mx.Unlock()
 
@@ -87,4 +86,8 @@ func (ms *MemStorage) SetBatch(ctx context.Context, metrics []models.Metricer) (
 	}
 
 	return metrics, nil
+}
+
+func (ms *MemStorage) TestPing() error {
+	return nil
 }
