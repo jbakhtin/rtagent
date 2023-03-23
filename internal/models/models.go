@@ -12,7 +12,7 @@ type Metricer interface {
 	Type() string
 	Key() string
 	StringValue() string
-	ToJSON() models.Metrics
+	ToJSON(key []byte) (models.Metrics, error)
 }
 
 type (
@@ -61,12 +61,21 @@ func (g Gauge) StringValue() string {
 	return fmt.Sprintf("%v", g.MValue)
 }
 
-func (g Gauge) ToJSON() models.Metrics {
-	return models.Metrics{
+func (g Gauge) ToJSON(key []byte) (models.Metrics, error) {
+	var err error
+	JSONMetric := models.Metrics{
 		MKey:  g.MKey,
 		MType: g.MType,
 		Value: &g.MValue,
 	}
+	if len(key) != 0 {
+		JSONMetric.Hash, err = JSONMetric.CalcHash(key)
+		if err != nil {
+			return models.Metrics{}, err
+		}
+	}
+
+	return JSONMetric, nil
 }
 
 // Counter ----
@@ -99,12 +108,22 @@ func (c Counter) StringValue() string {
 	return value
 }
 
-func (c Counter) ToJSON() models.Metrics {
-	return models.Metrics{
+func (c Counter) ToJSON(key  []byte) (models.Metrics, error) {
+	var err error
+	JSONMetric := models.Metrics{
 		MKey:  c.MKey,
 		MType: c.MType,
 		Delta: &c.MValue,
 	}
+
+	if len(key) != 0 {
+		JSONMetric.Hash, err = JSONMetric.CalcHash(key)
+		if err != nil {
+			return models.Metrics{}, err
+		}
+	}
+
+	return JSONMetric, nil
 }
 
 func (c *Counter) Increment() {

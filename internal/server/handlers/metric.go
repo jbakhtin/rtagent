@@ -8,15 +8,25 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
-	models2 "github.com/jbakhtin/rtagent/internal/server/models"
-	"github.com/jbakhtin/rtagent/internal/services"
+	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
+	"github.com/jbakhtin/rtagent/internal/storages/dbstorage"
+	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"html/template"
 	"net/http"
 )
 
+type MetricRepository interface {
+	GetAll() (map[string]models.Metricer, error)
+	Get(key string) (models.Metricer, error)
+	Set(models.Metricer) (models.Metricer, error)
+	SetBatch([]models.Metricer) ([]models.Metricer, error)
+	TestPing() error
+}
+
 type HandlerMetric struct {
-	service *services.MetricService
+	repository MetricRepository
+	config config.Config
 }
 
 var listOfMetricHTMLTemplate = `
@@ -26,13 +36,31 @@ var listOfMetricHTMLTemplate = `
 `
 
 func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, error) {
-	service, err := services.NewMetricService(ctx, cfg)
+	if cfg.DatabaseDSN != "" {
+		ms, err := dbstorage.New(cfg) // TODO: move to cfg
+		if err != nil {
+			return nil, err
+		}
+
+		return &HandlerMetric{
+			repository: &ms,
+			config: cfg,
+		}, nil
+	}
+
+	ms, err := filestorage.New(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ms.Start(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	return &HandlerMetric{
-		service: service,
+		repository: &ms,
+		config: cfg,
 	}, nil
 }
 
@@ -50,7 +78,7 @@ func (h *HandlerMetric) GetMetricValue() http.HandlerFunc {
 			return
 		}
 
-		metric, err := h.service.Get(mKey)
+		metric, err := h.repository.Get(mKey)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -68,20 +96,21 @@ func (h *HandlerMetric) GetMetricAsJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		var metrics models2.Metrics
+		var metrics handlerModels.Metrics
 		err := json.NewDecoder(r.Body).Decode(&metrics)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		metric, err := h.service.Get(metrics.MKey)
+		metric, err := h.repository.Get(metrics.MKey)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		jsonMetric, err := json.Marshal(metric.ToJSON())
+		JSONMetric, _ := metric.ToJSON([]byte(h.config.KeyApp))
+		jsonMetric, err := json.Marshal(JSONMetric)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -114,9 +143,9 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 		mType := chi.URLParam(r, "type")
 		switch mType {
 		case types.GaugeType:
-			metric , err = models.NewGauge(mType, mKey, mValue)
+			metric, err = models.NewGauge(mType, mKey, mValue)
 		case types.CounterType:
-			metric , err = models.NewCounter(mType, mKey, mValue)
+			metric, err = models.NewCounter(mType, mKey, mValue)
 		default:
 			http.Error(w, "type not valid", http.StatusNotImplemented)
 			return
@@ -126,7 +155,7 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 			return
 		}
 
-		_, err = h.service.Update(metric)
+		_, err = h.repository.Set(metric)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -139,11 +168,24 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		var metrics models2.Metrics
+		var metrics handlerModels.Metrics
 		err := json.NewDecoder(r.Body).Decode(&metrics)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotImplemented)
 			return
+		}
+
+		if h.config.KeyApp != "" {
+			hash, err := metrics.CalcHash([]byte(h.config.KeyApp))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if hash != metrics.Hash {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
 		}
 
 		var metric models.Metricer
@@ -154,16 +196,23 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 			metric, err = models.NewCounter(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Delta))
 		}
 		if err != nil {
-			fmt.Println(err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
-		test, err := h.service.Update(metric)
+		test, err := h.repository.Set(metric)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		jsonMetric, err := json.Marshal(test.ToJSON())
+		JSONMetric, err := test.ToJSON([]byte(h.config.KeyApp))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		jsonMetric, err := json.Marshal(JSONMetric)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -181,7 +230,7 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 func (h *HandlerMetric) GetAllMetricsAsHTML() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		metrics, err := h.service.GetAll()
+		metrics, err := h.repository.GetAll()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -200,5 +249,78 @@ func (h *HandlerMetric) GetAllMetricsAsHTML() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+	}
+}
+
+func (h *HandlerMetric) PingStorage() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := h.repository.TestPing()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func (h *HandlerMetric) UpdateMetricsByJSON() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		var metrics []handlerModels.Metrics
+		err := json.NewDecoder(r.Body).Decode(&metrics)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotImplemented)
+			return
+		}
+
+		mMetrics := make([]models.Metricer, len(metrics))
+		for i, m := range metrics {
+			if h.config.KeyApp != "" {
+				hash, err := m.CalcHash([]byte(h.config.KeyApp))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				if hash != m.Hash {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+			}
+
+			var metric models.Metricer
+			switch m.MType {
+			case types.GaugeType:
+				metric, err = models.NewGauge(m.MType, m.MKey, fmt.Sprintf("%v", *m.Value))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			case types.CounterType:
+				metric, err = models.NewCounter(m.MType, m.MKey, fmt.Sprintf("%v", *m.Delta))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			mMetrics[i] = metric
+		}
+
+		_, err = h.repository.SetBatch(mMetrics)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		_, err = w.Write([]byte("{}"))
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
 	}
 }

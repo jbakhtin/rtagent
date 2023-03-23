@@ -34,6 +34,19 @@ func (ms *MemStorage) Set(metric models.Metricer) (models.Metricer, error) {
 	ms.Mx.Lock()
 	defer ms.Mx.Unlock()
 
+	switch m := metric.(type) {
+	case models.Counter:
+		entity := ms.Items[metric.Key()]
+
+		oldMetric, ok := entity.(models.Counter)
+		if !ok {
+			break
+		}
+
+		m.Add(oldMetric.MValue)
+		metric = m
+	}
+
 	ms.Items[metric.Key()] = metric
 
 	return metric, nil
@@ -62,4 +75,19 @@ func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
 	}
 
 	return result, nil
+}
+
+func (ms *MemStorage) SetBatch(metrics []models.Metricer) ([]models.Metricer, error){
+	ms.Mx.Lock()
+	defer ms.Mx.Unlock()
+
+	for _, v := range metrics {
+		ms.Items[v.Key()] = v
+	}
+
+	return metrics, nil
+}
+
+func (ms *MemStorage) TestPing() error {
+	return nil
 }
