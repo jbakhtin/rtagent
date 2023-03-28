@@ -117,7 +117,7 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 	for {
 		select {
 		case <-ticker.C:
-			err := m.reportBatch(cfg)
+			err := m.reportJSON(cfg)
 			if err != nil {
 				chanError <- err
 			}
