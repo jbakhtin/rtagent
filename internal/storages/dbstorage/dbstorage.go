@@ -47,7 +47,7 @@ const (
 var embedMigrations embed.FS
 
 type DBStorage struct {
-	Logger      *zap.Logger
+	Logger *zap.Logger
 	*sql.DB
 	config config.Config
 }
@@ -74,8 +74,8 @@ func New(cfg config.Config) (DBStorage, error) {
 	}
 
 	return DBStorage{
-		Logger:      logger,
-		DB: db,
+		Logger: logger,
+		DB:     db,
 		config: cfg,
 	}, nil
 }
@@ -168,7 +168,7 @@ func (dbs *DBStorage) GetAll() (map[string]models.Metricer, error) {
 	return metrics, nil
 }
 
-func (dbs *DBStorage) SetBatch(metrics []models.Metricer) ([]models.Metricer, error){
+func (dbs *DBStorage) SetBatch(metrics []models.Metricer) ([]models.Metricer, error) {
 	tx, err := dbs.Begin()
 	if err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ func (dbs *DBStorage) SetBatch(metrics []models.Metricer) ([]models.Metricer, er
 
 	defer tx.Rollback()
 
-	ctx :=  context.TODO()
+	ctx := context.TODO()
 
 	stmtGauge, err := tx.PrepareContext(ctx, insertGauge)
 	if err != nil {

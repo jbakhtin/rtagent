@@ -77,7 +77,7 @@ func (ms *MemStorage) GetAll() (map[string]models.Metricer, error) {
 	return result, nil
 }
 
-func (ms *MemStorage) SetBatch(metrics []models.Metricer) ([]models.Metricer, error){
+func (ms *MemStorage) SetBatch(metrics []models.Metricer) ([]models.Metricer, error) {
 	ms.Mx.Lock()
 	defer ms.Mx.Unlock()
 

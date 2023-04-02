@@ -26,7 +26,7 @@ type MetricRepository interface {
 
 type HandlerMetric struct {
 	repository MetricRepository
-	config config.Config
+	config     config.Config
 }
 
 var listOfMetricHTMLTemplate = `
@@ -44,7 +44,7 @@ func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, e
 
 		return &HandlerMetric{
 			repository: &ms,
-			config: cfg,
+			config:     cfg,
 		}, nil
 	}
 
@@ -60,7 +60,7 @@ func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, e
 
 	return &HandlerMetric{
 		repository: &ms,
-		config: cfg,
+		config:     cfg,
 	}, nil
 }
 

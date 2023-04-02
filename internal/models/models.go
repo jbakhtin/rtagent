@@ -17,7 +17,7 @@ type Metricer interface {
 
 type (
 	Description struct {
-		MKey string
+		MKey  string
 		MType string
 	}
 
@@ -34,15 +34,15 @@ type (
 
 // Gauge ----
 
-func NewGauge(mType, mKey, mValue string) (Gauge, error){
+func NewGauge(mType, mKey, mValue string) (Gauge, error) {
 	value, err := strconv.ParseFloat(mValue, 64)
 	if err != nil {
 		return Gauge{}, err
 	}
 
 	return Gauge{
-		Description: Description {
-			MKey: mKey,
+		Description: Description{
+			MKey:  mKey,
 			MType: mType,
 		},
 		MValue: types.Gauge(value),
@@ -80,15 +80,15 @@ func (g Gauge) ToJSON(key []byte) (models.Metrics, error) {
 
 // Counter ----
 
-func NewCounter(mType, mKey, mValue string) (Counter, error){
+func NewCounter(mType, mKey, mValue string) (Counter, error) {
 	value, err := strconv.ParseInt(mValue, 10, 0)
 	if err != nil {
 		return Counter{}, err
 	}
 
 	return Counter{
-		Description: Description {
-			MKey: mKey,
+		Description: Description{
+			MKey:  mKey,
 			MType: mType,
 		},
 		MValue: types.Counter(value),
@@ -108,7 +108,7 @@ func (c Counter) StringValue() string {
 	return value
 }
 
-func (c Counter) ToJSON(key  []byte) (models.Metrics, error) {
+func (c Counter) ToJSON(key []byte) (models.Metrics, error) {
 	var err error
 	JSONMetric := models.Metrics{
 		MKey:  c.MKey,

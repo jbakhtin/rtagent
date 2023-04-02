@@ -1,7 +1,7 @@
 package types
 
-const  (
-	GaugeType = "gauge"
+const (
+	GaugeType   = "gauge"
 	CounterType = "counter"
 )
 
@@ -10,7 +10,7 @@ type Metricer interface {
 }
 
 type (
-	Gauge float64
+	Gauge   float64
 	Counter int64
 )
 

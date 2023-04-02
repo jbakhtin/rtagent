@@ -16,7 +16,7 @@ import (
 	"github.com/jbakhtin/rtagent/internal/config"
 )
 
-//FileStorage является оберткой над MemStorage и вынесен в отдельный пакет, как полноценное хранилище
+// FileStorage является оберткой над MemStorage и вынесен в отдельный пакет, как полноценное хранилище
 type FileStorage struct {
 	memstorage.MemStorage
 }

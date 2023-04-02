@@ -11,7 +11,7 @@ import (
 
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/stretchr/testify/require"
-	
+
 	"github.com/stretchr/testify/assert"
 )
 
