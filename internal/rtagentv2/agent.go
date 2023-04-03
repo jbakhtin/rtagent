@@ -122,6 +122,7 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 	for {
 		select {
 		case <-ticker.C:
+			fmt.Println("test")
 			err := m.reportRuntime()
 			if err != nil {
 				chanError <- err
@@ -142,6 +143,7 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 
 func (m *Monitor) reportRuntime() error {
 	for key, value := range m.getStatsRuntime() {
+		fmt.Println("test 1")
 		job := Job{
 			key,
 			value,
@@ -154,6 +156,7 @@ func (m *Monitor) reportRuntime() error {
 
 func (m *Monitor) reportGopsutil() error {
 	for key, value := range m.getStatsGopsutil() {
+		fmt.Println("test 2")
 		job := Job{
 			key,
 			value,
