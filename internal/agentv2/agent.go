@@ -1,10 +1,12 @@
-package rtagentv2
+package agentv2
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jbakhtin/rtagent/internal/agentv2/ratelimiter"
+	"github.com/jbakhtin/rtagent/internal/agentv2/workerpool"
 	"net/http"
 	"runtime"
 	"sync"
@@ -31,18 +33,18 @@ type Monitor struct {
 
 	pollCounter types.Counter
 
-	worker Worker
+	workerPool workerpool.WorkerPool
 }
 
 func NewMonitor(cfg config.Config, logger *zap.Logger) (Monitor, error) {
-	worker, _ := NewWorker(cfg, 5)
+	workerPool, _ := workerpool.NewWorkerPool()
 	return Monitor{
 		loger:                      logger,
 		serverAddress:              fmt.Sprintf("http://%s", cfg.Address), //TODO: переделать зависимость от http/https
 		pollInterval:               cfg.PollInterval,
 		reportInterval:             cfg.ReportInterval,
 		acceptableCountAgentErrors: cfg.AcceptableCountAgentErrors,
-		worker:                     worker,
+		workerPool:                     workerPool,
 	}, nil
 }
 
@@ -55,7 +57,7 @@ func (m *Monitor) Start(cfg config.Config) error {
 
 	go m.polling(ctx, cfg, chanErr)
 	go m.reporting(ctx, cfg, chanErr)
-	go m.worker.Run(ctx, cfg)
+	go m.Run(ctx, cfg, chanErr)
 
 	var errCount int
 	var err error
@@ -120,7 +122,6 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 	for {
 		select {
 		case <-ticker.C:
-			fmt.Println("test")
 			err := m.reportRuntime()
 			if err != nil {
 				chanError <- err
@@ -141,26 +142,16 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 
 func (m *Monitor) reportRuntime() error {
 	for key, value := range m.getStatsRuntime() {
-		fmt.Println("test 1")
-		job := Job{
-			key,
-			value,
-		}
-
-		m.worker.workerPool.Jobs <- job
+		job := workerpool.NewJob(key, value)
+		m.workerPool.Jobs <- job
 	}
 	return nil
 }
 
 func (m *Monitor) reportGopsutil() error {
 	for key, value := range m.getStatsGopsutil() {
-		fmt.Println("test 2")
-		job := Job{
-			key,
-			value,
-		}
-
-		m.worker.workerPool.Jobs <- job
+		job := workerpool.NewJob(key, value)
+		m.workerPool.Jobs <- job
 	}
 	return nil
 }
@@ -221,89 +212,63 @@ func (m *Monitor) getStatsGopsutil() map[string]types.Metricer {
 	return result
 }
 
-// --- worker pool
+func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanErr chan error) {
+	limiter := ratelimiter.NewLimiter(1*time.Second, 40)
 
-type Job struct {
-	key   string
-	value types.Metricer
-}
-
-type WorkerPool struct {
-	Jobs chan Job
-}
-
-type Worker struct {
-	config     config.Config
-	workerPool WorkerPool
-	rateLimit  int
-}
-
-func NewWorker(cfg config.Config, rateLimit int) (Worker, error) {
-	workerPool := WorkerPool{
-		make(chan Job),
-	}
-
-	return Worker{
-		cfg,
-		workerPool,
-		rateLimit,
-	}, nil
-}
-
-func (w *Worker) Run(ctx context.Context, cfg config.Config) error {
 	for {
-		ticker := time.NewTicker(time.Second)
+		select {
+		case <-ctx.Done():
+			m.loger.Info("обработка заданий приостановлена")
+			return
+		case job := <- m.workerPool.Jobs:
+			limiter.Wait()
 
-		for i := 0; i < w.rateLimit; i++ {
+			go func() {
+				endpoint := fmt.Sprintf("%s/update/", m.serverAddress)
+				metric, err := handlerModels.ToJSON(cfg, job.Key, job.Value)
+				if err != nil {
+					chanErr <- err
+					return
+				}
 
-			select {
-			case <-ctx.Done():
-				return nil
-			case job := <-w.workerPool.Jobs:
-				go func() error {
-					endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", cfg.Address),)
-					metric, err := handlerModels.ToJSON(w.config, job.key, job.value)
-					if err != nil {
-						return err
-					}
+				metric.Hash, err = metric.CalcHash([]byte(cfg.KeyApp))
+				if err != nil {
+					chanErr <- err
+					return
+				}
 
-					metric.Hash, err = metric.CalcHash([]byte(w.config.KeyApp))
-					if err != nil {
-						return err
-					}
+				hash, err := metric.CalcHash([]byte(cfg.KeyApp))
+				if err != nil {
+					chanErr <- err
+					return
+				}
+				metric.Hash = hash
 
-					hash, err := metric.CalcHash([]byte(w.config.KeyApp))
-					if err != nil {
-						return err
-					}
-					metric.Hash = hash
+				buf, err := json.Marshal(metric)
+				if err != nil {
+					chanErr <- err
+					return
+				}
 
-					buf, err := json.Marshal(metric)
-					if err != nil {
-						return err
-					}
+				request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
+				if err != nil {
+					chanErr <- err
+					return
+				}
+				request.Header.Set("Content-Type", "application/json")
 
-					request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
-					if err != nil {
-						return err
-					}
-					request.Header.Set("Content-Type", "application/json")
+				client := http.Client{}
+				response, err := client.Do(request)
+				if err != nil {
+					chanErr <- err
+					return
+				}
 
-					client := http.Client{}
-					response, err := client.Do(request)
-					if err != nil {
-						return err
-					}
-
-					if err = response.Body.Close(); err != nil {
-						return err
-					}
-
-					return nil
-				}()
-			}
+				if err = response.Body.Close(); err != nil {
+					chanErr <- err
+					return
+				}
+			}()
 		}
-
-		<-ticker.C
 	}
 }
