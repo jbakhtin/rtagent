@@ -1,12 +1,12 @@
-package agentv2
+package rtagentv2
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/agentv2/ratelimiter"
-	"github.com/jbakhtin/rtagent/internal/agentv2/workerpool"
+	"github.com/jbakhtin/rtagent/internal/rtagentv2/ratelimiter"
+	"github.com/jbakhtin/rtagent/internal/rtagentv2/workerpool"
 	"net/http"
 	"runtime"
 	"sync"
@@ -57,7 +57,7 @@ func (m *Monitor) Start(cfg config.Config) error {
 
 	go m.polling(ctx, cfg, chanErr)
 	go m.reporting(ctx, cfg, chanErr)
-	go m.Run(ctx, cfg, chanErr)
+	go m.Run(ctx, cfg)
 
 	var errCount int
 	var err error
@@ -212,62 +212,56 @@ func (m *Monitor) getStatsGopsutil() map[string]types.Metricer {
 	return result
 }
 
-func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanErr chan error) {
+func (m *Monitor) Run(ctx context.Context, cfg config.Config) error {
 	limiter := ratelimiter.NewLimiter(1*time.Second, 40)
 
 	for {
 		select {
 		case <-ctx.Done():
-			m.loger.Info("обработка заданий приостановлена")
-			return
+			return nil
 		case job := <- m.workerPool.Jobs:
 			limiter.Wait()
 
-			go func() {
-				endpoint := fmt.Sprintf("%s/update/", m.serverAddress)
+			go func() error{
+				endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", cfg.Address))
 				metric, err := handlerModels.ToJSON(cfg, job.Key, job.Value)
 				if err != nil {
-					chanErr <- err
-					return
+					return err
 				}
 
 				metric.Hash, err = metric.CalcHash([]byte(cfg.KeyApp))
 				if err != nil {
-					chanErr <- err
-					return
+					return err
 				}
 
 				hash, err := metric.CalcHash([]byte(cfg.KeyApp))
 				if err != nil {
-					chanErr <- err
-					return
+					return err
 				}
 				metric.Hash = hash
 
 				buf, err := json.Marshal(metric)
 				if err != nil {
-					chanErr <- err
-					return
+					return err
 				}
 
 				request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
 				if err != nil {
-					chanErr <- err
-					return
+					return err
 				}
 				request.Header.Set("Content-Type", "application/json")
 
 				client := http.Client{}
 				response, err := client.Do(request)
 				if err != nil {
-					chanErr <- err
-					return
+					return err
 				}
 
 				if err = response.Body.Close(); err != nil {
-					chanErr <- err
-					return
+					return err
 				}
+
+				return nil
 			}()
 		}
 	}

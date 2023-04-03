@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/jbakhtin/rtagent/internal/agentv2"
+	"github.com/jbakhtin/rtagent/internal/rtagentv2"
 	"log"
 
 	"github.com/jbakhtin/rtagent/internal/config"
@@ -24,7 +24,7 @@ func main() {
 		return
 	}
 
-	monitor, err := agentv2.NewMonitor(cfg, logger)
+	monitor, err := rtagentv2.NewMonitor(cfg, logger)
 	if err != nil {
 		logger.Error(err.Error())
 	}
