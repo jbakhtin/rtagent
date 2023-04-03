@@ -55,7 +55,7 @@ func (m *Monitor) Start(cfg config.Config) error {
 
 	go m.polling(ctx, cfg, chanErr)
 	go m.reporting(ctx, cfg, chanErr)
-	go m.worker.Run(ctx)
+	go m.worker.Run(ctx, cfg)
 
 	var errCount int
 	var err error
@@ -250,7 +250,7 @@ func NewWorker(cfg config.Config, rateLimit int) (Worker, error) {
 	}, nil
 }
 
-func (w *Worker) Run(ctx context.Context) error {
+func (w *Worker) Run(ctx context.Context, cfg config.Config) error {
 	for {
 		ticker := time.NewTicker(time.Second)
 
@@ -265,7 +265,7 @@ func (w *Worker) Run(ctx context.Context) error {
 				//g, _ := errgroup.WithContext(ctx)
 
 				go func() error {
-					endpoint := fmt.Sprintf("%s/update/", "http://localhost:8080")
+					endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", cfg.Address),)
 					metric, err := handlerModels.ToJSON(w.config, job.key, job.value)
 					if err != nil {
 						return err
