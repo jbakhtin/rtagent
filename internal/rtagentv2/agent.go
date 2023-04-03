@@ -10,8 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/sync/errgroup"
-
 	gopsutil "github.com/shirou/gopsutil/v3/mem"
 
 	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
@@ -264,9 +262,9 @@ func (w *Worker) Run(ctx context.Context) error {
 			case <-ticker.C:
 				break
 			case job := <-w.workerPool.Jobs:
-				g, _ := errgroup.WithContext(ctx)
+				//g, _ := errgroup.WithContext(ctx)
 
-				g.Go(func() error {
+				go func() error {
 					endpoint := fmt.Sprintf("%s/update/", "http://localhost:8080")
 					metric, err := handlerModels.ToJSON(w.config, job.key, job.value)
 					if err != nil {
@@ -306,12 +304,12 @@ func (w *Worker) Run(ctx context.Context) error {
 					}
 
 					return nil
-				})
+				}()
 
-				err := g.Wait()
-				if err != nil {
-					return err
-				}
+				//err := g.Wait()
+				//if err != nil {
+				//	return err
+				//}
 			}
 		}
 	}
