@@ -258,12 +258,8 @@ func (w *Worker) Run(ctx context.Context, cfg config.Config) error {
 
 			select {
 			case <-ctx.Done():
-				break
-			case <-ticker.C:
-				break
+				return nil
 			case job := <-w.workerPool.Jobs:
-				//g, _ := errgroup.WithContext(ctx)
-
 				go func() error {
 					endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", cfg.Address),)
 					metric, err := handlerModels.ToJSON(w.config, job.key, job.value)
@@ -305,12 +301,9 @@ func (w *Worker) Run(ctx context.Context, cfg config.Config) error {
 
 					return nil
 				}()
-
-				//err := g.Wait()
-				//if err != nil {
-				//	return err
-				//}
 			}
 		}
+
+		<-ticker.C
 	}
 }
