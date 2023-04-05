@@ -3,43 +3,41 @@ package ratelimiter
 import "time"
 
 type Limiter struct {
-	maxCount int
-	count    int
-	ticker   *time.Ticker
-	ch       chan struct{}
+	maxCount     int
+	counter      int
+	resetCounter *time.Ticker
+	waiter       chan struct{}
 }
 
 func (l *Limiter) run() {
 	for {
-		// if counter has reached 0: block until next tick
-		if l.count <= 0 {
-			<-l.ticker.C
-			l.count = l.maxCount
+		if l.counter > l.maxCount { // Если количество операций во временном интервале израсходовано, то
+			<-l.resetCounter.C // дожидаемся завершения временного интервала
+			l.counter = 0      // обновляем счетчик
 		}
 
-		// otherwise:
-		// decrement 'count' each time a message is sent on channel,
-		// reset 'count' to 'maxCount' when ticker says so
 		select {
-		case l.ch <- struct{}{}:
-			l.count--
+		case l.waiter <- struct{}{}: // На каждое выполненное действие
+			// уменьшаем счетчик допустимых действий в заданном интервале
+			l.counter++
 
-		case <-l.ticker.C:
-			l.count = l.maxCount
+		case <-l.resetCounter.C: // если не успеваем выполнить заданное количество действий в заданном интервале, то
+			// обнуляем счетчик
+			l.counter = 0
 		}
 	}
 }
 
 func (l *Limiter) Wait() {
-	<-l.ch
+	<-l.waiter
 }
 
-func NewLimiter(d time.Duration, count int) *Limiter {
+func NewLimiter(timeInterval time.Duration, count int) *Limiter {
 	l := &Limiter{
-		maxCount: count,
-		count:    count,
-		ticker:   time.NewTicker(d),
-		ch:       make(chan struct{}),
+		maxCount:     count,
+		counter:      0,
+		resetCounter: time.NewTicker(timeInterval),
+		waiter:       make(chan struct{}),
 	}
 	go l.run()
 
