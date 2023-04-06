@@ -57,7 +57,7 @@ func (m *Monitor) Start(cfg config.Config) error {
 
 	go m.polling(ctx, cfg, chanErr)
 	go m.reporting(ctx, cfg, chanErr)
-	go m.Run(ctx, cfg)
+	go m.Run(ctx, cfg, chanErr)
 
 	var errCount int
 	var err error
@@ -212,7 +212,7 @@ func (m *Monitor) getStatsGopsutil() map[string]types.Metricer {
 	return result
 }
 
-func (m *Monitor) Run(ctx context.Context, cfg config.Config) error {
+func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan error) error {
 	limiter := ratelimiter.New(1 * time.Second, cfg.RateLimit)
 	err := limiter.Run(ctx)
 	if err != nil {
@@ -226,47 +226,55 @@ func (m *Monitor) Run(ctx context.Context, cfg config.Config) error {
 		case job := <- m.workerPool.Jobs:
 			limiter.Wait()
 
-			go func() error{
-				endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", cfg.Address))
-				metric, err := handlerModels.ToJSON(cfg, job.Key, job.Value)
+			go func() {
+				err = m.sendJSON(ctx, cfg, job)
 				if err != nil {
-					return err
+					m.loger.Info(err.Error())
+					chanError <- err
 				}
-
-				metric.Hash, err = metric.CalcHash([]byte(cfg.KeyApp))
-				if err != nil {
-					return err
-				}
-
-				hash, err := metric.CalcHash([]byte(cfg.KeyApp))
-				if err != nil {
-					return err
-				}
-				metric.Hash = hash
-
-				buf, err := json.Marshal(metric)
-				if err != nil {
-					return err
-				}
-
-				request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
-				if err != nil {
-					return err
-				}
-				request.Header.Set("Content-Type", "application/json")
-
-				client := http.Client{}
-				response, err := client.Do(request)
-				if err != nil {
-					return err
-				}
-
-				if err = response.Body.Close(); err != nil {
-					return err
-				}
-
-				return nil
 			}()
 		}
 	}
+}
+
+func (m *Monitor) sendJSON(ctx context.Context, cfg config.Config, job workerpool.Job) error {
+	endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", cfg.Address))
+	metric, err := handlerModels.ToJSON(cfg, job.Key, job.Value)
+	if err != nil {
+		return err
+	}
+
+	metric.Hash, err = metric.CalcHash([]byte(cfg.KeyApp))
+	if err != nil {
+		return err
+	}
+
+	hash, err := metric.CalcHash([]byte(cfg.KeyApp))
+	if err != nil {
+		return err
+	}
+	metric.Hash = hash
+
+	buf, err := json.Marshal(metric)
+	if err != nil {
+		return err
+	}
+
+	request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/json")
+
+	client := http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+
+	if err = response.Body.Close(); err != nil {
+		return err
+	}
+
+	return nil
 }
