@@ -1,6 +1,9 @@
 package ratelimiter
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type Limiter struct {
 	maxCount     int
@@ -9,7 +12,7 @@ type Limiter struct {
 	waiter       chan struct{}
 }
 
-func (l *Limiter) run() {
+func (l *Limiter) run(ctx  context.Context) {
 	for {
 		if l.counter > l.maxCount { // Если количество операций во временном интервале израсходовано, то
 			<-l.resetCounter.C // дожидаемся завершения временного интервала
@@ -17,6 +20,8 @@ func (l *Limiter) run() {
 		}
 
 		select {
+		case <- ctx.Done():
+			return
 		case l.waiter <- struct{}{}: // На каждое выполненное действие
 			// уменьшаем счетчик допустимых действий в заданном интервале
 			l.counter++
@@ -32,14 +37,19 @@ func (l *Limiter) Wait() {
 	<-l.waiter
 }
 
-func NewLimiter(timeInterval time.Duration, count int) *Limiter {
+func New(timeInterval time.Duration, count int) *Limiter {
 	l := &Limiter{
 		maxCount:     count,
 		counter:      0,
 		resetCounter: time.NewTicker(timeInterval),
 		waiter:       make(chan struct{}),
 	}
-	go l.run()
 
 	return l
+}
+
+func (l *Limiter) Run(ctx context.Context) error {
+	go l.run(ctx)
+
+	return nil
 }
