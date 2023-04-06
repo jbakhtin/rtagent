@@ -20,7 +20,7 @@ type WorkerPool struct {
 
 func NewWorkerPool() (WorkerPool, error) {
 	return WorkerPool{
-		make(chan Job, 20),
+		make(chan Job),
 	}, nil
 }
 
