@@ -21,6 +21,7 @@ func (l *Limiter) run(ctx  context.Context) {
 
 		select {
 		case <- ctx.Done():
+			l.resetCounter.Stop()
 			return
 		case l.waiter <- struct{}{}: // На каждое выполненное действие
 			// уменьшаем счетчик допустимых действий в заданном интервале
