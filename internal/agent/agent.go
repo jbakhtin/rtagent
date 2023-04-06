@@ -213,7 +213,7 @@ func (m *Monitor) getStatsGopsutil() map[string]types.Metricer {
 }
 
 func (m *Monitor) Run(ctx context.Context, cfg config.Config) error {
-	limiter := ratelimiter.New(1*time.Second, 40)
+	limiter := ratelimiter.New(1 * time.Second, cfg.RateLimit)
 	err := limiter.Run(ctx)
 	if err != nil {
 		return err
