@@ -14,7 +14,7 @@ const (
 	_storeFile                  = "tmp/devops-metrics-db.json"
 	_storeInterval              = time.Second * 300
 	_restore                    = true
-	_acceptableCountAgentErrors = 10
+	_acceptableCountAgentErrors = 100
 	_keyApp                     = ""
 	_databaseDSN                = ""
 	_databaseDriver             = "pgx"
