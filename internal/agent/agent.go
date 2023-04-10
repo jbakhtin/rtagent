@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/agent/collector"
-	"github.com/jbakhtin/rtagent/internal/agent/ratelimiter"
-	"github.com/jbakhtin/rtagent/internal/agent/workerpool"
 	"net/http"
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/jbakhtin/rtagent/internal/agent/collector"
+	"github.com/jbakhtin/rtagent/internal/agent/ratelimiter"
+	"github.com/jbakhtin/rtagent/internal/agent/workerpool"
 
 	gopsutil "github.com/shirou/gopsutil/v3/mem"
 
@@ -35,7 +36,7 @@ type Monitor struct {
 	pollCounter types.Counter
 
 	workerPool workerpool.WorkerPool
-	collector collector.Collector
+	collector  collector.Collector
 }
 
 func NewMonitor(cfg config.Config, logger *zap.Logger) (Monitor, error) {
@@ -47,8 +48,8 @@ func NewMonitor(cfg config.Config, logger *zap.Logger) (Monitor, error) {
 		pollInterval:               cfg.PollInterval,
 		reportInterval:             cfg.ReportInterval,
 		acceptableCountAgentErrors: cfg.AcceptableCountAgentErrors,
-		workerPool:                     workerPool,
-		collector: collect,
+		workerPool:                 workerPool,
+		collector:                  collect,
 	}, nil
 }
 
@@ -99,10 +100,19 @@ func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan
 	for {
 		select {
 		case <-ticker.C:
-			err := m.poll(cfg)
-			if err != nil {
-				chanError <- err
-			}
+			go func() {
+				err := m.pollRuntime(cfg)
+				if err != nil {
+					chanError <- err
+				}
+			}()
+
+			go func() {
+				err := m.pollGopsutil(cfg)
+				if err != nil {
+					chanError <- err
+				}
+			}()
 		case <-ctx.Done():
 			m.loger.Info("сбор метрик приостановлен")
 			return
@@ -110,13 +120,25 @@ func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan
 	}
 }
 
-func (m *Monitor) poll(cfg config.Config) error {
+func (m *Monitor) pollRuntime(cfg config.Config) error {
 	m.sc.Lock()
 	defer m.sc.Unlock()
 
 	m.pollCounter++
 
 	for key, value := range m.getStatsRuntime() {
+		m.collector.Set(key, value)
+	}
+	return nil
+}
+
+func (m *Monitor) pollGopsutil(cfg config.Config) error {
+	m.sc.Lock()
+	defer m.sc.Unlock()
+
+	m.pollCounter++
+
+	for key, value := range m.getStatsGopsutil() {
 		m.collector.Set(key, value)
 	}
 	return nil
@@ -213,7 +235,7 @@ func (m *Monitor) getStatsGopsutil() map[string]types.Metricer {
 }
 
 func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan error) error {
-	limiter := ratelimiter.New(1 * time.Second, cfg.RateLimit)
+	limiter := ratelimiter.New(1*time.Second, cfg.RateLimit)
 	err := limiter.Run(ctx)
 	if err != nil {
 		return err
@@ -223,7 +245,7 @@ func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan err
 		select {
 		case <-ctx.Done():
 			return nil
-		case job := <- m.workerPool.Jobs:
+		case job := <-m.workerPool.Jobs:
 			limiter.Wait()
 
 			go func() {
