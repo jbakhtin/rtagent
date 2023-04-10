@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jbakhtin/rtagent/internal/agent/collector"
 	"github.com/jbakhtin/rtagent/internal/agent/ratelimiter"
 	"github.com/jbakhtin/rtagent/internal/agent/workerpool"
 	"net/http"
@@ -34,10 +35,12 @@ type Monitor struct {
 	pollCounter types.Counter
 
 	workerPool workerpool.WorkerPool
+	collector collector.Collector
 }
 
 func NewMonitor(cfg config.Config, logger *zap.Logger) (Monitor, error) {
 	workerPool, _ := workerpool.NewWorkerPool()
+	collect, _ := collector.NewCollector()
 	return Monitor{
 		loger:                      logger,
 		serverAddress:              fmt.Sprintf("http://%s", cfg.Address), //TODO: переделать зависимость от http/https
@@ -45,6 +48,7 @@ func NewMonitor(cfg config.Config, logger *zap.Logger) (Monitor, error) {
 		reportInterval:             cfg.ReportInterval,
 		acceptableCountAgentErrors: cfg.AcceptableCountAgentErrors,
 		workerPool:                     workerPool,
+		collector: collect,
 	}, nil
 }
 
@@ -111,6 +115,10 @@ func (m *Monitor) poll(cfg config.Config) error {
 	defer m.sc.Unlock()
 
 	m.pollCounter++
+
+	for key, value := range m.getStatsRuntime() {
+		m.collector.Set(key, value)
+	}
 	return nil
 }
 
@@ -122,12 +130,7 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 	for {
 		select {
 		case <-ticker.C:
-			err := m.reportRuntime()
-			if err != nil {
-				chanError <- err
-			}
-
-			err = m.reportGopsutil()
+			err := m.report()
 			if err != nil {
 				chanError <- err
 			}
@@ -140,16 +143,13 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 	}
 }
 
-func (m *Monitor) reportRuntime() error {
-	for key, value := range m.getStatsRuntime() {
-		job := workerpool.NewJob(key, value)
-		m.workerPool.Jobs <- job
+func (m *Monitor) report() error {
+	stats, err := m.collector.GetAll()
+	if err != nil {
+		return err
 	}
-	return nil
-}
 
-func (m *Monitor) reportGopsutil() error {
-	for key, value := range m.getStatsGopsutil() {
+	for key, value := range stats {
 		job := workerpool.NewJob(key, value)
 		m.workerPool.Jobs <- job
 	}
