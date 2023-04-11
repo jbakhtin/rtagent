@@ -26,7 +26,7 @@ type MetricRepository interface {
 
 type HandlerMetric struct {
 	repository MetricRepository
-	config config.Config
+	config     config.Config
 }
 
 var listOfMetricHTMLTemplate = `
@@ -44,7 +44,7 @@ func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, e
 
 		return &HandlerMetric{
 			repository: &ms,
-			config: cfg,
+			config:     cfg,
 		}, nil
 	}
 
@@ -60,7 +60,7 @@ func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, e
 
 	return &HandlerMetric{
 		repository: &ms,
-		config: cfg,
+		config:     cfg,
 	}, nil
 }
 
@@ -191,7 +191,7 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 		var metric models.Metricer
 		switch metrics.MType {
 		case types.GaugeType:
-			metric, err = models.NewGauge(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Value))
+			metric, err = models.NewGauge(metrics.MType, metrics.MKey, fmt.Sprintf( "%v", *metrics.Value))
 		case types.CounterType:
 			metric, err = models.NewCounter(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Delta))
 		}

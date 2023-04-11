@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/jbakhtin/rtagent/internal/config"
-	"go.uber.org/zap"
+	"github.com/jbakhtin/rtagent/internal/agent"
 	"log"
 
-	"github.com/jbakhtin/rtagent/internal/agent"
+	"github.com/jbakhtin/rtagent/internal/config"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 		return
 	}
 
-	monitor, err := agent.New(cfg, logger)
+	monitor, err := agent.NewMonitor(cfg, logger)
 	if err != nil {
 		logger.Error(err.Error())
 	}

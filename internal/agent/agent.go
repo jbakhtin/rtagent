@@ -5,39 +5,51 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
 	"net/http"
 	"runtime"
 	"sync"
 	"time"
 
+	"github.com/jbakhtin/rtagent/internal/agent/collector"
+	"github.com/jbakhtin/rtagent/internal/agent/ratelimiter"
+	"github.com/jbakhtin/rtagent/internal/agent/workerpool"
+
+	gopsutil "github.com/shirou/gopsutil/v3/mem"
+
+	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
+
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"go.uber.org/zap"
 	"golang.org/x/exp/rand"
-
-	"github.com/go-resty/resty/v2"
 )
 
 type Monitor struct {
 	sc    sync.Mutex
 	loger *zap.Logger
 
-	serverAddress  string
-	pollInterval   time.Duration
-	reportInterval time.Duration
+	serverAddress              string
+	pollInterval               time.Duration
+	reportInterval             time.Duration
 	acceptableCountAgentErrors int
 
 	pollCounter types.Counter
+
+	workerPool workerpool.WorkerPool
+	collector  collector.Collector
 }
 
-func New(cfg config.Config, logger *zap.Logger) (Monitor, error) {
+func NewMonitor(cfg config.Config, logger *zap.Logger) (Monitor, error) {
+	workerPool, _ := workerpool.NewWorkerPool()
+	collect, _ := collector.NewCollector()
 	return Monitor{
-		loger:          logger,
-		serverAddress:  fmt.Sprintf("http://%s", cfg.Address), //TODO: переделать зависимость от http/https
-		pollInterval:   cfg.PollInterval,
-		reportInterval: cfg.ReportInterval,
+		loger:                      logger,
+		serverAddress:              fmt.Sprintf("http://%s", cfg.Address), //TODO: переделать зависимость от http/https
+		pollInterval:               cfg.PollInterval,
+		reportInterval:             cfg.ReportInterval,
 		acceptableCountAgentErrors: cfg.AcceptableCountAgentErrors,
+		workerPool:                 workerPool,
+		collector:                  collect,
 	}, nil
 }
 
@@ -50,11 +62,12 @@ func (m *Monitor) Start(cfg config.Config) error {
 
 	go m.polling(ctx, cfg, chanErr)
 	go m.reporting(ctx, cfg, chanErr)
+	go m.Run(ctx, cfg, chanErr)
 
 	var errCount int
 	var err error
 
-	err = func () error{
+	err = func() error {
 		for {
 			select {
 			case err = <-chanErr:
@@ -62,22 +75,19 @@ func (m *Monitor) Start(cfg config.Config) error {
 				m.loger.Info(err.Error())
 
 				if errCount > m.acceptableCountAgentErrors {
-					// TODO: реализовать отправку количества ошибко на сервер
-					// TODO: реализовать новый тип метрики - стринг отправлять описание ошибки на сервер
 
 					m.loger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.acceptableCountAgentErrors))
 					cancel()
 				}
 			case <-ctx.Done():
 				m.loger.Info("завершаем работу агента")
-				err := m.report(cfg)
 				if err != nil {
 					return err
 				}
 				return nil
 			}
 		}
-	} ()
+	}()
 
 	return err
 }
@@ -90,10 +100,19 @@ func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan
 	for {
 		select {
 		case <-ticker.C:
-			err := m.poll(cfg)
-			if err != nil {
-				chanError <- err
-			}
+			go func() {
+				err := m.pollRuntime(cfg)
+				if err != nil {
+					chanError <- err
+				}
+			}()
+
+			go func() {
+				err := m.pollGopsutil(cfg)
+				if err != nil {
+					chanError <- err
+				}
+			}()
 		case <-ctx.Done():
 			m.loger.Info("сбор метрик приостановлен")
 			return
@@ -101,11 +120,27 @@ func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan
 	}
 }
 
-func (m *Monitor) poll(cfg config.Config) error {
+func (m *Monitor) pollRuntime(cfg config.Config) error {
 	m.sc.Lock()
 	defer m.sc.Unlock()
 
 	m.pollCounter++
+
+	for key, value := range m.getStatsRuntime() {
+		m.collector.Set(key, value)
+	}
+	return nil
+}
+
+func (m *Monitor) pollGopsutil(cfg config.Config) error {
+	m.sc.Lock()
+	defer m.sc.Unlock()
+
+	m.pollCounter++
+
+	for key, value := range m.getStatsGopsutil() {
+		m.collector.Set(key, value)
+	}
 	return nil
 }
 
@@ -117,10 +152,12 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 	for {
 		select {
 		case <-ticker.C:
-			err := m.reportBatch(cfg)
+			err := m.report()
 			if err != nil {
 				chanError <- err
 			}
+
+			m.pollCounter = 0
 		case <-ctx.Done():
 			m.loger.Info("отправка метрики приостановлена")
 			return
@@ -128,124 +165,21 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 	}
 }
 
-// report - отправить данные
-func (m *Monitor) report(cfg config.Config) error {
-	m.sc.Lock()
-	defer m.sc.Unlock()
-
-	for key, value := range m.getStats() {
-		endpoint := fmt.Sprintf("%s/update/{type}/{key}/{value}", m.serverAddress)
-		client := resty.New()
-		_, err := client.R().SetHeaders(map[string]string{
-			"Content-Type": "text/plain",
-		}).SetPathParams(map[string]string{
-			"type":  value.Type(),
-			"key":   key,
-			"value": fmt.Sprint(value),
-		}).Post(endpoint)
-		if err != nil {
-			return err
-		}
+func (m *Monitor) report() error {
+	stats, err := m.collector.GetAll()
+	if err != nil {
+		return err
 	}
 
-	m.pollCounter = 0
-
-	return nil
-}
-
-func (m *Monitor) reportJSON(cfg config.Config) error {
-	for key, value := range m.getStats() {
-		endpoint := fmt.Sprintf("%s/update/", m.serverAddress)
-		metric, err := handlerModels.ToJSON(cfg, key, value)
-		if err != nil {
-			return err
-		}
-
-		metric.Hash, err = metric.CalcHash([]byte(cfg.KeyApp))
-		if err != nil {
-			return err
-		}
-
-		hash, err := metric.CalcHash([]byte(cfg.KeyApp))
-		if err != nil {
-			return err
-		}
-		metric.Hash = hash
-
-		buf, err := json.Marshal(metric)
-		if err != nil {
-			return err
-		}
-
-		request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
-		if err != nil {
-			return err
-		}
-		request.Header.Set("Content-Type", "application/json")
-
-		client := http.Client{}
-		response, err := client.Do(request)
-		if err != nil {
-			return err
-		}
-
-		if err = response.Body.Close(); err != nil {
-			return err
-		}
-	}
-
-	m.pollCounter = 0
-	return nil
-}
-
-func (m *Monitor) reportBatch(cfg config.Config) error {
-	stats := m.getStats()
-	metrics := make([]handlerModels.Metrics, len(stats))
-
-	counter := 0
 	for key, value := range stats {
-		metric, err := handlerModels.ToJSON(cfg, key, value)
-		if err != nil {
-			return err
-		}
-
-		metric.Hash, err = metric.CalcHash([]byte(cfg.KeyApp))
-		if err != nil {
-			return err
-		}
-
-		metrics[counter] = metric
-		counter++
+		job := workerpool.NewJob(key, value)
+		m.workerPool.Jobs <- job
 	}
-
-	endpoint := fmt.Sprintf("%s/updates/", m.serverAddress)
-	buf, err := json.Marshal(metrics)
-	if err != nil {
-		return err
-	}
-
-	request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/json")
-
-	client := http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-
-	if err = response.Body.Close(); err != nil {
-		return err
-	}
-
-	m.pollCounter = 0
 	return nil
 }
 
 // GetStats - Поулчить слайс содержщий последние акутальные данные
-func (m *Monitor) getStats() map[string]types.Metricer {
+func (m *Monitor) getStatsRuntime() map[string]types.Metricer {
 	memStats := runtime.MemStats{}
 	runtime.ReadMemStats(&memStats)
 
@@ -285,4 +219,84 @@ func (m *Monitor) getStats() map[string]types.Metricer {
 	result["RandomValue"] = types.Gauge(rand.Int())
 
 	return result
+}
+
+func (m *Monitor) getStatsGopsutil() map[string]types.Metricer {
+	memStats, _ := gopsutil.VirtualMemory()
+
+	result := map[string]types.Metricer{}
+
+	// memStats
+	result["TotalMemory"] = types.Gauge(memStats.Total)
+	result["FreeMemory"] = types.Gauge(memStats.Free)
+	result["CPUutilization1"] = types.Gauge(memStats.Used)
+
+	return result
+}
+
+func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan error) error {
+	limiter := ratelimiter.New(1*time.Second, cfg.RateLimit)
+	err := limiter.Run(ctx)
+	if err != nil {
+		return err
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case job := <-m.workerPool.Jobs:
+			limiter.Wait()
+
+			go func() {
+				err = m.sendJSON(ctx, cfg, job)
+				if err != nil {
+					m.loger.Info(err.Error())
+					chanError <- err
+				}
+			}()
+		}
+	}
+}
+
+func (m *Monitor) sendJSON(ctx context.Context, cfg config.Config, job workerpool.Job) error {
+	endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", cfg.Address))
+	metric, err := handlerModels.ToJSON(cfg, job.Key, job.Value)
+	if err != nil {
+		return err
+	}
+
+	metric.Hash, err = metric.CalcHash([]byte(cfg.KeyApp))
+	if err != nil {
+		return err
+	}
+
+	hash, err := metric.CalcHash([]byte(cfg.KeyApp))
+	if err != nil {
+		return err
+	}
+	metric.Hash = hash
+
+	buf, err := json.Marshal(metric)
+	if err != nil {
+		return err
+	}
+
+	request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/json")
+
+	client := http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+
+	if err = response.Body.Close(); err != nil {
+		return err
+	}
+
+	return nil
 }

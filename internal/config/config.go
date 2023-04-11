@@ -14,10 +14,11 @@ const (
 	_storeFile                  = "tmp/devops-metrics-db.json"
 	_storeInterval              = time.Second * 300
 	_restore                    = true
-	_acceptableCountAgentErrors = 10
+	_acceptableCountAgentErrors = 100
 	_keyApp                     = ""
 	_databaseDSN                = ""
 	_databaseDriver             = "pgx"
+	_rateLimit                  = 100
 )
 
 const (
@@ -31,6 +32,7 @@ const (
 	_keyAppLabel                     = "Ключ приложения"
 	_databaseDSNLabel                = "DSN БД"
 	_databaseDriverLabel             = "Драйвер подключения к БД"
+	_rateLimitLabel                  = "Количество исходящих запросов в секунду"
 )
 
 type Config struct {
@@ -44,6 +46,7 @@ type Config struct {
 	KeyApp                     string        `env:"KEY"`
 	DatabaseDSN                string        `env:"DATABASE_DSN"`
 	DatabaseDriver             string        `env:"DATABASE_DRIVER" envDefault:"pgx"`
+	RateLimit                  int           `env:"RATE_LIMIT" envDefault:"100"`
 }
 
 type Builder struct {
@@ -64,6 +67,7 @@ func NewConfigBuilder() *Builder {
 			_keyApp,
 			_databaseDSN,
 			_databaseDriver,
+			_rateLimit,
 		},
 		nil,
 	}
@@ -101,6 +105,7 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	address := flag.String("a", _address, _addressLabel)
 	acceptableCountAgentErrors := flag.Int("e", _acceptableCountAgentErrors, _acceptableCountAgentErrorsLabel)
 	keyApp := flag.String("k", _keyApp, _keyAppLabel)
+	rateLimit := flag.Int("l", _rateLimit, _rateLimitLabel)
 	flag.Parse()
 
 	cb.config.PollInterval = *pollInterval
@@ -108,6 +113,7 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	cb.config.Address = *address
 	cb.config.AcceptableCountAgentErrors = *acceptableCountAgentErrors
 	cb.config.KeyApp = *keyApp
+	cb.config.RateLimit = *rateLimit
 
 	return cb
 }
