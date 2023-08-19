@@ -27,3 +27,6 @@ vendor/
 # sandbox
 /cmd/sandbox/
 /tmp/*
+
+# profile
+profile/

@@ -9,8 +9,8 @@ import (
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
-	"github.com/jbakhtin/rtagent/internal/storages/dbstorage"
 	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
+	"github.com/jbakhtin/rtagent/internal/storages/memstorage"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"html/template"
 	"net/http"
@@ -37,7 +37,7 @@ var listOfMetricHTMLTemplate = `
 
 func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, error) {
 	if cfg.DatabaseDSN != "" {
-		ms, err := dbstorage.New(cfg) // TODO: move to cfg
+		ms, err := memstorage.NewMemStorage(cfg) // TODO: move to cfg
 		if err != nil {
 			return nil, err
 		}

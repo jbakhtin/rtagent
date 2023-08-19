@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/server/middlewares"
@@ -56,6 +57,10 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 		})
 
 		r.Post("/updates/", handlerMetric.UpdateMetricsByJSON())
+
+		r.HandleFunc("/debug/pprof/*", pprof.Index)
+		r.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		r.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	})
 
 	return http.ListenAndServe(ms.Addr, r)
