@@ -28,5 +28,5 @@ vendor/
 /cmd/sandbox/
 /tmp/*
 
-# profile
-profile/
+# profiles
+# profiles/
