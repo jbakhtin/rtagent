@@ -59,4 +59,5 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 	})
 
 	return http.ListenAndServe(ms.Addr, r)
+
 }
