@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"fmt"
+
 	"github.com/jbakhtin/rtagent/internal/config"
 
 	"github.com/jbakhtin/rtagent/internal/types"

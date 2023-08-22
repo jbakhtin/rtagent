@@ -6,6 +6,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+
 	_ "github.com/jackc/pgx/v5"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"

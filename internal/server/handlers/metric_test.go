@@ -3,11 +3,12 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
 
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/stretchr/testify/require"

@@ -12,7 +12,7 @@ type Limiter struct {
 	waiter       chan struct{}
 }
 
-func (l *Limiter) run(ctx  context.Context) {
+func (l *Limiter) run(ctx context.Context) {
 	for {
 		if l.counter > l.maxCount { // Если количество операций во временном интервале израсходовано, то
 			<-l.resetCounter.C // дожидаемся завершения временного интервала
@@ -20,7 +20,7 @@ func (l *Limiter) run(ctx  context.Context) {
 		}
 
 		select {
-		case <- ctx.Done():
+		case <-ctx.Done():
 			l.resetCounter.Stop()
 			return
 		case l.waiter <- struct{}{}: // На каждое выполненное действие

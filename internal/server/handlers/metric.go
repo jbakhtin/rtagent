@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
@@ -12,8 +15,6 @@ import (
 	"github.com/jbakhtin/rtagent/internal/storages/dbstorage"
 	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
 	"github.com/jbakhtin/rtagent/internal/types"
-	"html/template"
-	"net/http"
 )
 
 type MetricRepository interface {
@@ -191,7 +192,7 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 		var metric models.Metricer
 		switch metrics.MType {
 		case types.GaugeType:
-			metric, err = models.NewGauge(metrics.MType, metrics.MKey, fmt.Sprintf( "%v", *metrics.Value))
+			metric, err = models.NewGauge(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Value))
 		case types.CounterType:
 			metric, err = models.NewCounter(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Delta))
 		}

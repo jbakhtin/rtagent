@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"github.com/jbakhtin/rtagent/internal/models"
-	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
-	"github.com/jbakhtin/rtagent/internal/types"
 	"io"
 	"os"
 	"time"
+
+	"github.com/jbakhtin/rtagent/internal/models"
+	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
+	"github.com/jbakhtin/rtagent/internal/types"
 
 	"github.com/jbakhtin/rtagent/internal/storages/memstorage"
 

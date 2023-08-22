@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/config"
-	"github.com/jbakhtin/rtagent/internal/server"
-	"go.uber.org/zap"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/jbakhtin/rtagent/internal/config"
+	"github.com/jbakhtin/rtagent/internal/server"
+	"go.uber.org/zap"
 
 	_ "net/http/pprof"
 )
