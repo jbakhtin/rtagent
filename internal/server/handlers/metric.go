@@ -17,6 +17,7 @@ import (
 	"github.com/jbakhtin/rtagent/internal/types"
 )
 
+// MetricRepository интерфейс реализации хранилища.
 type MetricRepository interface {
 	GetAll() (map[string]models.Metricer, error)
 	Get(key string) (models.Metricer, error)
@@ -30,12 +31,12 @@ type HandlerMetric struct {
 	config     config.Config
 }
 
+// listOfMetricHTMLTemplate html шаблон списка метрик key: value.
 var listOfMetricHTMLTemplate = `
 	{{range .}}
 		<div>{{.Key}}:{{.StringValue}}</div>
 	{{end}}
 `
-
 func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, error) {
 	if cfg.DatabaseDSN != "" {
 		ms, err := dbstorage.New(cfg) // TODO: move to cfg
@@ -65,6 +66,10 @@ func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, e
 	}, nil
 }
 
+// GetMetricValue - получить значение метрики по типу метрики и ключу.
+//  /value/{type}/{key}
+//  type - тип метрики
+//  key - ключ метрики
 func (h *HandlerMetric) GetMetricValue() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mKey := chi.URLParam(r, "key")
@@ -93,6 +98,10 @@ func (h *HandlerMetric) GetMetricValue() http.HandlerFunc {
 	}
 }
 
+// GetMetricAsJSON - получить значение метрики по типу метрики и ключу в формате JSON.
+//  /value/{type}/{key}
+//  type - тип метрики
+//  key - ключ метрики
 func (h *HandlerMetric) GetMetricAsJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -124,6 +133,11 @@ func (h *HandlerMetric) GetMetricAsJSON() http.HandlerFunc {
 	}
 }
 
+// UpdateMetric - обновить значение метрики по типу метрики и ключу в формате JSON.
+//  /value/{type}/{key}/{value}
+//  type - тип метрики
+//  key - ключ метрики
+//  value - новое значение метрики
 func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mValue := chi.URLParam(r, "value")
@@ -166,6 +180,11 @@ func (h *HandlerMetric) UpdateMetric() http.HandlerFunc {
 	}
 }
 
+// UpdateMetricByJSON - создать или обновить несколько метрик в формате JSON
+//  /value/{type}/{key}/{value}
+//  type - тип метрики
+//  key - ключ метрики
+//  value - новое значение метрики
 func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
