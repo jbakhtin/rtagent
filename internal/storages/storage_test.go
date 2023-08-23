@@ -22,14 +22,24 @@ func genRandString(length int) (string) {
 	return b.String()
 }
 
+// Benchmark - сравнивает производительность хранилищ.
 func Benchmark(b *testing.B) {
+	// Инициализация хранилищ
 	cfg, _ := config.NewConfigBuilder().WithAllFromEnv().Build()
-	memStorage, _ := memstorage.NewMemStorage(cfg)
-	dbStorage, _ := dbstorage.New(cfg)
+	memStorage, err := memstorage.NewMemStorage(cfg)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	dbStorage, err := dbstorage.New(cfg)
+	if err != nil {
+		b.Fatal(err)
+	}
 
 	storageMapSize := 1000
 	testData := make(map[string]models.Metricer, storageMapSize)
 
+	// Создаем тестовые данные.
 	for i := 0; i < storageMapSize; i++ {
 		gauge := types.Gauge(12)
 		model := models.Gauge{
@@ -44,6 +54,7 @@ func Benchmark(b *testing.B) {
 	}
 
 	b.ResetTimer()
+
 	b.Run("mem_set", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _ ,model := range testData {
