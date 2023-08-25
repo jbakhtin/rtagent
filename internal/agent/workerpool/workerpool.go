@@ -3,7 +3,7 @@ package workerpool
 import "github.com/jbakhtin/rtagent/internal/types"
 
 type Job struct {
-	Key string
+	Key   string
 	Value types.Metricer
 }
 
@@ -23,7 +23,3 @@ func NewWorkerPool() (WorkerPool, error) {
 		make(chan Job),
 	}, nil
 }
-
-
-
-

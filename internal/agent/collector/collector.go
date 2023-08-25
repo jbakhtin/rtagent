@@ -1,14 +1,15 @@
 package collector
 
 import (
+	"sync"
+
 	"github.com/jbakhtin/rtagent/internal/types"
 	"go.uber.org/zap"
-	"sync"
 )
 
 type Collector struct {
 	Mx     *sync.RWMutex
-	Items map[string]types.Metricer
+	Items  map[string]types.Metricer
 	Logger *zap.Logger
 }
 
@@ -47,5 +48,3 @@ func (ms *Collector) GetAll() (map[string]types.Metricer, error) {
 
 	return result, nil
 }
-
-

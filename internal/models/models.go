@@ -2,8 +2,9 @@ package models
 
 import (
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/server/models"
 	"strconv"
+
+	"github.com/jbakhtin/rtagent/internal/server/models"
 
 	"github.com/jbakhtin/rtagent/internal/types"
 )
