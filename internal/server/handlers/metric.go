@@ -315,7 +315,7 @@ func (h *HandlerMetric) UpdateMetricsByJSON() http.HandlerFunc {
 			return
 		}
 
-		_, err = w.Write([]byte("{}"))
+		_, err = w.Write([]byte("[]"))
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return

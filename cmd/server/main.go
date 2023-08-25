@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	_ "net/http/pprof"
 )
 
 func main() {
