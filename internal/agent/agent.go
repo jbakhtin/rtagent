@@ -5,13 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jbakhtin/rtagent/pkg/ratelimiter"
 	"net/http"
 	"runtime"
 	"sync"
 	"time"
 
 	"github.com/jbakhtin/rtagent/internal/agent/collector"
-	"github.com/jbakhtin/rtagent/internal/agent/ratelimiter"
 	"github.com/jbakhtin/rtagent/internal/agent/workerpool"
 
 	gopsutil "github.com/shirou/gopsutil/v3/mem"
