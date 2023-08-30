@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/jbakhtin/rtagent/pkg/errcheck"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/copylock"
@@ -45,6 +46,7 @@ func main() {
 		loopclosure.Analyzer,
 		tests.Analyzer,
 		unreachable.Analyzer,
+		errcheck.Analyzer,
 	}
 	checks := make(map[string]bool)
 	for _, v := range cfg.Staticcheck {
