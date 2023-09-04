@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	BuildVersion string
-	BuildDate    string
-	BuildCommit  string
+	BuildVersion = "N/A"
+	BuildDate    = "N/A"
+	BuildCommit  = "N/A"
 )
 
 func init() {

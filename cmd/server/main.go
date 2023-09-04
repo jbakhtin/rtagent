@@ -14,6 +14,16 @@ import (
 	_ "net/http/pprof"
 )
 
+var (
+	BuildVersion = "N/A"
+	BuildDate    = "N/A"
+	BuildCommit  = "N/A"
+)
+
+func init() {
+	fmt.Printf("Build version: %s\nBuild date: %s\nBuild Commit: %s\n", BuildVersion, BuildDate, BuildCommit)
+}
+
 func main() {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
