@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"time"
@@ -37,9 +38,11 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 	ticker := time.NewTicker(cfg.StoreInterval)
 	defer ticker.Stop()
 
-	err := fs.Restore(ctx, cfg)
-	if err != nil {
-		return err
+	if cfg.Restore {
+		err := fs.Restore(ctx, cfg)
+		if err != nil {
+			return err
+		}
 	}
 
 	go func() {
@@ -125,7 +128,7 @@ func (fs *FileStorage) Restore(ctx context.Context, cfg config.Config) error {
 	data, err := reader.ReadBytes('\n')
 	if err != nil {
 		if err != io.EOF {
-			return err
+			return errors.New("test")
 		}
 
 		return nil
