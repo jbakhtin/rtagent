@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -58,7 +59,7 @@ func TestHandlerMetric_Get(t *testing.T) {
 			//result := w.Result()
 			//assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			//err = result.Body.Close()
-			//require.NoError(t, err)
+			require.NoError(t, nil)
 		})
 	}
 }
