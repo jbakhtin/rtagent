@@ -61,7 +61,7 @@ func TestHandlerMetric_Get(t *testing.T) {
 			result := w.Result()
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			err = result.Body.Close()
-			require.NoError(t, nil)
+			require.NoError(t, err)
 		})
 	}
 }
