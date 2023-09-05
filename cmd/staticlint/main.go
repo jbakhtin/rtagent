@@ -6,11 +6,15 @@
 // - самописный анализатор на обнаружение вызовов os.Exit в функции main.
 
 // Для запуска необходимо:
-// 1. Скомпилировать приложение
-//   go build -o bin/multichecker cmd/staticlint/main.go
+// 1. Скомпилировать приложение.
+//   go build -o bin/multichecker cmd/staticlint/main.go.
 //
-// 2. Запустить скомпилированный бинарник из консоли для указанной директории
+// 2. Запустить скомпилированный бинарник из консоли для указанной директории.
 //   ./bin/multichecker ./...
+
+//   Для игнорирования проверки авто-сгенерированных файлов с тестами.
+//   ./bin/multichecker -test=false ./...
+
 package main
 
 import (
@@ -36,7 +40,7 @@ import (
 	"honnef.co/go/tools/staticcheck"
 )
 
-// StaticCheckPath - путь к фалу конфигурации для staticcheck в фомате toml.
+// StaticCheckPath - путь к фалу конфигурации для staticcheck в формате toml.
 var StaticCheckPath = "staticcheck.toml"
 
 // Config - структура файла конфигурации.
