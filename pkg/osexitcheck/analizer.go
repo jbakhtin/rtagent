@@ -1,3 +1,4 @@
+// Package osexitcheck пакет производит проверку вызова функции os.Exit в функции main
 package osexitcheck
 
 import (
