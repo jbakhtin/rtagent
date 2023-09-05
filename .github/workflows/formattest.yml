@@ -1,0 +1,19 @@
+name: go format test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  statictest:
+    runs-on: ubuntu-latest
+    container: golang:1.19
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Format
+        run: if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then exit 1; fi
