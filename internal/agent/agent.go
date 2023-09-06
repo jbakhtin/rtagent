@@ -28,7 +28,7 @@ import (
 type Monitor struct {
 	collector                  collector.Collector
 	workerPool                 workerpool.WorkerPool
-	loger                      *zap.Logger
+	logger                      *zap.Logger
 	serverAddress              string
 	acceptableCountAgentErrors int
 	pollCounter                types.Counter
