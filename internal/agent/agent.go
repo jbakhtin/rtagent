@@ -48,8 +48,8 @@ func NewMonitor(cfg config.Config, logger *zap.Logger) (*Monitor, error) {
 		return nil, err
 	}
 
-	return Monitor{
-		loger:                      logger,
+	return &Monitor{
+		logger:                      logger,
 		serverAddress:              fmt.Sprintf("http://%s", cfg.Address), //TODO: переделать зависимость от http/https
 		pollInterval:               cfg.PollInterval,
 		reportInterval:             cfg.ReportInterval,
@@ -78,15 +78,15 @@ func (m *Monitor) Start(cfg config.Config) error {
 			select {
 			case err = <-chanErr:
 				errCount++
-				m.loger.Info(err.Error())
+				m.logger.Info(err.Error())
 
 				if errCount > m.acceptableCountAgentErrors {
 
-					m.loger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.acceptableCountAgentErrors))
+					m.logger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.acceptableCountAgentErrors))
 					cancel()
 				}
 			case <-ctx.Done():
-				m.loger.Info("завершаем работу агента")
+				m.logger.Info("завершаем работу агента")
 				if err != nil {
 					return err
 				}
@@ -120,7 +120,7 @@ func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan
 				}
 			}()
 		case <-ctx.Done():
-			m.loger.Info("сбор метрик приостановлен")
+			m.logger.Info("сбор метрик приостановлен")
 			return
 		}
 	}
@@ -176,7 +176,7 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 
 			m.pollCounter = 0
 		case <-ctx.Done():
-			m.loger.Info("отправка метрики приостановлена")
+			m.logger.Info("отправка метрики приостановлена")
 			return
 		}
 	}
@@ -271,7 +271,7 @@ func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan err
 			go func() {
 				err = m.sendJSON(ctx, cfg, job)
 				if err != nil {
-					m.loger.Info(err.Error())
+					m.logger.Info(err.Error())
 					chanError <- err
 				}
 			}()
