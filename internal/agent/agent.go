@@ -37,7 +37,7 @@ type Monitor struct {
 	pollInterval               time.Duration
 }
 
-func NewMonitor(cfg config.Config, logger *zap.Logger) (Monitor, error) {
+func NewMonitor(cfg config.Config, logger *zap.Logger) (*Monitor, error) {
 	workerPool, err := workerpool.NewWorkerPool()
 	if err != nil {
 		return Monitor{}, err
