@@ -28,7 +28,7 @@ import (
 type Monitor struct {
 	collector                  collector.Collector
 	workerPool                 workerpool.WorkerPool
-	logger                      *zap.Logger
+	logger                     *zap.Logger
 	serverAddress              string
 	acceptableCountAgentErrors int
 	pollCounter                types.Counter
@@ -49,7 +49,7 @@ func NewMonitor(cfg config.Config, logger *zap.Logger) (*Monitor, error) {
 	}
 
 	return &Monitor{
-		logger:                      logger,
+		logger:                     logger,
 		serverAddress:              fmt.Sprintf("http://%s", cfg.Address), //TODO: переделать зависимость от http/https
 		pollInterval:               cfg.PollInterval,
 		reportInterval:             cfg.ReportInterval,
