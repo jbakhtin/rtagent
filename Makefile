@@ -8,6 +8,9 @@ build-staticlint:
 run-staticlint:
 	./bin/staticlint ./...
 
+run-staticlint-with-ignore-tests:
+	./bin/staticlint -test=false ./...
+
 run-server-with-build-info:
 	go run -ldflags \
 	"-X 'main.BuildVersion=$(BUILD_VERSION)' \

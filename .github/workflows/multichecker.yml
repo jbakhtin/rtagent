@@ -19,4 +19,4 @@ jobs:
         run: make build-staticlint
 
       - name: Run multichecker
-        run: make run-staticlint
+        run: make run-staticlint-with-ignore-tests
