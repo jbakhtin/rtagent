@@ -122,12 +122,20 @@ func (h *HandlerMetric) GetMetricAsJSON() http.HandlerFunc {
 			return
 		}
 
-		JSONMetric, _ := metric.ToJSON([]byte(h.config.KeyApp))
-		jsonMetric, err := json.Marshal(JSONMetric)
+		var JSONMetric handlerModels.Metrics
+		JSONMetric, err = metric.ToJSON([]byte(h.config.KeyApp))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		var jsonMetric []byte
+		jsonMetric, err = json.Marshal(JSONMetric)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+
 		_, err = w.Write(jsonMetric)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
@@ -194,6 +202,8 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		var metrics handlerModels.Metrics
+		var hash string
+
 		err := json.NewDecoder(r.Body).Decode(&metrics)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotImplemented)
@@ -201,7 +211,7 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 		}
 
 		if h.config.KeyApp != "" {
-			hash, err := metrics.CalcHash([]byte(h.config.KeyApp))
+			hash, err = metrics.CalcHash([]byte(h.config.KeyApp))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -225,13 +235,13 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 			return
 		}
 
-		test, err := h.repository.Set(metric)
+		_, err = h.repository.Set(metric)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		JSONMetric, err := test.ToJSON([]byte(h.config.KeyApp))
+		JSONMetric, err := metric.ToJSON([]byte(h.config.KeyApp))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -300,10 +310,11 @@ func (h *HandlerMetric) UpdateMetricsByJSON() http.HandlerFunc {
 			return
 		}
 
+		var hash string
 		mMetrics := make([]models.Metricer, len(metrics))
 		for i, m := range metrics {
 			if h.config.KeyApp != "" {
-				hash, err := m.CalcHash([]byte(h.config.KeyApp))
+				hash, err = m.CalcHash([]byte(h.config.KeyApp))
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return

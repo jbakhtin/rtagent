@@ -36,40 +36,40 @@ const (
 )
 
 type Config struct {
-	PollInterval               time.Duration `env:"POLL_INTERVAL"`
-	ReportInterval             time.Duration `env:"REPORT_INTERVAL"`
 	Address                    string        `env:"ADDRESS"`
 	StoreFile                  string        `env:"STORE_FILE"`
-	StoreInterval              time.Duration `env:"STORE_INTERVAL"`
-	Restore                    bool          `env:"RESTORE"`
-	AcceptableCountAgentErrors int           `env:"ACCEPTABLE_COUNT_AGENT_ERRORS"`
 	KeyApp                     string        `env:"KEY"`
 	DatabaseDSN                string        `env:"DATABASE_DSN"`
 	DatabaseDriver             string        `env:"DATABASE_DRIVER" envDefault:"pgx"`
+	AcceptableCountAgentErrors int           `env:"ACCEPTABLE_COUNT_AGENT_ERRORS"`
 	RateLimit                  int           `env:"RATE_LIMIT" envDefault:"100"`
+	PollInterval               time.Duration `env:"POLL_INTERVAL"`
+	ReportInterval             time.Duration `env:"REPORT_INTERVAL"`
+	StoreInterval              time.Duration `env:"STORE_INTERVAL"`
+	Restore                    bool          `env:"RESTORE"`
 }
 
 type Builder struct {
-	config Config
 	err    error
+	config Config
 }
 
 func NewConfigBuilder() *Builder {
 	return &Builder{
+		nil,
 		Config{
-			_pollInterval,
-			_reportInterval,
 			_address,
 			_storeFile,
-			_storeInterval,
-			_restore,
-			_acceptableCountAgentErrors,
 			_keyApp,
 			_databaseDSN,
 			_databaseDriver,
+			_acceptableCountAgentErrors,
 			_rateLimit,
+			_pollInterval,
+			_reportInterval,
+			_storeInterval,
+			_restore,
 		},
-		nil,
 	}
 }
 

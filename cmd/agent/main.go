@@ -16,7 +16,10 @@ var (
 )
 
 func init() {
-	fmt.Printf("Build version: %s\nBuild date: %s\nBuild Commit: %s\n", BuildVersion, BuildDate, BuildCommit)
+	_, err := fmt.Printf("Build version: %s\nBuild date: %s\nBuild Commit: %s\n", BuildVersion, BuildDate, BuildCommit)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

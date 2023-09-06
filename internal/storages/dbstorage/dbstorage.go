@@ -203,7 +203,10 @@ func (dbs *DBStorage) SetBatch(metrics []models.Metricer) ([]models.Metricer, er
 			}
 		}
 	}
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
 
 	return metrics, nil
 }

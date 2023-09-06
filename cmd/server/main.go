@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os/signal"
 	"syscall"
 	"time"
@@ -21,14 +22,16 @@ var (
 )
 
 func init() {
-	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", BuildVersion, BuildDate, BuildCommit)
+	_, err := fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", BuildVersion, BuildDate, BuildCommit)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {
 	logger, err := zap.NewDevelopment()
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatal(err)
 	}
 
 	cfg, err := config.NewConfigBuilder().

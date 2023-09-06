@@ -73,7 +73,11 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 	file, err := fs.openFile(cfg, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		file.Close()
+		closeErr := file.Close()
+		if closeErr != nil {
+			return closeErr
+		}
+
 		return err
 	}
 	defer file.Close()
@@ -84,9 +88,13 @@ func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 	}
 
 	var JSONMetrics []handlerModels.Metrics
+	var JSONMetric handlerModels.Metrics
 
 	for _, v := range metrics {
-		JSONMetric, _ := v.ToJSON([]byte(cfg.KeyApp))
+		JSONMetric, err = v.ToJSON([]byte(cfg.KeyApp))
+		if err != nil {
+			return err
+		}
 		JSONMetrics = append(JSONMetrics, JSONMetric)
 	}
 
@@ -96,7 +104,7 @@ func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 	}
 
 	writer := bufio.NewWriter(file)
-	if _, err := writer.Write(data); err != nil {
+	if _, err = writer.Write(data); err != nil {
 		return err
 	}
 
@@ -119,7 +127,11 @@ func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 func (fs *FileStorage) Restore(ctx context.Context, cfg config.Config) error {
 	file, err := fs.openFile(cfg, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
-		file.Close()
+		closeErr := file.Close()
+		if closeErr != nil {
+			return closeErr
+		}
+
 		return err
 	}
 	defer file.Close()

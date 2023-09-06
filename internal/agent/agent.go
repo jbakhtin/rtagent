@@ -26,23 +26,28 @@ import (
 )
 
 type Monitor struct {
-	sc    sync.Mutex
-	loger *zap.Logger
-
+	collector                  collector.Collector
+	workerPool                 workerpool.WorkerPool
+	loger                      *zap.Logger
 	serverAddress              string
-	pollInterval               time.Duration
-	reportInterval             time.Duration
 	acceptableCountAgentErrors int
-
-	pollCounter types.Counter
-
-	workerPool workerpool.WorkerPool
-	collector  collector.Collector
+	pollCounter                types.Counter
+	sc                         sync.Mutex
+	reportInterval             time.Duration
+	pollInterval               time.Duration
 }
 
 func NewMonitor(cfg config.Config, logger *zap.Logger) (Monitor, error) {
-	workerPool, _ := workerpool.NewWorkerPool()
-	collect, _ := collector.NewCollector()
+	workerPool, err := workerpool.NewWorkerPool()
+	if err != nil {
+		return Monitor{}, err
+	}
+
+	collect, err := collector.NewCollector()
+	if err != nil {
+		return Monitor{}, err
+	}
+
 	return Monitor{
 		loger:                      logger,
 		serverAddress:              fmt.Sprintf("http://%s", cfg.Address), //TODO: переделать зависимость от http/https
@@ -128,7 +133,10 @@ func (m *Monitor) pollRuntime(cfg config.Config) error {
 	m.pollCounter++
 
 	for key, value := range m.getStatsRuntime() {
-		m.collector.Set(key, value)
+		_, err := m.collector.Set(key, value)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -139,8 +147,16 @@ func (m *Monitor) pollGopsutil(cfg config.Config) error {
 
 	m.pollCounter++
 
-	for key, value := range m.getStatsGopsutil() {
-		m.collector.Set(key, value)
+	stats, err := m.getStatsGopsutil()
+	if err != nil {
+		return err
+	}
+
+	for key, value := range stats {
+		_, err := m.collector.Set(key, value)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -222,8 +238,11 @@ func (m *Monitor) getStatsRuntime() map[string]types.Metricer {
 	return result
 }
 
-func (m *Monitor) getStatsGopsutil() map[string]types.Metricer {
-	memStats, _ := gopsutil.VirtualMemory()
+func (m *Monitor) getStatsGopsutil() (map[string]types.Metricer, error) {
+	memStats, err := gopsutil.VirtualMemory()
+	if err != nil {
+		return nil, err
+	}
 
 	result := map[string]types.Metricer{}
 
@@ -232,7 +251,7 @@ func (m *Monitor) getStatsGopsutil() map[string]types.Metricer {
 	result["FreeMemory"] = types.Gauge(memStats.Free)
 	result["CPUutilization1"] = types.Gauge(memStats.Used)
 
-	return result
+	return result, nil
 }
 
 func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan error) error {
