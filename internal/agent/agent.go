@@ -45,7 +45,7 @@ func NewMonitor(cfg config.Config, logger *zap.Logger) (*Monitor, error) {
 
 	collect, err := collector.NewCollector()
 	if err != nil {
-		return Monitor{}, err
+		return nil, err
 	}
 
 	return Monitor{
