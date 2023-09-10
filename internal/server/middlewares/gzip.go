@@ -52,7 +52,9 @@ func GZIPCompressor(next http.Handler) http.Handler {
 				return
 			}
 			defer func() {
-				err = releaseGzipWriter(gz)
+				if tempErr := releaseGzipWriter(gz); tempErr != nil {
+					err = tempErr
+				}
 			}()
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
