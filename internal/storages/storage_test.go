@@ -59,7 +59,10 @@ func Benchmark(b *testing.B) {
 	b.Run("mem_set", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, model := range testData {
-				memStorage.Set(model)
+				_, err := memStorage.Set(model)
+				if err != nil {
+					b.Fatal(err)
+				}
 			}
 		}
 	})
@@ -67,7 +70,10 @@ func Benchmark(b *testing.B) {
 	b.Run("mem_get", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for key := range testData {
-				memStorage.Get(key)
+				_, err := memStorage.Get(key)
+				if err != nil {
+					b.Fatal(err)
+				}
 			}
 		}
 	})
@@ -75,7 +81,10 @@ func Benchmark(b *testing.B) {
 	b.Run("db_set", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for _, model := range testData {
-				dbStorage.Set(model)
+				_, err := dbStorage.Set(model)
+				if err != nil {
+					b.Fatal(err)
+				}
 			}
 		}
 	})
@@ -83,7 +92,10 @@ func Benchmark(b *testing.B) {
 	b.Run("db_get", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			for key := range testData {
-				dbStorage.Get(key)
+				_, err := dbStorage.Get(key)
+				if err != nil {
+					b.Fatal(err)
+				}
 			}
 		}
 	})

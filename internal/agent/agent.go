@@ -254,17 +254,16 @@ func (m *Monitor) getStatsGopsutil() (map[string]types.Metricer, error) {
 	return result, nil
 }
 
-func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan error) error {
+func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan error) {
 	limiter := ratelimiter.New(1*time.Second, cfg.RateLimit)
 	err := limiter.Run(ctx)
 	if err != nil {
-		return err
+		chanError <- err
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
 		case job := <-m.workerPool.Jobs:
 			limiter.Wait()
 
