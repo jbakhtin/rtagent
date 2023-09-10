@@ -13,7 +13,6 @@ import (
 
 func TestHandlerMetric_Get(t *testing.T) {
 	type fields struct {
-		repo    MetricRepository
 		request string
 	}
 	type want struct {
@@ -39,7 +38,6 @@ func TestHandlerMetric_Get(t *testing.T) {
 		{
 			"Get all metrics. Test 1",
 			fields{
-				//repo:    &storage,
 				request: "http://127.0.0.1:8080",
 			},
 			want{
