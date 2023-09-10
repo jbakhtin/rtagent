@@ -51,7 +51,13 @@ func GZIPCompressor(next http.Handler) http.Handler {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			defer releaseGzipWriter(gz)
+			defer func() {
+				err = releaseGzipWriter(gz)
+			}()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
 			w.Header().Set("Content-Encoding", gzipType)
 			next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
