@@ -169,13 +169,17 @@ func (dbs *DBStorage) GetAll() (map[string]models.Metricer, error) {
 	return metrics, nil
 }
 
-func (dbs *DBStorage) SetBatch(metrics []models.Metricer) ([]models.Metricer, error) {
+func (dbs *DBStorage) SetBatch(metrics []models.Metricer) (metric []models.Metricer, err error) {
 	tx, err := dbs.Begin()
 	if err != nil {
 		return nil, err
 	}
 
-	defer tx.Rollback()
+	defer func(tx *sql.Tx) {
+		if tempErr := tx.Rollback(); tempErr != nil {
+			err = tempErr
+		}
+	}(tx)
 
 	ctx := context.TODO()
 
