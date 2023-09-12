@@ -26,25 +26,30 @@ import (
 )
 
 type Monitor struct {
-	sc    sync.Mutex
-	loger *zap.Logger
-
+	collector                  collector.Collector
+	workerPool                 workerpool.WorkerPool
+	logger                     *zap.Logger
 	serverAddress              string
-	pollInterval               time.Duration
-	reportInterval             time.Duration
 	acceptableCountAgentErrors int
-
-	pollCounter types.Counter
-
-	workerPool workerpool.WorkerPool
-	collector  collector.Collector
+	pollCounter                types.Counter
+	sc                         sync.Mutex
+	reportInterval             time.Duration
+	pollInterval               time.Duration
 }
 
-func NewMonitor(cfg config.Config, logger *zap.Logger) (Monitor, error) {
-	workerPool, _ := workerpool.NewWorkerPool()
-	collect, _ := collector.NewCollector()
-	return Monitor{
-		loger:                      logger,
+func NewMonitor(cfg config.Config, logger *zap.Logger) (*Monitor, error) {
+	workerPool, err := workerpool.NewWorkerPool()
+	if err != nil {
+		return nil, err
+	}
+
+	collect, err := collector.NewCollector()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Monitor{
+		logger:                     logger,
 		serverAddress:              fmt.Sprintf("http://%s", cfg.Address), //TODO: переделать зависимость от http/https
 		pollInterval:               cfg.PollInterval,
 		reportInterval:             cfg.ReportInterval,
@@ -73,15 +78,15 @@ func (m *Monitor) Start(cfg config.Config) error {
 			select {
 			case err = <-chanErr:
 				errCount++
-				m.loger.Info(err.Error())
+				m.logger.Info(err.Error())
 
 				if errCount > m.acceptableCountAgentErrors {
 
-					m.loger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.acceptableCountAgentErrors))
+					m.logger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.acceptableCountAgentErrors))
 					cancel()
 				}
 			case <-ctx.Done():
-				m.loger.Info("завершаем работу агента")
+				m.logger.Info("завершаем работу агента")
 				if err != nil {
 					return err
 				}
@@ -115,7 +120,7 @@ func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan
 				}
 			}()
 		case <-ctx.Done():
-			m.loger.Info("сбор метрик приостановлен")
+			m.logger.Info("сбор метрик приостановлен")
 			return
 		}
 	}
@@ -128,7 +133,10 @@ func (m *Monitor) pollRuntime(cfg config.Config) error {
 	m.pollCounter++
 
 	for key, value := range m.getStatsRuntime() {
-		m.collector.Set(key, value)
+		_, err := m.collector.Set(key, value)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -139,8 +147,16 @@ func (m *Monitor) pollGopsutil(cfg config.Config) error {
 
 	m.pollCounter++
 
-	for key, value := range m.getStatsGopsutil() {
-		m.collector.Set(key, value)
+	stats, err := m.getStatsGopsutil()
+	if err != nil {
+		return err
+	}
+
+	for key, value := range stats {
+		_, err := m.collector.Set(key, value)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -160,7 +176,7 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 
 			m.pollCounter = 0
 		case <-ctx.Done():
-			m.loger.Info("отправка метрики приостановлена")
+			m.logger.Info("отправка метрики приостановлена")
 			return
 		}
 	}
@@ -222,8 +238,11 @@ func (m *Monitor) getStatsRuntime() map[string]types.Metricer {
 	return result
 }
 
-func (m *Monitor) getStatsGopsutil() map[string]types.Metricer {
-	memStats, _ := gopsutil.VirtualMemory()
+func (m *Monitor) getStatsGopsutil() (map[string]types.Metricer, error) {
+	memStats, err := gopsutil.VirtualMemory()
+	if err != nil {
+		return nil, err
+	}
 
 	result := map[string]types.Metricer{}
 
@@ -232,27 +251,26 @@ func (m *Monitor) getStatsGopsutil() map[string]types.Metricer {
 	result["FreeMemory"] = types.Gauge(memStats.Free)
 	result["CPUutilization1"] = types.Gauge(memStats.Used)
 
-	return result
+	return result, nil
 }
 
-func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan error) error {
+func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan error) {
 	limiter := ratelimiter.New(1*time.Second, cfg.RateLimit)
 	err := limiter.Run(ctx)
 	if err != nil {
-		return err
+		chanError <- err
 	}
 
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
 		case job := <-m.workerPool.Jobs:
 			limiter.Wait()
 
 			go func() {
 				err = m.sendJSON(ctx, cfg, job)
 				if err != nil {
-					m.loger.Info(err.Error())
+					m.logger.Info(err.Error())
 					chanError <- err
 				}
 			}()

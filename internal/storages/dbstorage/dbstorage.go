@@ -175,7 +175,11 @@ func (dbs *DBStorage) SetBatch(metrics []models.Metricer) ([]models.Metricer, er
 		return nil, err
 	}
 
-	defer tx.Rollback()
+	defer func(tx *sql.Tx) {
+		if tempErr := tx.Rollback(); tempErr != nil {
+			err = tempErr
+		}
+	}(tx)
 
 	ctx := context.TODO()
 
@@ -203,7 +207,10 @@ func (dbs *DBStorage) SetBatch(metrics []models.Metricer) ([]models.Metricer, er
 			}
 		}
 	}
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
 
 	return metrics, nil
 }

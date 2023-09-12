@@ -23,9 +23,14 @@ func acquireGzipWriter(w io.Writer, lvl int) (zw *gzip.Writer, err error) {
 	return
 }
 
-func releaseGzipWriter(zw *gzip.Writer) {
-	zw.Close()
+func releaseGzipWriter(zw *gzip.Writer) error {
+	err := zw.Close()
+	if err != nil {
+		return err
+	}
+
 	gzipWriterPool.Put(zw)
+	return nil
 }
 
 type gzipWriter struct {
@@ -46,7 +51,15 @@ func GZIPCompressor(next http.Handler) http.Handler {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			defer releaseGzipWriter(gz)
+			defer func() {
+				if tempErr := releaseGzipWriter(gz); tempErr != nil {
+					err = tempErr
+				}
+			}()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 
 			w.Header().Set("Content-Encoding", gzipType)
 			next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)

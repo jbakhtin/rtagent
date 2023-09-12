@@ -1,12 +1,26 @@
 package main
 
 import (
+	"fmt"
 	"github.com/jbakhtin/rtagent/internal/agent"
 	"log"
 
 	"github.com/jbakhtin/rtagent/internal/config"
 	"go.uber.org/zap"
 )
+
+var (
+	BuildVersion = "N/A"
+	BuildDate    = "N/A"
+	BuildCommit  = "N/A"
+)
+
+func init() {
+	_, err := fmt.Printf("Build version: %s\nBuild date: %s\nBuild Commit: %s\n", BuildVersion, BuildDate, BuildCommit)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 func main() {
 	logger, err := zap.NewDevelopment()

@@ -3,14 +3,14 @@ package workerpool
 import "github.com/jbakhtin/rtagent/internal/types"
 
 type Job struct {
-	Key   string
 	Value types.Metricer
+	Key   string
 }
 
 func NewJob(key string, value types.Metricer) Job {
 	return Job{
-		key,
 		value,
+		key,
 	}
 }
 

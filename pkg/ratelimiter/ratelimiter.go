@@ -8,10 +8,10 @@ import (
 )
 
 type Limiter struct {
+	waiter       chan struct{} // Канал для увеличения счетчика после завершения действия.
+	resetCounter *time.Ticker  // Тикер для сброса счетчика.
 	maxCount     int           // Максимальное количество разрешенных действий.
 	counter      int           // Текущее количество выполненных действий.
-	resetCounter *time.Ticker  // Тикер для сброса счетчика.
-	waiter       chan struct{} // Канал для увеличения счетчика после завершения действия.
 }
 
 func New(timeInterval time.Duration, count int) *Limiter {
