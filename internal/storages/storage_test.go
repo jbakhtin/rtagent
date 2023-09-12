@@ -1,18 +1,19 @@
 package storages
 
 import (
+	"math/rand"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/storages/dbstorage"
 	"github.com/jbakhtin/rtagent/internal/storages/memstorage"
 	"github.com/jbakhtin/rtagent/internal/types"
-	"math/rand"
-	"strings"
-	"testing"
-	"time"
 )
 
-func genRandString(length int) (string) {
+func genRandString(length int) string {
 	rand.Seed(time.Now().UnixNano())
 	chars := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
 	var b strings.Builder
@@ -57,7 +58,7 @@ func Benchmark(b *testing.B) {
 
 	b.Run("mem_set", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			for _ ,model := range testData {
+			for _, model := range testData {
 				memStorage.Set(model)
 			}
 		}
@@ -73,7 +74,7 @@ func Benchmark(b *testing.B) {
 
 	b.Run("db_set", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			for _ ,model := range testData {
+			for _, model := range testData {
 				dbStorage.Set(model)
 			}
 		}

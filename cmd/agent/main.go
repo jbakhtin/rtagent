@@ -1,9 +1,8 @@
 package main
 
 import (
-	"log"
-
 	"github.com/jbakhtin/rtagent/internal/agent"
+	"log"
 
 	"github.com/jbakhtin/rtagent/internal/config"
 	"go.uber.org/zap"
