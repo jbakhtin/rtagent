@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/github/jbakhtin/rtagent/graph/badge.svg?token=1A3VILDNN9)](https://codecov.io/github/jbakhtin/rtagent)
+
 # go-musthave-devops-tpl
 
 Шаблон репозитория для практического трека «Go в DevOps».
