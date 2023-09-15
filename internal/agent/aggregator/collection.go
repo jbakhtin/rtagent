@@ -22,7 +22,13 @@ func (m *Metrics) GetAll() map[string]types.Metricer{
 	m.Lock()
 	defer m.Unlock()
 
-	return m.items
+	// Deep copy
+	result := make(map[string]types.Metricer, len(m.items))
+	for k, v := range m.items {
+		result[k] = v
+	}
+
+	return result
 }
 
 func (m *Metrics) Set(key string, metric types.Metricer) {

@@ -67,12 +67,7 @@ func (a *aggregator) GetAll() (map[string]types.Metricer, error) {
 	a.Lock()
 	defer a.Unlock()
 
-	result := make(map[string]types.Metricer, len(a.collection.GetAll()))
-
-	// Deep copy
-	for k, v := range a.collection.GetAll() {
-		result[k] = v
-	}
+	result := a.collection.GetAll()
 
 	return result, nil
 }
