@@ -3,6 +3,7 @@ package aggregator
 import (
 	"github.com/jbakhtin/rtagent/internal/types"
 	gopsutil "github.com/shirou/gopsutil/v3/mem"
+	"math/rand"
 	"runtime"
 )
 
@@ -61,6 +62,14 @@ func Gopsutil() (map[string]types.Metricer, error) {
 	result["TotalMemory"] = types.Gauge(memStats.Total)
 	result["FreeMemory"] = types.Gauge(memStats.Free)
 	result["CPUutilization1"] = types.Gauge(memStats.Used)
+
+	return result, nil
+}
+
+func RandomMetric() (map[string]types.Metricer, error) {
+	result := map[string]types.Metricer{}
+
+	result["RandomValue"] = types.Gauge(rand.Int())
 
 	return result, nil
 }

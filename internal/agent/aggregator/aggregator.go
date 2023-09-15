@@ -22,13 +22,13 @@ type Aggregator struct {
 func (a *Aggregator) PoolCount()(map[string]types.Metricer, error) {
 	//fmt.Println("PoolCount")
 	a.poolCount.Add(1)
-	return map[string]types.Metricer{"PoolCount": types.Counter(a.poolCount)}, nil
+	return map[string]types.Metricer{"PollCount": types.Counter(a.poolCount)}, nil
 }
 
 func New() (Aggregator, error) {
 	aggregator := Aggregator{
 		items:  make(map[string]types.Metricer, 0),
-		collectors: []Collector{Runtime, Gopsutil},
+		collectors: []Collector{Runtime, Gopsutil, RandomMetric},
 	}
 
 	aggregator.collectors = append(aggregator.collectors, aggregator.PoolCount)
