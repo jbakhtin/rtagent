@@ -2,7 +2,6 @@ package aggregator
 
 import (
 	"context"
-	"fmt"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"golang.org/x/exp/maps"
 	"sync"
@@ -21,9 +20,9 @@ type Aggregator struct {
 }
 
 func (a *Aggregator) PoolCount()(map[string]types.Metricer, error) {
-	fmt.Println("PoolCount")
+	//fmt.Println("PoolCount")
 	a.poolCount.Add(1)
-	return map[string]types.Metricer{"poolCount": types.Counter(a.poolCount)}, nil
+	return map[string]types.Metricer{"PoolCount": types.Counter(a.poolCount)}, nil
 }
 
 func New() (Aggregator, error) {
