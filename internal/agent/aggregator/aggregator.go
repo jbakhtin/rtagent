@@ -29,13 +29,13 @@ func (a *aggregator) run(ctx context.Context) {
 	a.Lock()
 	defer a.Unlock()
 
-	for _, collector := range a.collectors {
+	for i, _ := range a.collectors {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			go func() {
-				metrics, err := collector()
+			go func(index int) {
+				metrics, err := a.collectors[index]()
 				if err != nil {
 					a.errorChan<- err
 					return
@@ -44,7 +44,7 @@ func (a *aggregator) run(ctx context.Context) {
 				for key, metric := range metrics {
 					a.collection.Set(key, metric)
 				}
-			}()
+			}(i)
 		}
 	}
 

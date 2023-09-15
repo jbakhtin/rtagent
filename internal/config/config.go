@@ -10,7 +10,7 @@ import (
 const (
 	_pollInterval               = time.Second * 2
 	_reportInterval             = time.Second * 10
-	_address                    = "127.0.0.1:8080"
+	_address                    = "127.0.0.1:8081"
 	_storeFile                  = "tmp/devops-metrics-db.json"
 	_storeInterval              = time.Second * 300
 	_restore                    = true
