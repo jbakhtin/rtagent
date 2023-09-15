@@ -2,7 +2,6 @@ package aggregator
 
 import (
 	"context"
-	"golang.org/x/exp/maps"
 	"sync"
 	"time"
 
@@ -26,44 +25,40 @@ func (a *aggregator) poolCountCollector()(map[string]types.Metricer, error) {
 	return map[string]types.Metricer{"PollCount": types.Counter(a.poolCount)}, nil
 }
 
-func (a *aggregator) run(ctx context.Context) (err error) {
+func (a *aggregator) run(ctx context.Context) {
 	a.Lock()
 	defer a.Unlock()
 
 	for _, collector := range a.collectors {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return
 		default:
-			items, tempErr := collector()
-			if tempErr != nil && err == nil {
-				err = tempErr
-			}
+			go func() {
+				metrics, err := collector()
+				if err != nil {
+					a.errorChan<- err
+					return
+				}
 
-			maps.Copy(a.items, items)
-
-			if err != nil {
-				return err
-			}
+				for key, metric := range metrics {
+					a.items[key] = metric
+				}
+			}()
 		}
 	}
 
 	return
 }
 
-func (a *aggregator) Run(ctx context.Context) error {
+func (a *aggregator) Run(ctx context.Context) {
 	ticker := time.NewTicker(a.cfg.GetPollInterval())
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			go func() {
-				err := a.run(ctx)
-				if err != nil {
-					a.errorChan <- err
-				}
-			}()
+			a.run(ctx)
 		}
 	}
 }

@@ -22,7 +22,7 @@ import (
 )
 
 type Aggregator interface {
-	Run(ctx context.Context) error
+	Run(ctx context.Context)
 	GetAll() (map[string]types.Metricer, error)
 	Err() chan error
 }
