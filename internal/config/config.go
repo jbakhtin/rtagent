@@ -130,3 +130,7 @@ func (cb *Builder) WithAllFromEnv() *Builder {
 func (cb *Builder) Build() (Config, error) {
 	return cb.config, cb.err
 }
+
+func (c Config) GetPollInterval() time.Duration  {
+	return c.PollInterval
+}
