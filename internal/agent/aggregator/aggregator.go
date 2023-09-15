@@ -13,7 +13,7 @@ type CollectorFunc func() (map[string]types.Metricer, error)
 type aggregator struct {
 	sync.RWMutex
 	cfg Config
-	items  map[string]types.Metricer
+	collection  Metrics
 	collectors []CollectorFunc
 	poolCount types.Counter
 	errorChan chan error
@@ -29,29 +29,22 @@ func (a *aggregator) run(ctx context.Context) {
 	a.Lock()
 	defer a.Unlock()
 
-	wg := sync.WaitGroup{}
 	for _, collector := range a.collectors {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			wg.Add(1)
 			go func() {
-				defer wg.Done()
 				metrics, err := collector()
 				if err != nil {
 					a.errorChan<- err
 					return
 				}
 
-				for key, metric := range metrics {
-					a.items[key] = metric
-				}
+				a.collection.Merge(metrics)
 			}()
 		}
 	}
-
-	wg.Wait()
 
 	return
 }
@@ -72,10 +65,10 @@ func (a *aggregator) GetAll() (map[string]types.Metricer, error) {
 	a.Lock()
 	defer a.Unlock()
 
-	result := make(map[string]types.Metricer, len(a.items))
+	result := make(map[string]types.Metricer, len(a.collection.GetAll()))
 
 	// Deep copy
-	for k, v := range a.items {
+	for k, v := range a.collection.GetAll() {
 		result[k] = v
 	}
 
