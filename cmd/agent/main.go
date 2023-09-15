@@ -38,7 +38,7 @@ func main() {
 		return
 	}
 
-	monitor, err := agent.NewMonitor(cfg, logger)
+	monitor, err := agent.New(cfg, logger)
 	if err != nil {
 		logger.Error(err.Error())
 	}

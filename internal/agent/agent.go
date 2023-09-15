@@ -6,13 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"runtime"
 	"sync"
 	"time"
 
 	"github.com/jbakhtin/rtagent/pkg/ratelimiter"
 
-	"github.com/jbakhtin/rtagent/internal/agent/collector"
+	"github.com/jbakhtin/rtagent/internal/agent/aggregator"
 	"github.com/jbakhtin/rtagent/internal/agent/workerpool"
 
 	gopsutil "github.com/shirou/gopsutil/v3/mem"
@@ -22,11 +21,15 @@ import (
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"go.uber.org/zap"
-	"golang.org/x/exp/rand"
 )
 
+type Aggregator interface {
+	Run(ctx context.Context) error
+	GetAll() (map[string]types.Metricer, error)
+}
+
 type Monitor struct {
-	collector                  collector.Collector
+	aggregator                 Aggregator
 	workerPool                 workerpool.WorkerPool
 	logger                     *zap.Logger
 	serverAddress              string
@@ -37,13 +40,13 @@ type Monitor struct {
 	pollInterval               time.Duration
 }
 
-func NewMonitor(cfg config.Config, logger *zap.Logger) (*Monitor, error) {
+func New(cfg config.Config, logger *zap.Logger) (*Monitor, error) {
 	workerPool, err := workerpool.NewWorkerPool()
 	if err != nil {
 		return nil, err
 	}
 
-	collect, err := collector.NewCollector()
+	aggregator, err := aggregator.New()
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +58,7 @@ func NewMonitor(cfg config.Config, logger *zap.Logger) (*Monitor, error) {
 		reportInterval:             cfg.ReportInterval,
 		acceptableCountAgentErrors: cfg.AcceptableCountAgentErrors,
 		workerPool:                 workerPool,
-		collector:                  collect,
+		aggregator:                 &aggregator,
 	}, nil
 }
 
@@ -107,14 +110,7 @@ func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan
 		select {
 		case <-ticker.C:
 			go func() {
-				err := m.pollRuntime(cfg)
-				if err != nil {
-					chanError <- err
-				}
-			}()
-
-			go func() {
-				err := m.pollGopsutil(cfg)
+				err := m.aggregator.Run(ctx)
 				if err != nil {
 					chanError <- err
 				}
@@ -124,41 +120,6 @@ func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan
 			return
 		}
 	}
-}
-
-func (m *Monitor) pollRuntime(cfg config.Config) error {
-	m.sc.Lock()
-	defer m.sc.Unlock()
-
-	m.pollCounter++
-
-	for key, value := range m.getStatsRuntime() {
-		_, err := m.collector.Set(key, value)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (m *Monitor) pollGopsutil(cfg config.Config) error {
-	m.sc.Lock()
-	defer m.sc.Unlock()
-
-	m.pollCounter++
-
-	stats, err := m.getStatsGopsutil()
-	if err != nil {
-		return err
-	}
-
-	for key, value := range stats {
-		_, err := m.collector.Set(key, value)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // reporting - инициирует отправку данных с заданным интервалом monitor.reportInterval
@@ -183,7 +144,7 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 }
 
 func (m *Monitor) report() error {
-	stats, err := m.collector.GetAll()
+	stats, err := m.aggregator.GetAll()
 	if err != nil {
 		return err
 	}
@@ -193,49 +154,6 @@ func (m *Monitor) report() error {
 		m.workerPool.Jobs <- job
 	}
 	return nil
-}
-
-// GetStats - Поулчить слайс содержщий последние акутальные данные
-func (m *Monitor) getStatsRuntime() map[string]types.Metricer {
-	memStats := runtime.MemStats{}
-	runtime.ReadMemStats(&memStats)
-
-	result := map[string]types.Metricer{}
-
-	// memStats
-	result["Alloc"] = types.Gauge(memStats.Alloc)
-	result["Frees"] = types.Gauge(memStats.Frees)
-	result["HeapAlloc"] = types.Gauge(memStats.HeapAlloc)
-	result["BuckHashSys"] = types.Gauge(memStats.BuckHashSys)
-	result["GCSys"] = types.Gauge(memStats.GCSys)
-	result["GCCPUFraction"] = types.Gauge(memStats.GCCPUFraction)
-	result["HeapIdle"] = types.Gauge(memStats.HeapIdle)
-	result["HeapInuse"] = types.Gauge(memStats.HeapInuse)
-	result["HeapObjects"] = types.Gauge(memStats.HeapObjects)
-	result["HeapReleased"] = types.Gauge(memStats.HeapReleased)
-	result["HeapSys"] = types.Gauge(memStats.HeapSys)
-	result["LastGC"] = types.Gauge(memStats.LastGC)
-	result["Lookups"] = types.Gauge(memStats.Lookups)
-	result["MCacheInuse"] = types.Gauge(memStats.MCacheInuse)
-	result["MCacheSys"] = types.Gauge(memStats.MCacheSys)
-	result["MSpanInuse"] = types.Gauge(memStats.MSpanInuse)
-	result["MSpanSys"] = types.Gauge(memStats.MSpanSys)
-	result["Mallocs"] = types.Gauge(memStats.Mallocs)
-	result["NextGC"] = types.Gauge(memStats.NextGC)
-	result["NumForcedGC"] = types.Gauge(memStats.NumForcedGC)
-	result["NumGC"] = types.Gauge(memStats.NumGC)
-	result["OtherSys"] = types.Gauge(memStats.OtherSys)
-	result["PauseTotalNs"] = types.Gauge(memStats.PauseTotalNs)
-	result["StackInuse"] = types.Gauge(memStats.StackInuse)
-	result["StackSys"] = types.Gauge(memStats.StackSys)
-	result["Sys"] = types.Gauge(memStats.Sys)
-	result["TotalAlloc"] = types.Gauge(memStats.TotalAlloc)
-
-	// Custom stats
-	result["PollCount"] = m.pollCounter
-	result["RandomValue"] = types.Gauge(rand.Int())
-
-	return result
 }
 
 func (m *Monitor) getStatsGopsutil() (map[string]types.Metricer, error) {
