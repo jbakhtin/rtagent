@@ -29,12 +29,15 @@ func (a *aggregator) run(ctx context.Context) {
 	a.Lock()
 	defer a.Unlock()
 
+	wg := sync.WaitGroup{}
 	for _, collector := range a.collectors {
 		select {
 		case <-ctx.Done():
 			return
 		default:
+			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				metrics, err := collector()
 				if err != nil {
 					a.errorChan<- err
@@ -47,6 +50,8 @@ func (a *aggregator) run(ctx context.Context) {
 			}()
 		}
 	}
+
+	wg.Wait()
 
 	return
 }
