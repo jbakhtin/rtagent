@@ -10,7 +10,9 @@ type Builder struct {
 func New() *Builder {
 	return &Builder{
 		aggregator: aggregator{
-			items:  make(map[string]types.Metricer, 0),
+			collection: Metrics{
+				items: make(map[string]types.Metricer, 0),
+			},
 		},
 	}
 }
