@@ -18,6 +18,7 @@ type aggregator struct {
 	collectors []CollectorFunc
 	poolCount types.Counter
 	errorChan chan error
+	doneChan chan struct{}
 }
 
 func (a *aggregator) poolCountCollector()(map[string]types.Metricer, error) {
@@ -30,19 +31,24 @@ func (a *aggregator) run(ctx context.Context) (err error) {
 	defer a.Unlock()
 
 	for _, collector := range a.collectors {
-		items, tempErr := collector()
-		if tempErr != nil && err == nil {
-			err = tempErr
-		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			items, tempErr := collector()
+			if tempErr != nil && err == nil {
+				err = tempErr
+			}
 
-		maps.Copy(a.items, items)
+			maps.Copy(a.items, items)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	return nil
+	return
 }
 
 func (a *aggregator) Run(ctx context.Context) error {
