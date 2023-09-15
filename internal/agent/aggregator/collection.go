@@ -24,3 +24,10 @@ func (m *Metrics) GetAll() map[string]types.Metricer{
 
 	return m.items
 }
+
+func (m *Metrics) Set(key string, metric types.Metricer) {
+	m.Lock()
+	defer m.Unlock()
+
+	m.items[key] = metric
+}

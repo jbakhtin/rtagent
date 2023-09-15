@@ -41,7 +41,9 @@ func (a *aggregator) run(ctx context.Context) {
 					return
 				}
 
-				a.collection.Merge(metrics)
+				for key, metric := range metrics {
+					a.collection.Set(key, metric)
+				}
 			}()
 		}
 	}
