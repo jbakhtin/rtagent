@@ -14,8 +14,6 @@ import (
 	"github.com/jbakhtin/rtagent/internal/agent/aggregator"
 	"github.com/jbakhtin/rtagent/internal/agent/workerpool"
 
-	gopsutil "github.com/shirou/gopsutil/v3/mem"
-
 	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
 
 	"github.com/jbakhtin/rtagent/internal/config"
@@ -26,6 +24,7 @@ import (
 type Aggregator interface {
 	Run(ctx context.Context) error
 	GetAll() (map[string]types.Metricer, error)
+	Err() chan error
 }
 
 type Monitor struct {
@@ -46,7 +45,11 @@ func New(cfg config.Config, logger *zap.Logger) (*Monitor, error) {
 		return nil, err
 	}
 
-	aggregator, err := aggregator.New()
+	aggregator, err := aggregator.New().
+		WithConfig(cfg).
+		WithDefaultCollectors().
+		Build()
+
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +61,7 @@ func New(cfg config.Config, logger *zap.Logger) (*Monitor, error) {
 		reportInterval:             cfg.ReportInterval,
 		acceptableCountAgentErrors: cfg.AcceptableCountAgentErrors,
 		workerPool:                 workerPool,
-		aggregator:                 &aggregator,
+		aggregator:                 aggregator,
 	}, nil
 }
 
@@ -69,7 +72,7 @@ func (m *Monitor) Start(cfg config.Config) error {
 
 	chanErr := make(chan error)
 
-	go m.polling(ctx, cfg, chanErr)
+	go m.aggregator.Run(ctx)
 	go m.reporting(ctx, cfg, chanErr)
 	go m.Run(ctx, cfg, chanErr)
 
@@ -79,6 +82,15 @@ func (m *Monitor) Start(cfg config.Config) error {
 	err = func() error {
 		for {
 			select {
+			case err = <-m.aggregator.Err():
+				errCount++
+				m.logger.Info(err.Error())
+
+				if errCount > m.acceptableCountAgentErrors {
+
+					m.logger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.acceptableCountAgentErrors))
+					cancel()
+				}
 			case err = <-chanErr:
 				errCount++
 				m.logger.Info(err.Error())
@@ -99,27 +111,6 @@ func (m *Monitor) Start(cfg config.Config) error {
 	}()
 
 	return err
-}
-
-// pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
-func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan error) {
-	ticker := time.NewTicker(m.pollInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			go func() {
-				err := m.aggregator.Run(ctx)
-				if err != nil {
-					chanError <- err
-				}
-			}()
-		case <-ctx.Done():
-			m.logger.Info("сбор метрик приостановлен")
-			return
-		}
-	}
 }
 
 // reporting - инициирует отправку данных с заданным интервалом monitor.reportInterval
@@ -154,22 +145,6 @@ func (m *Monitor) report() error {
 		m.workerPool.Jobs <- job
 	}
 	return nil
-}
-
-func (m *Monitor) getStatsGopsutil() (map[string]types.Metricer, error) {
-	memStats, err := gopsutil.VirtualMemory()
-	if err != nil {
-		return nil, err
-	}
-
-	result := map[string]types.Metricer{}
-
-	// memStats
-	result["TotalMemory"] = types.Gauge(memStats.Total)
-	result["FreeMemory"] = types.Gauge(memStats.Free)
-	result["CPUutilization1"] = types.Gauge(memStats.Used)
-
-	return result, nil
 }
 
 func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan error) {

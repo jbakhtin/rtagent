@@ -2,41 +2,30 @@ package aggregator
 
 import (
 	"context"
-	"github.com/jbakhtin/rtagent/internal/config"
 	"golang.org/x/exp/maps"
 	"sync"
+	"time"
 
 	"github.com/jbakhtin/rtagent/internal/types"
 )
 
-type Collector func() (map[string]types.Metricer, error)
+type CollectorFunc func() (map[string]types.Metricer, error)
 
-type Aggregator struct {
+type aggregator struct {
 	sync.RWMutex
-	cfg config.Config
+	cfg Config
 	items  map[string]types.Metricer
-	collectors []Collector
+	collectors []CollectorFunc
 	poolCount types.Counter
+	errorChan chan error
 }
 
-func (a *Aggregator) PoolCount()(map[string]types.Metricer, error) {
-	//fmt.Println("PoolCount")
+func (a *aggregator) PoolCount()(map[string]types.Metricer, error) {
 	a.poolCount.Add(1)
 	return map[string]types.Metricer{"PollCount": types.Counter(a.poolCount)}, nil
 }
 
-func New() (Aggregator, error) {
-	aggregator := Aggregator{
-		items:  make(map[string]types.Metricer, 0),
-		collectors: []Collector{Runtime, Gopsutil, RandomMetric},
-	}
-
-	aggregator.collectors = append(aggregator.collectors, aggregator.PoolCount)
-
-	return aggregator, nil
-}
-
-func (a *Aggregator) Run(ctx context.Context) (err error) {
+func (a *aggregator) run(ctx context.Context) (err error) {
 	a.Lock()
 	defer a.Unlock()
 
@@ -56,12 +45,24 @@ func (a *Aggregator) Run(ctx context.Context) (err error) {
 	return nil
 }
 
-func (a *Aggregator) AddCollector(collector Collector) error {
-	a.collectors = append(a.collectors, collector)
-	return nil
+func (a *aggregator) Run(ctx context.Context) error {
+	ticker := time.NewTicker(a.cfg.GetPollInterval())
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			go func() {
+				err := a.run(ctx)
+				if err != nil {
+					a.errorChan <- err
+				}
+			}()
+		}
+	}
 }
 
-func (a *Aggregator) GetAll() (map[string]types.Metricer, error) {
+func (a *aggregator) GetAll() (map[string]types.Metricer, error) {
 	a.Lock()
 	defer a.Unlock()
 
@@ -73,4 +74,8 @@ func (a *Aggregator) GetAll() (map[string]types.Metricer, error) {
 	}
 
 	return result, nil
+}
+
+func (a *aggregator) Err() chan error {
+	return a.errorChan
 }
