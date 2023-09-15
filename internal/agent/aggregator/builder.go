@@ -16,7 +16,7 @@ func New() *Builder {
 }
 
 func (b *Builder) WithDefaultCollectors() *Builder {
-	b.aggregator.collectors = append(b.aggregator.collectors, []CollectorFunc{Runtime, Gopsutil, RandomMetric}...)
+	b.aggregator.collectors = append(b.aggregator.collectors, []CollectorFunc{Runtime, Gopsutil, RandomMetric, b.aggregator.poolCountCollector}...)
 	return b
 }
 
