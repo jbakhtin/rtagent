@@ -125,6 +125,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           devopstest -test.v -test.run=^TestIteration1$ \
@@ -174,6 +175,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           devopstest -test.v -test.run=^TestIteration2[b]*$ \
@@ -210,6 +212,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           devopstest -test.v -test.run=^TestIteration3[b]*$ \
@@ -257,6 +260,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           devopstest -test.v -test.run=^TestIteration4$ \
@@ -295,6 +299,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           SERVER_PORT=$(random unused-port)
@@ -335,6 +340,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           SERVER_PORT=$(random unused-port)
@@ -381,6 +387,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           SERVER_PORT=$(random unused-port)
@@ -417,6 +424,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           SERVER_PORT=$(random unused-port)
@@ -480,6 +488,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           SERVER_PORT=$(random unused-port)
@@ -519,6 +528,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           SERVER_PORT=$(random unused-port)
@@ -554,6 +564,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           SERVER_PORT=$(random unused-port)
@@ -593,6 +604,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           SERVER_PORT=$(random unused-port)
@@ -627,6 +639,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           devopstest -test.v -test.run=^TestIteration13$ \
@@ -655,6 +668,7 @@ jobs:
           github.head_ref == 'iter21' ||
           github.head_ref == 'iter22' ||
           github.head_ref == 'iter23' ||
+          github.head_ref == 'dev' ||
           github.head_ref == 'iter24'
         run: |
           SERVER_PORT=$(random unused-port)
