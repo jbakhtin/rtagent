@@ -3,13 +3,11 @@ package agent
 import (
 	"context"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/agent/sender"
 	"sync"
 	"time"
 
 	"github.com/jbakhtin/rtagent/pkg/ratelimiter"
 
-	"github.com/jbakhtin/rtagent/internal/agent/aggregator"
 	"github.com/jbakhtin/rtagent/internal/agent/workerpool"
 
 	"github.com/jbakhtin/rtagent/internal/config"
@@ -27,52 +25,18 @@ type Sender interface {
 	Send(key string, value types.Metricer) error
 }
 
-type Monitor struct {
+type agent struct {
 	aggregator                 Aggregator
 	sender					Sender
 	workerPool                 workerpool.WorkerPool
 	logger                     *zap.Logger
 	serverAddress              string
-	acceptableCountAgentErrors int
-	pollCounter                types.Counter
 	sc                         sync.Mutex
-	reportInterval             time.Duration
-	pollInterval               time.Duration
-}
-
-func New(cfg config.Config, logger *zap.Logger) (*Monitor, error) {
-	workerPool, err := workerpool.NewWorkerPool()
-	if err != nil {
-		return nil, err
-	}
-
-	aggregator, err := aggregator.New().
-		WithConfig(cfg).
-		WithDefaultCollectors().
-		Build()
-
-	sender, err := sender.New().
-		WithConfig(cfg).
-		Build()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &Monitor{
-		logger:                     logger,
-		serverAddress:              fmt.Sprintf("http://%s", cfg.Address), //TODO: переделать зависимость от http/https
-		pollInterval:               cfg.PollInterval,
-		reportInterval:             cfg.ReportInterval,
-		acceptableCountAgentErrors: cfg.AcceptableCountAgentErrors,
-		workerPool:                 workerPool,
-		aggregator:                 aggregator,
-		sender:                 sender,
-	}, nil
+	cfg Configer
 }
 
 // Start - запустить мониторинг
-func (m *Monitor) Start(cfg config.Config) error {
+func (m *agent) Start(cfg config.Config) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -80,7 +44,7 @@ func (m *Monitor) Start(cfg config.Config) error {
 
 	go m.polling(ctx, cfg, chanErr)
 	go m.reporting(ctx, cfg, chanErr)
-	go m.Run(ctx, cfg, chanErr)
+	go m.run(ctx, cfg, chanErr)
 
 	var errCount int
 	var err error
@@ -92,18 +56,18 @@ func (m *Monitor) Start(cfg config.Config) error {
 				errCount++
 				m.logger.Info(err.Error())
 
-				if errCount > m.acceptableCountAgentErrors {
+				if errCount > m.cfg.GetAcceptableCountAgentErrors() {
 
-					m.logger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.acceptableCountAgentErrors))
+					m.logger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.cfg.GetAcceptableCountAgentErrors()))
 					cancel()
 				}
 			case err = <-chanErr:
 				errCount++
 				m.logger.Info(err.Error())
 
-				if errCount > m.acceptableCountAgentErrors {
+				if errCount > m.cfg.GetAcceptableCountAgentErrors() {
 
-					m.logger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.acceptableCountAgentErrors))
+					m.logger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.cfg.GetAcceptableCountAgentErrors()))
 					cancel()
 				}
 			case <-ctx.Done():
@@ -120,8 +84,8 @@ func (m *Monitor) Start(cfg config.Config) error {
 }
 
 // pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
-func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan error) {
-	ticker := time.NewTicker(m.pollInterval)
+func (m *agent) polling(ctx context.Context, cfg config.Config, chanError chan error) {
+	ticker := time.NewTicker(m.cfg.GetPollInterval())
 	defer ticker.Stop()
 
 	for {
@@ -137,8 +101,8 @@ func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan
 }
 
 // reporting - инициирует отправку данных с заданным интервалом monitor.reportInterval
-func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError chan error) {
-	ticker := time.NewTicker(m.reportInterval)
+func (m *agent) reporting(ctx context.Context, cfg config.Config, chanError chan error) {
+	ticker := time.NewTicker(m.cfg.GetReportInterval())
 	defer ticker.Stop()
 
 	for {
@@ -149,7 +113,6 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 				chanError <- err
 			}
 
-			m.pollCounter = 0
 		case <-ctx.Done():
 			m.logger.Info("отправка метрики приостановлена")
 			return
@@ -157,7 +120,7 @@ func (m *Monitor) reporting(ctx context.Context, cfg config.Config, chanError ch
 	}
 }
 
-func (m *Monitor) report() error {
+func (m *agent) report() error {
 	stats, err := m.aggregator.GetAll()
 	if err != nil {
 		return err
@@ -170,7 +133,7 @@ func (m *Monitor) report() error {
 	return nil
 }
 
-func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan error) {
+func (m *agent) run(ctx context.Context, cfg config.Config, chanError chan error) {
 	limiter := ratelimiter.New(1*time.Second, cfg.RateLimit)
 	err := limiter.Run(ctx)
 	if err != nil {

@@ -146,3 +146,7 @@ func (c Config) GetReportInterval() time.Duration  {
 func (c Config) GetKeyApp() string  {
 	return c.KeyApp
 }
+
+func (c Config) GetAcceptableCountAgentErrors() int  {
+	return c.AcceptableCountAgentErrors
+}

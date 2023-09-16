@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/agent"
+	aggregator2 "github.com/jbakhtin/rtagent/internal/agent/aggregator"
+	"github.com/jbakhtin/rtagent/internal/agent/sender"
 	"log"
 
 	"github.com/jbakhtin/rtagent/internal/config"
@@ -38,12 +40,22 @@ func main() {
 		return
 	}
 
-	monitor, err := agent.New(cfg, logger)
+	sender, err := sender.New().WithConfig(cfg).Build()
 	if err != nil {
 		logger.Error(err.Error())
 	}
 
-	if err := monitor.Start(cfg); err != nil {
+	aggregator, err := aggregator2.New().WithDefaultCollectors().WithConfig(cfg).Build()
+	if err != nil {
+		logger.Error(err.Error())
+	}
+
+	agent, err := agent.New().WithConfig(cfg).WithSender(sender).WithAggregator(aggregator).Build()
+	if err != nil {
+		logger.Error(err.Error())
+	}
+
+	if err := agent.Start(cfg); err != nil {
 		logger.Error(err.Error())
 	}
 }
