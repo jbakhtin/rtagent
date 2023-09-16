@@ -134,3 +134,15 @@ func (cb *Builder) Build() (Config, error) {
 func (c Config) GetPollInterval() time.Duration  {
 	return c.PollInterval
 }
+
+func (c Config) GetServerAddress() string  {
+	return c.Address
+}
+
+func (c Config) GetReportInterval() time.Duration  {
+	return c.ReportInterval
+}
+
+func (c Config) GetKeyApp() string  {
+	return c.KeyApp
+}

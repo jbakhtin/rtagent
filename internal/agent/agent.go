@@ -1,11 +1,9 @@
 package agent
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
+	"github.com/jbakhtin/rtagent/internal/agent/sender"
 	"sync"
 	"time"
 
@@ -13,8 +11,6 @@ import (
 
 	"github.com/jbakhtin/rtagent/internal/agent/aggregator"
 	"github.com/jbakhtin/rtagent/internal/agent/workerpool"
-
-	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
 
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/types"
@@ -27,8 +23,13 @@ type Aggregator interface {
 	Err() chan error
 }
 
+type Sender interface {
+	Send(key string, value types.Metricer) error
+}
+
 type Monitor struct {
 	aggregator                 Aggregator
+	sender					Sender
 	workerPool                 workerpool.WorkerPool
 	logger                     *zap.Logger
 	serverAddress              string
@@ -50,6 +51,10 @@ func New(cfg config.Config, logger *zap.Logger) (*Monitor, error) {
 		WithDefaultCollectors().
 		Build()
 
+	sender, err := sender.New().
+		WithConfig(cfg).
+		Build()
+
 	if err != nil {
 		return nil, err
 	}
@@ -62,6 +67,7 @@ func New(cfg config.Config, logger *zap.Logger) (*Monitor, error) {
 		acceptableCountAgentErrors: cfg.AcceptableCountAgentErrors,
 		workerPool:                 workerPool,
 		aggregator:                 aggregator,
+		sender:                 sender,
 	}, nil
 }
 
@@ -161,7 +167,7 @@ func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan err
 			limiter.Wait()
 
 			go func() {
-				err = m.sendJSON(ctx, cfg, job)
+				err = m.sender.Send(job.Key, job.Value)
 				if err != nil {
 					m.logger.Info(err.Error())
 					chanError <- err
@@ -169,46 +175,4 @@ func (m *Monitor) Run(ctx context.Context, cfg config.Config, chanError chan err
 			}()
 		}
 	}
-}
-
-func (m *Monitor) sendJSON(ctx context.Context, cfg config.Config, job workerpool.Job) error {
-	endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", cfg.Address))
-	metric, err := handlerModels.ToJSON(cfg, job.Key, job.Value)
-	if err != nil {
-		return err
-	}
-
-	metric.Hash, err = metric.CalcHash([]byte(cfg.KeyApp))
-	if err != nil {
-		return err
-	}
-
-	hash, err := metric.CalcHash([]byte(cfg.KeyApp))
-	if err != nil {
-		return err
-	}
-	metric.Hash = hash
-
-	buf, err := json.Marshal(metric)
-	if err != nil {
-		return err
-	}
-
-	request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/json")
-
-	client := http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-
-	if err = response.Body.Close(); err != nil {
-		return err
-	}
-
-	return nil
 }
