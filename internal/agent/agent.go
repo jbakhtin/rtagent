@@ -18,7 +18,7 @@ import (
 )
 
 type Aggregator interface {
-	Run(ctx context.Context)
+	Pool(ctx context.Context)
 	GetAll() (map[string]types.Metricer, error)
 	Err() chan error
 }
@@ -78,7 +78,7 @@ func (m *Monitor) Start(cfg config.Config) error {
 
 	chanErr := make(chan error)
 
-	go m.aggregator.Run(ctx)
+	go m.polling(ctx, cfg, chanErr)
 	go m.reporting(ctx, cfg, chanErr)
 	go m.Run(ctx, cfg, chanErr)
 
@@ -117,6 +117,23 @@ func (m *Monitor) Start(cfg config.Config) error {
 	}()
 
 	return err
+}
+
+// pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
+func (m *Monitor) polling(ctx context.Context, cfg config.Config, chanError chan error) {
+	ticker := time.NewTicker(m.pollInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+				m.aggregator.Pool(ctx)
+		case err := <-m.aggregator.Err():
+			chanError<- err
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 // reporting - инициирует отправку данных с заданным интервалом monitor.reportInterval

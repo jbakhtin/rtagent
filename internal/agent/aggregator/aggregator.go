@@ -2,10 +2,8 @@ package aggregator
 
 import (
 	"context"
-	"sync"
-	"time"
-
 	"github.com/jbakhtin/rtagent/internal/types"
+	"sync"
 )
 
 type CollectorFunc func() (map[string]types.Metricer, error)
@@ -25,7 +23,7 @@ func (a *aggregator) poolCountCollector()(map[string]types.Metricer, error) {
 	return map[string]types.Metricer{"PollCount": types.Counter(a.poolCount)}, nil
 }
 
-func (a *aggregator) run(ctx context.Context) {
+func (a *aggregator) Pool(ctx context.Context) {
 	a.Lock()
 	defer a.Unlock()
 
@@ -49,18 +47,6 @@ func (a *aggregator) run(ctx context.Context) {
 	}
 
 	return
-}
-
-func (a *aggregator) Run(ctx context.Context) {
-	ticker := time.NewTicker(a.cfg.GetPollInterval())
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			a.run(ctx)
-		}
-	}
 }
 
 func (a *aggregator) GetAll() (map[string]types.Metricer, error) {
