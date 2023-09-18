@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/types"
-	"go.uber.org/zap"
 )
 
 type Aggregator interface {
@@ -29,71 +29,36 @@ type agent struct {
 	aggregator                 Aggregator
 	sender					Sender
 	workerPool                 workerpool.WorkerPool
-	logger                     *zap.Logger
 	serverAddress              string
 	sc                         sync.Mutex
 	cfg Configer
+	errorChan chan error
+	softShuttingDown bool
+	isShuttingDown bool
 }
 
-// Start - запустить мониторинг
-func (m *agent) Start(cfg config.Config) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+// Run - запустить мониторинг
+func (m *agent) Run(ctx context.Context, cfg config.Config) {
+	go m.polling(ctx)
+	go m.reporting(ctx)
+	go m.run(ctx, cfg)
+}
 
-	chanErr := make(chan error)
-
-	go m.polling(ctx, cfg, chanErr)
-	go m.reporting(ctx, cfg, chanErr)
-	go m.run(ctx, cfg, chanErr)
-
-	var errCount int
-	var err error
-
-	err = func() error {
-		for {
-			select {
-			case err = <-m.aggregator.Err():
-				errCount++
-				m.logger.Info(err.Error())
-
-				if errCount > m.cfg.GetAcceptableCountAgentErrors() {
-
-					m.logger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.cfg.GetAcceptableCountAgentErrors()))
-					cancel()
-				}
-			case err = <-chanErr:
-				errCount++
-				m.logger.Info(err.Error())
-
-				if errCount > m.cfg.GetAcceptableCountAgentErrors() {
-
-					m.logger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", m.cfg.GetAcceptableCountAgentErrors()))
-					cancel()
-				}
-			case <-ctx.Done():
-				m.logger.Info("завершаем работу агента")
-				if err != nil {
-					return err
-				}
-				return nil
-			}
-		}
-	}()
-
-	return err
+func (m *agent) Err() chan error {
+	return m.errorChan
 }
 
 // pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
-func (m *agent) polling(ctx context.Context, cfg config.Config, chanError chan error) {
+func (m *agent) polling(ctx context.Context) {
 	ticker := time.NewTicker(m.cfg.GetPollInterval())
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-				m.aggregator.Pool(ctx)
+			go m.aggregator.Pool(ctx)
 		case err := <-m.aggregator.Err():
-			chanError<- err
+			m.errorChan<- err
 		case <-ctx.Done():
 			return
 		}
@@ -101,20 +66,21 @@ func (m *agent) polling(ctx context.Context, cfg config.Config, chanError chan e
 }
 
 // reporting - инициирует отправку данных с заданным интервалом monitor.reportInterval
-func (m *agent) reporting(ctx context.Context, cfg config.Config, chanError chan error) {
+func (m *agent) reporting(ctx context.Context) {
 	ticker := time.NewTicker(m.cfg.GetReportInterval())
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
+			timer := time.NewTimer(time.Second * 3)
+			<-timer.C
 			err := m.report()
 			if err != nil {
-				chanError <- err
+				m.errorChan<- err
 			}
 
 		case <-ctx.Done():
-			m.logger.Info("отправка метрики приостановлена")
 			return
 		}
 	}
@@ -127,32 +93,52 @@ func (m *agent) report() error {
 	}
 
 	for key, value := range stats {
+		if m.isShuttingDown && !m.softShuttingDown {
+			close(m.workerPool.Jobs)
+			return errors.New("sending the report was interrupted")
+		}
+
 		job := workerpool.NewJob(key, value)
 		m.workerPool.Jobs <- job
 	}
+
 	return nil
 }
 
-func (m *agent) run(ctx context.Context, cfg config.Config, chanError chan error) {
+func (m *agent) run(ctx context.Context, cfg config.Config) {
 	limiter := ratelimiter.New(1*time.Second, cfg.RateLimit)
 	err := limiter.Run(ctx)
 	if err != nil {
-		chanError <- err
+		m.errorChan<- err
 	}
 
 	for {
+		if m.isShuttingDown && !m.softShuttingDown {
+			_ = limiter.Close(ctx)
+			goto Exit
+		}
+
 		select {
-		case <-ctx.Done():
-		case job := <-m.workerPool.Jobs:
+		case job, ok := <-m.workerPool.Jobs:
+			if !ok {
+				_ = limiter.Close(ctx)
+				goto Exit
+			}
 			limiter.Wait()
 
 			go func() {
 				err = m.sender.Send(job.Key, job.Value)
 				if err != nil {
-					m.logger.Info(err.Error())
-					chanError <- err
+					m.errorChan<- err
 				}
 			}()
 		}
 	}
+	Exit:
+}
+
+func (m *agent) Close(ctx context.Context) error {
+	fmt.Println("agent closing")
+	m.isShuttingDown = true
+	return nil
 }

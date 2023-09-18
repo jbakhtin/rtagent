@@ -12,6 +12,7 @@ type Limiter struct {
 	resetCounter *time.Ticker  // Тикер для сброса счетчика.
 	maxCount     int           // Максимальное количество разрешенных действий.
 	counter      int           // Текущее количество выполненных действий.
+	isShuttingDown bool
 }
 
 func New(timeInterval time.Duration, count int) *Limiter {
@@ -33,23 +34,32 @@ func (l *Limiter) Wait() {
 
 // Run запускает внутренний цикл счетчика.
 func (l *Limiter) Run(ctx context.Context) error {
-	go l.run(ctx)
+	go l.run()
 
 	return nil
 }
 
+// Run запускает внутренний цикл счетчика.
+func (l *Limiter) Close(ctx context.Context) error {
+	l.isShuttingDown = true
+	return nil
+}
+
 // run обрабатывает состояния счетчика.
-func (l *Limiter) run(ctx context.Context) {
+func (l *Limiter) run() {
 	for {
 		if l.counter > l.maxCount {
 			<-l.resetCounter.C
 			l.counter = 0
 		}
 
-		select {
-		case <-ctx.Done():
+		if l.isShuttingDown {
 			l.resetCounter.Stop()
+			close(l.waiter)
 			return
+		}
+
+		select {
 		case l.waiter <- struct{}{}:
 			l.counter++
 

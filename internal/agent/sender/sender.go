@@ -2,6 +2,7 @@ package sender
 
 import (
 	"bytes"
+	"container/list"
 	"encoding/json"
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/server/models"
@@ -15,6 +16,11 @@ type ReportFunction func() string
 type sender struct {
 	sync.RWMutex
 	cfg Configer
+	jobs list.List
+}
+
+func (r *sender) AddTask(value types.Metricer)  {
+	r.jobs.PushFront(value)
 }
 
 func (r *sender) Send(key string, value types.Metricer) error {

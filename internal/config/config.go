@@ -19,6 +19,7 @@ const (
 	_databaseDSN                = ""
 	_databaseDriver             = "pgx"
 	_rateLimit                  = 100
+	_shutdownTimeout                  = 10
 )
 
 const (
@@ -33,6 +34,7 @@ const (
 	_databaseDSNLabel                = "DSN БД"
 	_databaseDriverLabel             = "Драйвер подключения к БД"
 	_rateLimitLabel                  = "Количество исходящих запросов в секунду"
+	_shutdownTimeoutLabel                  = "Время на заерщение всех процессов перед отключением"
 )
 
 type Config struct {
@@ -47,6 +49,7 @@ type Config struct {
 	ReportInterval             time.Duration `env:"REPORT_INTERVAL"`
 	StoreInterval              time.Duration `env:"STORE_INTERVAL"`
 	Restore                    bool          `env:"RESTORE"`
+	ShutdownTimeout                    time.Duration          `env:"SHUTDOWN_TIMEOUT"`
 }
 
 type Builder struct {
@@ -69,6 +72,7 @@ func NewConfigBuilder() *Builder {
 			_reportInterval,
 			_storeInterval,
 			_restore,
+			_shutdownTimeout,
 		},
 	}
 }
@@ -81,6 +85,7 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	keyApp := flag.String("k", _keyApp, _keyAppLabel)
 	databaseDSN := flag.String("d", _databaseDSN, _databaseDSNLabel)
 	databaseDriver := flag.String("dbDriver", _databaseDriver, _databaseDriverLabel)
+	shutdownTimeout := flag.Duration("shutdownTimeout", _shutdownTimeout, _shutdownTimeoutLabel)
 	flag.Parse()
 
 	cb.config.Address = *address
@@ -90,6 +95,7 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	cb.config.KeyApp = *keyApp
 	cb.config.DatabaseDSN = *databaseDSN
 	cb.config.DatabaseDriver = *databaseDriver
+	cb.config.ShutdownTimeout = *shutdownTimeout
 
 	return cb
 }
@@ -106,6 +112,7 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	acceptableCountAgentErrors := flag.Int("e", _acceptableCountAgentErrors, _acceptableCountAgentErrorsLabel)
 	keyApp := flag.String("k", _keyApp, _keyAppLabel)
 	rateLimit := flag.Int("l", _rateLimit, _rateLimitLabel)
+	shutdownTimeout := flag.Duration("shutdownTimeout", _shutdownTimeout, _shutdownTimeoutLabel)
 	flag.Parse()
 
 	cb.config.PollInterval = *pollInterval
@@ -114,6 +121,7 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	cb.config.AcceptableCountAgentErrors = *acceptableCountAgentErrors
 	cb.config.KeyApp = *keyApp
 	cb.config.RateLimit = *rateLimit
+	cb.config.ShutdownTimeout = *shutdownTimeout
 
 	return cb
 }
@@ -149,4 +157,8 @@ func (c Config) GetKeyApp() string  {
 
 func (c Config) GetAcceptableCountAgentErrors() int  {
 	return c.AcceptableCountAgentErrors
+}
+
+func (c Config) GetShutdownTimeout() time.Duration  {
+	return c.ShutdownTimeout
 }
