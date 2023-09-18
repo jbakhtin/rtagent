@@ -57,7 +57,7 @@ func main() {
 		logger.Error(err.Error())
 	}
 
-	agent, err := agent.New().WithConfig(cfg).WithSender(sender).WithAggregator(aggregator).WithSoftShuttingDown().Build()
+	agent, err := agent.New().WithConfig(cfg).WithSender(sender).WithAggregator(aggregator).Build()
 	if err != nil {
 		logger.Error(err.Error())
 	}
@@ -90,9 +90,7 @@ func main() {
 	defer cancel()
 
 	closer, err := closer.New().
-		WithFuncs(
-			agent.Close,
-		).Build()
+		WithFuncs().Build()
 	if err != nil {
 		logger.Info(err.Error())
 	}

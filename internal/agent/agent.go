@@ -2,12 +2,10 @@ package agent
 
 import (
 	"context"
-	"fmt"
 	"github.com/jbakhtin/rtagent/internal/agentv2/workerPool"
+	"github.com/pkg/errors"
 	"sync"
 	"time"
-
-	"github.com/jbakhtin/rtagent/pkg/ratelimiter"
 
 	"github.com/jbakhtin/rtagent/internal/agent/workerpool"
 
@@ -33,8 +31,6 @@ type agent struct {
 	sc                         sync.Mutex
 	cfg Configer
 	errorChan chan error
-	softShuttingDown bool
-	isShuttingDown bool
 }
 
 // Run - запустить мониторинг
@@ -66,9 +62,11 @@ func (m *agent) Run(ctx context.Context, cfg config.Config) {
 		for {
 			select {
 			case <-ticker.C:
-				limiter := ratelimiter.New(1 * time.Second, cfg.RateLimit)
-				err := limiter.Run(ctx)
 				stats, err := m.aggregator.GetAll()
+				err = errors.New("test error")
+				if err != nil {
+					m.errorChan<- err
+				}
 
 				for key, metric := range stats {
 					go func(key string, metric types.Metricer) {
@@ -77,12 +75,6 @@ func (m *agent) Run(ctx context.Context, cfg config.Config) {
 							m.errorChan<- err
 						}
 					}(key, metric)
-
-					limiter.Wait()
-				}
-
-				if err != nil {
-					m.errorChan<- err
 				}
 
 			case <-ctx.Done():
@@ -94,10 +86,4 @@ func (m *agent) Run(ctx context.Context, cfg config.Config) {
 
 func (m *agent) Err() chan error {
 	return m.errorChan
-}
-
-func (m *agent) Close(ctx context.Context) error {
-	fmt.Println("agent closing")
-	m.isShuttingDown = true
-	return nil
 }

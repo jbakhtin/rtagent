@@ -26,13 +26,10 @@ func (b *builder) WithSender(sender Sender) *builder {
 	return b
 }
 
-func (b *builder) WithSoftShuttingDown() *builder {
-	b.agent.softShuttingDown = true
-	return b
-}
-
 func (b *builder) Build() (*agent, error) {
 	b.agent.workerPool, b.err = workerpool.NewWorkerPool()
+
+	b.agent.errorChan = make(chan error)
 
 	if b.err != nil {
 		return nil, b.err
