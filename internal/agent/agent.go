@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jbakhtin/rtagent/internal/agentv2/workerPool"
 	"sync"
 	"time"
 
@@ -27,7 +28,7 @@ type Sender interface {
 
 type agent struct {
 	aggregator                 Aggregator
-	sender					Sender
+	sender						Sender
 	workerPool                 workerpool.WorkerPool
 	serverAddress              string
 	sc                         sync.Mutex
@@ -39,8 +40,42 @@ type agent struct {
 
 // Run - запустить мониторинг
 func (m *agent) Run(ctx context.Context, cfg config.Config) {
-	go m.polling(ctx)
-	go m.reporting(ctx)
+	wp, _ := workerPool.New()
+
+	wp.AddJob(func() error {
+		ticker := time.NewTicker(m.cfg.GetPollInterval())
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				go m.aggregator.Pool(ctx)
+			case err := <-m.aggregator.Err():
+				m.errorChan<- err
+			case <-ctx.Done():
+				return nil
+			}
+		}
+	})
+
+	wp.AddJob(func() error {
+		ticker := time.NewTicker(m.cfg.GetReportInterval())
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				err := m.report()
+				if err != nil {
+					m.errorChan<- err
+				}
+
+			case <-ctx.Done():
+				return nil
+			}
+		}
+	})
+
 	go m.run(ctx, cfg)
 }
 
@@ -48,42 +83,10 @@ func (m *agent) Err() chan error {
 	return m.errorChan
 }
 
-// pooling - инициирует забор данных с заданным интервалом monitor.pollInterval
-func (m *agent) polling(ctx context.Context) {
-	ticker := time.NewTicker(m.cfg.GetPollInterval())
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			go m.aggregator.Pool(ctx)
-		case err := <-m.aggregator.Err():
-			m.errorChan<- err
-		case <-ctx.Done():
-			return
-		}
-	}
-}
 
 // reporting - инициирует отправку данных с заданным интервалом monitor.reportInterval
 func (m *agent) reporting(ctx context.Context) {
-	ticker := time.NewTicker(m.cfg.GetReportInterval())
-	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			timer := time.NewTimer(time.Second * 3)
-			<-timer.C
-			err := m.report()
-			if err != nil {
-				m.errorChan<- err
-			}
-
-		case <-ctx.Done():
-			return
-		}
-	}
 }
 
 func (m *agent) report() error {
