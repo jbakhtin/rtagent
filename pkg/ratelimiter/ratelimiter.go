@@ -33,10 +33,8 @@ func (l *Limiter) Wait() {
 }
 
 // Run запускает внутренний цикл счетчика.
-func (l *Limiter) Run(ctx context.Context) error {
+func (l *Limiter) Run(ctx context.Context) {
 	go l.run()
-
-	return nil
 }
 
 // Run запускает внутренний цикл счетчика.

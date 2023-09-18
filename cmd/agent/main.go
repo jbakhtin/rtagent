@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/agent/aggregator"
 	"github.com/jbakhtin/rtagent/internal/agent/sender"
-	"github.com/jbakhtin/rtagent/internal/agentv2/workerPool"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"github.com/jbakhtin/rtagent/pkg/closer"
+	"github.com/jbakhtin/rtagent/pkg/ratelimiter"
 	"go.uber.org/zap"
 	"log"
 	"os/signal"
@@ -39,10 +39,7 @@ func main() {
 		return
 	}
 
-	cfg, err := config.NewConfigBuilder().
-		WithAllFromFlagsA().
-		WithAllFromEnv().
-		Build()
+	cfg, err := config.NewConfigBuilder().WithAllFromFlagsA().WithAllFromEnv().Build()
 	if err != nil {
 		logger.Error(err.Error())
 		return
@@ -59,9 +56,7 @@ func main() {
 	}
 
 	errorChan := make(chan error)
-	wp, _ := workerPool.New()
-	// Task 1
-	wp.AddJob(func() error {
+	go func() {
 		ticker := time.NewTicker(cfg.GetPollInterval())
 		defer ticker.Stop()
 
@@ -72,15 +67,16 @@ func main() {
 			case err := <-aggregator.Err():
 				errorChan<- err
 			case <-osCtx.Done():
-				return nil
 			}
 		}
-	})
+	}()
 
-	// Task 1
-	wp.AddJob(func() error {
+	go func() error {
 		ticker := time.NewTicker(cfg.GetReportInterval())
 		defer ticker.Stop()
+
+		rl := ratelimiter.New(time.Second, cfg.RateLimit)
+		rl.Run(osCtx)
 
 		for {
 			select {
@@ -99,11 +95,13 @@ func main() {
 					}(key, metric)
 				}
 
+				rl.Wait()
+
 			case <-osCtx.Done():
 				return nil
 			}
 		}
-	})
+	}()
 
 	// check error count
 	var errCount int
