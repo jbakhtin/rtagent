@@ -6,8 +6,8 @@ require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/caarlos0/env/v6 v6.10.1
 	github.com/go-chi/chi/v5 v5.0.8
+	github.com/go-faster/errors v0.6.1
 	github.com/jackc/pgx/v5 v5.3.1
-	github.com/pkg/errors v0.9.1
 	github.com/pressly/goose/v3 v3.10.0
 	github.com/shirou/gopsutil/v3 v3.23.3
 	github.com/stretchr/testify v1.8.2

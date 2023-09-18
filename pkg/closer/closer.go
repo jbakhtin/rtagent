@@ -3,6 +3,7 @@ package closer
 import (
 	"context"
 	"fmt"
+	"github.com/go-faster/errors"
 	"strings"
 )
 
@@ -30,7 +31,7 @@ func (c *closer) Close(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
-		return fmt.Errorf("shutdown cancelled: %v", ctx.Err())
+		msgs = append(msgs, fmt.Sprintf("[!!] %v", errors.Wrap(ctx.Err(), "shutdown cancelled:")))
 	case <-complete:
 		break
 	}

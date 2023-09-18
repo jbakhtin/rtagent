@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/go-faster/errors"
 	"github.com/jbakhtin/rtagent/internal/agent/aggregator"
+	"github.com/jbakhtin/rtagent/internal/agent/jobqueue"
 	"github.com/jbakhtin/rtagent/internal/agent/sender"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/types"
+
 	"github.com/jbakhtin/rtagent/pkg/closer"
 	"github.com/jbakhtin/rtagent/pkg/ratelimiter"
 	"go.uber.org/zap"
@@ -71,12 +74,10 @@ func main() {
 		}
 	}()
 
-	go func() error {
+	queue := jobqueue.GetMyQueue()
+	poolingStats := func(ctx context.Context) error {
 		ticker := time.NewTicker(cfg.GetReportInterval())
 		defer ticker.Stop()
-
-		rl := ratelimiter.New(time.Second, cfg.RateLimit)
-		rl.Run(osCtx)
 
 		for {
 			select {
@@ -87,25 +88,61 @@ func main() {
 				}
 
 				for key, metric := range stats {
-					go func(key string, metric types.Metricer) {
-						err = sender.Send(key, metric)
-						if err != nil {
-							errorChan<- err
-						}
-					}(key, metric)
+					node := jobqueue.GetQNode(key, metric)
+					queue.Enqueue(node)
 				}
 
-				rl.Wait()
-
-			case <-osCtx.Done():
-				return nil
+			case <-ctx.Done():
+				return errors.Wrap(ctx.Err(), "pooling stats")
 			}
+		}
+	}
+
+	go func() {
+		err = poolingStats(osCtx)
+		if err != nil {
+			logger.Info(err.Error())
+		}
+	}()
+
+
+	sendMessages := func(ctx context.Context) error {
+		ticker := time.NewTicker(cfg.GetReportInterval())
+		defer ticker.Stop()
+
+		rl := ratelimiter.New(time.Second, cfg.RateLimit)
+		rl.Run()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return errors.Wrap(ctx.Err(), "send messages")
+			case <-rl.Wait():
+				if queue.IsEmpty() {
+					continue
+				}
+
+				node := queue.Dequeue()
+				go func(key string, metric types.Metricer) {
+					err = sender.Send(key, metric)
+					if err != nil {
+						errorChan<- err
+					}
+				}(node.Key(), node.Value())
+			}
+		}
+	}
+
+	go func() {
+		err = sendMessages(osCtx)
+		if err != nil {
+			logger.Info(err.Error())
 		}
 	}()
 
 	// check error count
 	var errCount int
-	go func() {
+	checkErrors := func(ctx context.Context) error {
 		for {
 			select {
 			case err = <-errorChan:
@@ -116,10 +153,16 @@ func main() {
 					logger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", cfg.GetAcceptableCountAgentErrors()))
 					cancel()
 				}
-			case <-osCtx.Done():
-				logger.Info("завершаем работу агента")
-				return
+			case <-ctx.Done():
+				return errors.Wrap(ctx.Err(), "check error count")
 			}
+		}
+	}
+
+	go func() {
+		err = checkErrors(osCtx)
+		if err != nil {
+			logger.Info(err.Error())
 		}
 	}()
 
@@ -129,7 +172,7 @@ func main() {
 	defer cancel()
 
 	closer, err := closer.New().
-		WithFuncs().Build()
+		WithFuncs(sendMessages).Build()
 	if err != nil {
 		logger.Info(err.Error())
 	}
