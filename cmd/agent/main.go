@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/jbakhtin/rtagent/internal/agent"
 	"github.com/jbakhtin/rtagent/internal/agent/aggregator"
 	"github.com/jbakhtin/rtagent/internal/agent/sender"
+	"github.com/jbakhtin/rtagent/internal/agentv2/workerPool"
 	"github.com/jbakhtin/rtagent/internal/config"
+	"github.com/jbakhtin/rtagent/internal/types"
 	"github.com/jbakhtin/rtagent/pkg/closer"
 	"go.uber.org/zap"
 	"log"
@@ -57,19 +58,59 @@ func main() {
 		logger.Error(err.Error())
 	}
 
-	agent, err := agent.New().WithConfig(cfg).WithSender(sender).WithAggregator(aggregator).Build()
-	if err != nil {
-		logger.Error(err.Error())
-	}
+	errorChan := make(chan error)
+	wp, _ := workerPool.New()
+	// Task 1
+	wp.AddJob(func() error {
+		ticker := time.NewTicker(cfg.GetPollInterval())
+		defer ticker.Stop()
 
-	agent.Run(osCtx, cfg)
+		for {
+			select {
+			case <-ticker.C:
+				go aggregator.Pool(osCtx)
+			case err := <-aggregator.Err():
+				errorChan<- err
+			case <-osCtx.Done():
+				return nil
+			}
+		}
+	})
+
+	// Task 1
+	wp.AddJob(func() error {
+		ticker := time.NewTicker(cfg.GetReportInterval())
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				stats, err := aggregator.GetAll()
+				if err != nil {
+					errorChan<- err
+				}
+
+				for key, metric := range stats {
+					go func(key string, metric types.Metricer) {
+						err = sender.Send(key, metric)
+						if err != nil {
+							errorChan<- err
+						}
+					}(key, metric)
+				}
+
+			case <-osCtx.Done():
+				return nil
+			}
+		}
+	})
 
 	// check error count
 	var errCount int
 	go func() {
 		for {
 			select {
-			case err = <-agent.Err():
+			case err = <-errorChan:
 				errCount++
 				logger.Info(err.Error())
 
