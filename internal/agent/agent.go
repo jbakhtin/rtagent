@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/agentv2/workerPool"
 	"sync"
@@ -42,6 +41,7 @@ type agent struct {
 func (m *agent) Run(ctx context.Context, cfg config.Config) {
 	wp, _ := workerPool.New()
 
+	// Task 1
 	wp.AddJob(func() error {
 		ticker := time.NewTicker(m.cfg.GetPollInterval())
 		defer ticker.Stop()
@@ -58,6 +58,7 @@ func (m *agent) Run(ctx context.Context, cfg config.Config) {
 		}
 	})
 
+	// Task 1
 	wp.AddJob(func() error {
 		ticker := time.NewTicker(m.cfg.GetReportInterval())
 		defer ticker.Stop()
@@ -65,7 +66,21 @@ func (m *agent) Run(ctx context.Context, cfg config.Config) {
 		for {
 			select {
 			case <-ticker.C:
-				err := m.report()
+				limiter := ratelimiter.New(1 * time.Second, cfg.RateLimit)
+				err := limiter.Run(ctx)
+				stats, err := m.aggregator.GetAll()
+
+				for key, metric := range stats {
+					go func(key string, metric types.Metricer) {
+						err = m.sender.Send(key, metric)
+						if err != nil {
+							m.errorChan<- err
+						}
+					}(key, metric)
+
+					limiter.Wait()
+				}
+
 				if err != nil {
 					m.errorChan<- err
 				}
@@ -75,69 +90,10 @@ func (m *agent) Run(ctx context.Context, cfg config.Config) {
 			}
 		}
 	})
-
-	go m.run(ctx, cfg)
 }
 
 func (m *agent) Err() chan error {
 	return m.errorChan
-}
-
-
-// reporting - инициирует отправку данных с заданным интервалом monitor.reportInterval
-func (m *agent) reporting(ctx context.Context) {
-
-}
-
-func (m *agent) report() error {
-	stats, err := m.aggregator.GetAll()
-	if err != nil {
-		return err
-	}
-
-	for key, value := range stats {
-		if m.isShuttingDown && !m.softShuttingDown {
-			close(m.workerPool.Jobs)
-			return errors.New("sending the report was interrupted")
-		}
-
-		job := workerpool.NewJob(key, value)
-		m.workerPool.Jobs <- job
-	}
-
-	return nil
-}
-
-func (m *agent) run(ctx context.Context, cfg config.Config) {
-	limiter := ratelimiter.New(1*time.Second, cfg.RateLimit)
-	err := limiter.Run(ctx)
-	if err != nil {
-		m.errorChan<- err
-	}
-
-	for {
-		if m.isShuttingDown && !m.softShuttingDown {
-			_ = limiter.Close(ctx)
-			goto Exit
-		}
-
-		select {
-		case job, ok := <-m.workerPool.Jobs:
-			if !ok {
-				_ = limiter.Close(ctx)
-				goto Exit
-			}
-			limiter.Wait()
-
-			go func() {
-				err = m.sender.Send(job.Key, job.Value)
-				if err != nil {
-					m.errorChan<- err
-				}
-			}()
-		}
-	}
-	Exit:
 }
 
 func (m *agent) Close(ctx context.Context) error {
