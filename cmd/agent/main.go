@@ -3,15 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/go-faster/errors"
 	"github.com/jbakhtin/rtagent/internal/agent/aggregator"
 	"github.com/jbakhtin/rtagent/internal/agent/jobqueue"
+	"github.com/jbakhtin/rtagent/internal/agent/jobsmaker"
+	"github.com/jbakhtin/rtagent/internal/agent/messagesender"
 	"github.com/jbakhtin/rtagent/internal/agent/sender"
+	"github.com/jbakhtin/rtagent/internal/agent/tasker/tasks/limited"
+	"github.com/jbakhtin/rtagent/internal/agent/tasker/tasks/once"
+	"github.com/jbakhtin/rtagent/internal/agent/tasker/tasks/periodic"
+	"github.com/jbakhtin/rtagent/internal/agent/taskmanager"
 	"github.com/jbakhtin/rtagent/internal/config"
-	"github.com/jbakhtin/rtagent/internal/types"
-
 	"github.com/jbakhtin/rtagent/pkg/closer"
-	"github.com/jbakhtin/rtagent/pkg/ratelimiter"
 	"go.uber.org/zap"
 	"log"
 	"os/signal"
@@ -33,8 +35,8 @@ func init() {
 }
 
 func main() {
-	osCtx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
-	defer cancel()
+	osCtx, osCancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	defer osCancel()
 
 	logger, err := zap.NewDevelopment()
 	if err != nil {
@@ -58,121 +60,67 @@ func main() {
 		logger.Error(err.Error())
 	}
 
-	errorChan := make(chan error)
-	go func() {
-		ticker := time.NewTicker(cfg.GetPollInterval())
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				go aggregator.Pool(osCtx)
-			case err := <-aggregator.Err():
-				errorChan<- err
-			case <-osCtx.Done():
-			}
-		}
-	}()
+	task1 := periodic.Task{
+		Name: "polling stats",
+		Duration: cfg.GetPollInterval(),
+		F: aggregator.Pool,
+	}
 
 	queue := jobqueue.GetMyQueue()
-	poolingStats := func(ctx context.Context) error {
-		ticker := time.NewTicker(cfg.GetReportInterval())
-		defer ticker.Stop()
 
-		for {
-			select {
-			case <-ticker.C:
-				stats, err := aggregator.GetAll()
-				if err != nil {
-					errorChan<- err
-				}
-
-				for key, metric := range stats {
-					node := jobqueue.GetQNode(key, metric)
-					queue.Enqueue(node)
-				}
-
-			case <-ctx.Done():
-				return errors.Wrap(ctx.Err(), "pooling stats")
-			}
-		}
+	jobsMaker := jobsmaker.JobsMaker{
+		Jober: queue,
+		Slicer: aggregator,
 	}
 
-	go func() {
-		err = poolingStats(osCtx)
-		if err != nil {
-			logger.Info(err.Error())
-		}
-	}()
-
-
-	sendMessages := func(ctx context.Context) error {
-		ticker := time.NewTicker(cfg.GetReportInterval())
-		defer ticker.Stop()
-
-		rl := ratelimiter.New(time.Second, cfg.RateLimit)
-		rl.Run()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return errors.Wrap(ctx.Err(), "send messages")
-			case <-rl.Wait():
-				if queue.IsEmpty() {
-					continue
-				}
-
-				node := queue.Dequeue()
-				go func(key string, metric types.Metricer) {
-					err = sender.Send(key, metric)
-					if err != nil {
-						errorChan<- err
-					}
-				}(node.Key(), node.Value())
-			}
-		}
+	task2 := periodic.Task{
+		Name: "make jobs",
+		Duration: cfg.GetReportInterval(),
+		F: jobsMaker.Do,
 	}
 
-	go func() {
-		err = sendMessages(osCtx)
-		if err != nil {
-			logger.Info(err.Error())
-		}
-	}()
-
-	// check error count
-	var errCount int
-	checkErrors := func(ctx context.Context) error {
-		for {
-			select {
-			case err = <-errorChan:
-				errCount++
-				logger.Info(err.Error())
-
-				if errCount > cfg.GetAcceptableCountAgentErrors() {
-					logger.Info(fmt.Sprintf("превышено количество (%v) допустимых ошибок", cfg.GetAcceptableCountAgentErrors()))
-					cancel()
-				}
-			case <-ctx.Done():
-				return errors.Wrap(ctx.Err(), "check error count")
-			}
-		}
+	messageSender := messagesender.MessageSender{
+		Sender: sender,
+		Jober: queue,
 	}
 
-	go func() {
-		err = checkErrors(osCtx)
-		if err != nil {
-			logger.Info(err.Error())
-		}
+	task3 := limited.Task{
+		Name: "send jobs",
+		Limit: cfg.RateLimit,
+		Duration: time.Second,
+		F: messageSender.Do,
+	}
+
+	ctx, appCancel := context.WithCancel(osCtx)
+	defer appCancel()
+
+	taskManager, err := taskmanager.New().WithFuncs(task1.Do, task2.Do, task3.Do).Build()
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	go func () {
+		err = taskManager.DoIt(ctx)
+		logger.Info(err.Error())
+		appCancel()
 	}()
+
 
 	// Gracefully shut down
-	<-osCtx.Done()
+	select {
+	case <-osCtx.Done():
+	case <-ctx.Done():
+	}
+
 	withTimeout, cancel := context.WithTimeout(context.Background(), time.Second * cfg.GetShutdownTimeout())
 	defer cancel()
 
+	task4 := once.Task{
+		Name: "send remaining messages",
+		F:messageSender.Do,
+	}
+
 	closer, err := closer.New().
-		WithFuncs(sendMessages).Build()
+		WithFuncs(task4.Do).Build()
 	if err != nil {
 		logger.Info(err.Error())
 	}
@@ -180,5 +128,7 @@ func main() {
 	err = closer.Close(withTimeout)
 	if err != nil {
 		logger.Info(err.Error())
+	} else {
+		logger.Info("shutdown finished successfully")
 	}
 }

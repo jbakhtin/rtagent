@@ -2,7 +2,9 @@ package aggregator
 
 import (
 	"context"
+	"fmt"
 	"github.com/jbakhtin/rtagent/internal/types"
+	"golang.org/x/sync/errgroup"
 	"sync"
 )
 
@@ -14,8 +16,6 @@ type aggregator struct {
 	collection  Metrics
 	collectors []CollectorFunc
 	poolCount types.Counter
-	errorChan chan error
-	doneChan chan struct{}
 }
 
 func (a *aggregator) poolCountCollector()(map[string]types.Metricer, error) {
@@ -23,41 +23,42 @@ func (a *aggregator) poolCountCollector()(map[string]types.Metricer, error) {
 	return map[string]types.Metricer{"PollCount": types.Counter(a.poolCount)}, nil
 }
 
-func (a *aggregator) Pool(ctx context.Context) {
+func (a *aggregator) Pool(ctx context.Context) error {
 	a.Lock()
 	defer a.Unlock()
 
+	eg := errgroup.Group{}
+
 	for i, _ := range a.collectors {
+		i := i
 		select {
 		case <-ctx.Done():
-			return
+			return ctx.Err()
 		default:
-			go func(index int) {
-				metrics, err := a.collectors[index]()
+			eg.Go(func() error {
+				metrics, err := a.collectors[i]()
+				fmt.Println(i)
 				if err != nil {
-					a.errorChan<- err
-					return
+					return err
 				}
 
 				for key, metric := range metrics {
 					a.collection.Set(key, metric)
 				}
-			}(i)
+
+				return nil
+			})
 		}
 	}
 
-	return
+	return eg.Wait()
 }
 
-func (a *aggregator) GetAll() (map[string]types.Metricer, error) {
+func (a *aggregator) GetAll() map[string]types.Metricer {
 	a.Lock()
 	defer a.Unlock()
 
 	result := a.collection.GetAll()
 
-	return result, nil
-}
-
-func (a *aggregator) Err() chan error {
-	return a.errorChan
+	return result
 }

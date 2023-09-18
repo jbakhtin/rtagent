@@ -47,7 +47,8 @@ func(this MyQueue) IsEmpty() bool {
 	return this.count == 0
 }
 // Add new node of queue
-func(this *MyQueue) Enqueue(node *QNode) {
+func(this *MyQueue) Enqueue(key string, metric types.Metricer) {
+	var node * QNode = GetQNode(key, metric)
 	if this.head == nil {
 		// Add first element into queue
 		this.head = node

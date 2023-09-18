@@ -37,18 +37,9 @@ func (b *Builder) WithConfig(cfg Config) *Builder {
 	return b
 }
 
-func (b *Builder) WithErrorChan(errorChan chan error) *Builder {
-	b.aggregator.errorChan = errorChan
-	return b
-}
-
 func (b *Builder) Build() (*aggregator, error) {
 	if b.err != nil {
 		return nil, b.err
-	}
-
-	if b.aggregator.errorChan == nil {
-		b.aggregator.errorChan = make(chan error)
 	}
 
 	return &b.aggregator, b.err
