@@ -2,6 +2,7 @@ package jobqueue
 
 import (
 	"github.com/jbakhtin/rtagent/internal/types"
+	"sync"
 )
 
 type QNode struct {
@@ -27,52 +28,57 @@ func (n QNode) Value() types.Metricer {
 }
 
 type MyQueue struct {
+	sync.RWMutex
 	head * QNode
 	tail * QNode
 	count int
 }
 func GetMyQueue() * MyQueue {
 	// return new MyQueue
-	return &MyQueue {
-		nil,
-		nil,
-		0,
-	}
+	return &MyQueue {}
 }
 
-func(this MyQueue) Size() int {
-	return this.count
+func(q *MyQueue) Size() int {
+	q.Lock()
+	defer q.Unlock()
+	return q.count
 }
-func(this MyQueue) IsEmpty() bool {
-	return this.count == 0
+func(q *MyQueue) IsEmpty() bool {
+	q.Lock()
+	defer q.Unlock()
+	return q.count == 0
 }
 // Add new node of queue
-func(this *MyQueue) Enqueue(key string, metric types.Metricer) {
+func(q *MyQueue) Enqueue(key string, metric types.Metricer) {
+	q.Lock()
+	defer q.Unlock()
 	var node * QNode = GetQNode(key, metric)
-	if this.head == nil {
+	if q.head == nil {
 		// Add first element into queue
-		this.head = node
+		q.head = node
 	} else {
 		// Add node at the end using tail
-		this.tail.next = node
+		q.tail.next = node
 	}
-	this.count++
-	this.tail = node
+	q.count++
+	q.tail = node
 }
 // Delete a element into queue
-func(this *MyQueue) Dequeue() *QNode {
-	if this.head == nil {
+func(q *MyQueue) Dequeue() *QNode {
+	q.Lock()
+	defer q.Unlock()
+	if q.head == nil {
 		return nil
 	}
 	// Pointer variable which are storing
 	// the address of deleted node
-	var temp * QNode = this.head
+	var temp * QNode = q.head
 	// Visit next node
-	this.head = this.head.next
-	this.count--
-	if this.head == nil {
+	q.head = q.head.next
+	q.count--
+	if q.head == nil {
 		// When deleting a last node of linked list
-		this.tail = nil
+		q.tail = nil
 	}
 	return temp
 }
