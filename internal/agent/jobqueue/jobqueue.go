@@ -40,7 +40,7 @@ func GetMyQueue() * MyQueue {
 	}
 }
 
-func(this MyQueue) size() int {
+func(this MyQueue) Size() int {
 	return this.count
 }
 func(this MyQueue) IsEmpty() bool {

@@ -2,7 +2,6 @@ package aggregator
 
 import (
 	"context"
-	"fmt"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"golang.org/x/sync/errgroup"
 	"sync"
@@ -37,7 +36,6 @@ func (a *aggregator) Pool(ctx context.Context) error {
 		default:
 			eg.Go(func() error {
 				metrics, err := a.collectors[i]()
-				fmt.Println(i)
 				if err != nil {
 					return err
 				}
