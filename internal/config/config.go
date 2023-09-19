@@ -44,7 +44,7 @@ type Config struct {
 	DatabaseDSN                string        `env:"DATABASE_DSN"`
 	DatabaseDriver             string        `env:"DATABASE_DRIVER" envDefault:"pgx"`
 	AcceptableCountAgentErrors int           `env:"ACCEPTABLE_COUNT_AGENT_ERRORS"`
-	RateLimit                  int           `env:"RATE_LIMIT" envDefault:"10"`
+	RateLimit                  int           `env:"RATE_LIMIT" envDefault:"100"`
 	PollInterval               time.Duration `env:"POLL_INTERVAL"`
 	ReportInterval             time.Duration `env:"REPORT_INTERVAL"`
 	StoreInterval              time.Duration `env:"STORE_INTERVAL"`

@@ -2,6 +2,7 @@ package messagesender
 
 import (
 	"context"
+	"fmt"
 	"github.com/jbakhtin/rtagent/internal/agent/jobqueue"
 	"github.com/jbakhtin/rtagent/internal/types"
 )
@@ -27,6 +28,7 @@ func (jm *MessageSender) Do(ctx context.Context) error {
 
 	node := jm.Jober.Dequeue()
 	err := jm.Sender.Send(node.Key(), node.Value())
+	fmt.Println(node.Value(), node.Key())
 	if err != nil {
 		return err
 	}
