@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/agent/aggregator"
-	"github.com/jbakhtin/rtagent/internal/agent/jobqueue"
 	"github.com/jbakhtin/rtagent/internal/agent/jobsmaker"
+	"github.com/jbakhtin/rtagent/internal/agent/jobsqueue"
 	"github.com/jbakhtin/rtagent/internal/agent/messagesender"
 	"github.com/jbakhtin/rtagent/internal/agent/sender"
 	"github.com/jbakhtin/rtagent/internal/agent/tasker/tasks/limited"
@@ -50,46 +50,20 @@ func main() {
 		return
 	}
 
-	sender, err := sender.New().WithConfig(cfg).Build()
-	if err != nil {
-		logger.Error(err.Error())
-	}
-
 	aggregator, err := aggregator.New().WithDefaultCollectors().WithConfig(cfg).Build()
 	if err != nil {
 		logger.Error(err.Error())
 	}
 
-	task1 := periodic.Task{
-		Name: "polling stats",
-		Duration: cfg.GetPollInterval(),
-		F: aggregator.Pool,
-	}
+	queue := jobqueue.NewQueue()
+	jobMaker := jobsmaker.New(aggregator, queue)
 
-	queue := jobqueue.GetMyQueue()
+	task1 := periodic.New("polling stats", cfg.GetPollInterval(), aggregator.Pool)
+	task2 := periodic.New("make jobsqueue", cfg.GetReportInterval(), jobMaker.Do)
 
-	jobsMaker := jobsmaker.JobsMaker{
-		Jober: queue,
-		Slicer: aggregator,
-	}
-
-	task2 := periodic.Task{
-		Name: "make jobs",
-		Duration: cfg.GetReportInterval(),
-		F: jobsMaker.Do,
-	}
-
-	messageSender := messagesender.MessageSender{
-		Sender: sender,
-		Jober: queue,
-	}
-
-	task3 := limited.Task{
-		Name: "send jobs",
-		Limit: cfg.RateLimit,
-		Duration: time.Second,
-		F: messageSender.Do,
-	}
+	sender := sender.New(cfg)
+	jobSender := worker.New(queue, sender)
+	task3 := limited.New("send jobsqueue", cfg.RateLimit, time.Second, jobSender.Do)
 
 	ctx, appCancel := context.WithCancel(osCtx)
 	defer appCancel()
@@ -114,10 +88,7 @@ func main() {
 	withTimeout, cancel := context.WithTimeout(context.Background(), time.Second * cfg.GetShutdownTimeout())
 	defer cancel()
 
-	task4 := once.Task{
-		Name: "send remaining messages",
-		F:messageSender.Do,
-	}
+	task4 := once.New("send remaining messages", jobSender.Do)
 
 	closer, err := closer.New().
 		WithFuncs(task4.Do).Build()

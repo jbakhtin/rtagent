@@ -1,32 +1,39 @@
-package messagesender
+package worker
 
 import (
 	"context"
-	"github.com/jbakhtin/rtagent/internal/agent/jobqueue"
+	"github.com/jbakhtin/rtagent/internal/agent/jobsqueue"
 	"github.com/jbakhtin/rtagent/internal/types"
 )
 
-type Sender interface {
+type IAPI interface {
 	Send(key string, value types.Metricer) error
 }
 
-type Jober interface {
-	Dequeue() *jobqueue.QNode
+type IQueue interface {
+	Dequeue() *jobqueue.Job
 	IsEmpty() bool
 }
 
-type MessageSender struct {
-	Sender Sender
-	Jober Jober
+type worker struct {
+	queue IQueue
+	api IAPI
 }
 
-func (jm *MessageSender) Do(ctx context.Context) error {
-	if jm.Jober.IsEmpty() {
+func New(queue IQueue, api IAPI) *worker {
+	return &worker{
+		queue,
+		api,
+	}
+}
+
+func (jm *worker) Do(ctx context.Context) error {
+	if jm.queue.IsEmpty() {
 		return nil
 	}
 
-	node := jm.Jober.Dequeue()
-	jm.Sender.Send(node.Key(), node.Value())
+	node := jm.queue.Dequeue()
+	jm.api.Send(node.Key(), node.Value())
 
 	return nil
 }

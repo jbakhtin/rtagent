@@ -2,7 +2,7 @@ package jobsmaker
 
 import (
 	"context"
-	"github.com/jbakhtin/rtagent/internal/agent/jobqueue"
+	"github.com/jbakhtin/rtagent/internal/agent/jobsqueue"
 	"github.com/jbakhtin/rtagent/internal/types"
 )
 
@@ -11,20 +11,27 @@ type Slicer interface {
 }
 
 type Jober interface {
-	Dequeue() *jobqueue.QNode
+	Dequeue() *jobqueue.Job
 	Enqueue(key string, metric types.Metricer)
 }
 
-type JobsMaker struct {
-	Slicer Slicer
-	Jober Jober
+type jobsMaker struct {
+	slicer Slicer
+	jober Jober
 }
 
-func (jm *JobsMaker) Do(ctx context.Context) error {
-	stats := jm.Slicer.GetAll()
+func New(slicer Slicer, jober Jober) *jobsMaker {
+	return &jobsMaker{
+		slicer,
+		jober,
+	}
+}
+
+func (jm *jobsMaker) Do(ctx context.Context) error {
+	stats := jm.slicer.GetAll()
 
 	for key, metric := range stats {
-		jm.Jober.Enqueue(key, metric)
+		jm.jober.Enqueue(key, metric)
 	}
 
 	return nil

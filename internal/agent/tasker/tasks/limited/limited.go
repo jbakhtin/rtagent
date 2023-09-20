@@ -8,25 +8,34 @@ import (
 	"time"
 )
 
-type Task struct {
-	Name string
-	Limit int
-	Duration time.Duration
-	F tasker.Func
+type task struct {
+	name string
+	limit int
+	duration time.Duration
+	f tasker.Func
 }
 
-func (t *Task) Do(ctx context.Context) error {
-	rl := ratelimiter.New(t.Duration, t.Limit)
+func New(name string, limit int, duration time.Duration, f tasker.Func) *task {
+	return &task{
+		name,
+		limit,
+		duration,
+		f,
+	}
+}
+
+func (t *task) Do(ctx context.Context) error {
+	rl := ratelimiter.New(t.duration, t.limit)
 	rl.Run()
 
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.Wrap(ctx.Err(), t.Name)
+			return errors.Wrap(ctx.Err(), t.name)
 		case <-rl.Wait():
-			err := t.F(ctx)
+			err := t.f(ctx)
 			if err != nil {
-				return errors.Wrap(ctx.Err(), t.Name)
+				return errors.Wrap(ctx.Err(), t.name)
 			}
 		}
 	}

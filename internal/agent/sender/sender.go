@@ -7,14 +7,18 @@ import (
 	"github.com/jbakhtin/rtagent/internal/server/models"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"net/http"
-	"sync"
 )
 
 type ReportFunction func() string
 
 type sender struct {
-	sync.RWMutex
 	cfg Configer
+}
+
+func New(cfg Configer) *sender {
+	return &sender{
+		cfg: cfg,
+	}
 }
 
 

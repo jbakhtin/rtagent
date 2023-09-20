@@ -7,26 +7,34 @@ import (
 	"time"
 )
 
-type Task struct {
-	Name string
-	Duration time.Duration
-	F tasker.Func
+type task struct {
+	name string
+	duration time.Duration
+	f tasker.Func
 }
 
-func (t *Task) Do(ctx context.Context) error {
-	ticker := time.NewTicker(t.Duration)
+func New(name string, duration time.Duration, f tasker.Func) *task {
+	return &task{
+		name,
+		duration,
+		f,
+	}
+}
+
+func (t *task) Do(ctx context.Context) error {
+	ticker := time.NewTicker(t.duration)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			err := t.F(ctx)
+			err := t.f(ctx)
 			if err != nil {
-				return errors.Wrap(ctx.Err(), t.Name)
+				return errors.Wrap(ctx.Err(), t.name)
 			}
 
 		case <-ctx.Done():
-			return errors.Wrap(ctx.Err(), t.Name)
+			return errors.Wrap(ctx.Err(), t.name)
 		}
 	}
 }
