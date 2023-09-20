@@ -59,11 +59,11 @@ func main() {
 	jobMaker := jobsmaker.New(aggregator, queue)
 
 	task1 := periodic.New("polling stats", cfg.GetPollInterval(), aggregator.Pool)
-	task2 := periodic.New("make jobsqueue", cfg.GetReportInterval(), jobMaker.Do)
+	task2 := periodic.New("make jobs", cfg.GetReportInterval(), jobMaker.Do)
 
 	sender := sender.New(cfg)
 	jobSender := worker.New(queue, sender)
-	task3 := limited.New("send jobsqueue", cfg.RateLimit, time.Second, jobSender.Do)
+	task3 := limited.New("send jobs", cfg.RateLimit, time.Second, jobSender.Do)
 
 	ctx, appCancel := context.WithCancel(osCtx)
 	defer appCancel()
