@@ -57,10 +57,7 @@ func (c *taskmanager) DoIt(ctx context.Context) (err error) {
 		})
 	}
 
-	select {
-	case <-ctx.Done():
-
-	}
+	<-ctx.Done()
 
 	return err
 }

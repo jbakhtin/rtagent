@@ -43,10 +43,8 @@ func (l *Limiter) run() {
 			l.counter = 0
 		}
 
-		select {
-		case l.waiter <- struct{}{}:
-			l.counter++
-		}
+		l.waiter <- struct{}{}
+		l.counter++
 	}
 }
 
