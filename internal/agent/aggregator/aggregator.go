@@ -27,7 +27,7 @@ func (a *aggregator) Pool(ctx context.Context) error {
 
 	eg := errgroup.Group{}
 
-	for i, _ := range a.collectors {
+	for i := range a.collectors {
 		i := i
 		select {
 		case <-ctx.Done():

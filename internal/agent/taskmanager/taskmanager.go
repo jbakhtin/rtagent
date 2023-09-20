@@ -45,7 +45,7 @@ func (c *taskmanager) DoIt(ctx context.Context) (err error) {
 		cancel()
 	}()
 
-	for i, _ := range c.funcs {
+	for i := range c.funcs {
 		i := i
 		eg.Go(func() error {
 			defer wg.Done()
