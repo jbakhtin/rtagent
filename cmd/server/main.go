@@ -52,9 +52,8 @@ func main() {
 		logger.Error(err.Error())
 	}
 
-	ctxServer, cancel := context.WithCancel(context.Background())
 	go func() {
-		if err = s.Start(ctxServer, cfg); err != nil {
+		if err = s.Start(osCtx, cfg); err != nil {
 			logger.Info(err.Error())
 		}
 	}()
@@ -66,8 +65,8 @@ func main() {
 
 	// Gracefully shut down
 	<-osCtx.Done()
-	withTimeout, cancel := context.WithTimeout(context.Background(), time.Second*cfg.ShutdownTimeout)
-	defer cancel()
+	withTimeout, cancelShutdownProc := context.WithTimeout(context.Background(), time.Second*cfg.ShutdownTimeout)
+	defer cancelShutdownProc()
 
 	err = cl.Close(withTimeout)
 	if err != nil {
