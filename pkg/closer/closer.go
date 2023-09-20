@@ -10,7 +10,7 @@ import (
 type Func func(ctx context.Context) error
 
 type closer struct {
-	funcs  []Func
+	funcs []Func
 }
 
 func (c *closer) Close(ctx context.Context) error {

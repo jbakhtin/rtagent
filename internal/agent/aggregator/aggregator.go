@@ -10,14 +10,13 @@ import (
 type CollectorFunc func() (map[string]types.Metricer, error)
 
 type aggregator struct {
-	sync.RWMutex
-	cfg Config
-	collection  Metrics
 	collectors []CollectorFunc
-	poolCount types.Counter
+	collection Metrics
+	sync.RWMutex
+	poolCount  types.Counter
 }
 
-func (a *aggregator) poolCountCollector()(map[string]types.Metricer, error) {
+func (a *aggregator) poolCountCollector() (map[string]types.Metricer, error) {
 	a.poolCount.Add(1)
 	return map[string]types.Metricer{"PollCount": types.Counter(a.poolCount)}, nil
 }

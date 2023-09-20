@@ -17,7 +17,7 @@ type IQueue interface {
 
 type worker struct {
 	queue IQueue
-	api IAPI
+	api   IAPI
 }
 
 func New(queue IQueue, api IAPI) *worker {
@@ -33,7 +33,10 @@ func (jm *worker) Do(ctx context.Context) error {
 	}
 
 	node := jm.queue.Dequeue()
-	jm.api.Send(node.Key(), node.Value())
+	err := jm.api.Send(node.Key(), node.Value())
+	if err != nil {
+		return nil //ToDo: need to forward to main to circuit breaker
+	}
 
 	return nil
 }

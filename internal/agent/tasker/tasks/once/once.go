@@ -7,13 +7,14 @@ import (
 )
 
 type task struct {
+	f    tasker.Func
 	name string
-	f tasker.Func
 }
+
 func New(name string, f tasker.Func) *task {
 	return &task{
-		name,
-		f,
+		name: name,
+		f:    f,
 	}
 }
 

@@ -231,7 +231,6 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 			metric, err = models.NewCounter(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Delta))
 		}
 		if err != nil {
-			fmt.Println("test")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

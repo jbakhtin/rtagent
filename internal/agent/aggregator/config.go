@@ -1,4 +1,4 @@
 package aggregator
 
-type Config interface{
+type Config interface {
 }

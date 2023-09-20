@@ -12,19 +12,19 @@ import (
 type Func func(ctx context.Context) error
 
 type taskmanager struct {
-	funcs  []Func
+	funcs []Func
 }
 
 func (c *taskmanager) DoIt(ctx context.Context) (err error) {
 	defer func() {
 		err = errors.Wrap(err, "task manager")
 	}()
-	var msgs     = make([]string, 0, len(c.funcs))
+	var msgs = make([]string, 0, len(c.funcs))
 	wg := sync.WaitGroup{}
 	defer func() {
 		wg.Wait()
 		if len(msgs) > 0 {
-			err =  fmt.Errorf(
+			err = fmt.Errorf(
 				"tasks finished with error(s): \n\t-%s",
 				strings.Join(msgs, "\n\t-"),
 			)
@@ -49,11 +49,11 @@ func (c *taskmanager) DoIt(ctx context.Context) (err error) {
 		i := i
 		eg.Go(func() error {
 			defer wg.Done()
-			err := c.funcs[i](newCtx)
-			if err != nil {
-				msgs = append(msgs, err.Error())
+			tempErr := c.funcs[i](newCtx)
+			if tempErr != nil {
+				msgs = append(msgs, tempErr.Error())
 			}
-			return err
+			return tempErr
 		})
 	}
 

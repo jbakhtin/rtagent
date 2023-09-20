@@ -1,14 +1,14 @@
 package taskmanager
 
 type builder struct {
+	err    error
 	closer taskmanager
-	err error
 }
 
 func New() *builder {
 	return &builder{
 		closer: taskmanager{},
-		err: nil,
+		err:    nil,
 	}
 }
 

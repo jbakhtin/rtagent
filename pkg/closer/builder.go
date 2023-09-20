@@ -1,14 +1,14 @@
 package closer
 
 type builder struct {
+	err    error
 	closer closer
-	err error
 }
 
-func New() (*builder) {
+func New() *builder {
 	return &builder{
 		closer: closer{},
-		err: nil,
+		err:    nil,
 	}
 }
 

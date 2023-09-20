@@ -26,7 +26,7 @@ func New(timeInterval time.Duration, count int) *Limiter {
 
 // Wait ожидает окончания действия.
 // Устанавливается в конце повторяющейся операции, количество выполнений которой нужно ограничить.
-func (l *Limiter) Wait() chan struct{}{
+func (l *Limiter) Wait() chan struct{} {
 	return l.waiter
 }
 

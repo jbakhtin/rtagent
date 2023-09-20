@@ -50,7 +50,7 @@ func main() {
 		return
 	}
 
-	aggregator, err := aggregator.New().WithDefaultCollectors().WithConfig(cfg).Build()
+	aggregator, err := aggregator.New().WithDefaultCollectors().Build()
 	if err != nil {
 		logger.Error(err.Error())
 	}
@@ -72,12 +72,11 @@ func main() {
 	if err != nil {
 		logger.Error(err.Error())
 	}
-	go func () {
+	go func() {
 		err = taskManager.DoIt(ctx)
 		logger.Info(err.Error())
 		appCancel()
 	}()
-
 
 	// Gracefully shut down
 	select {
@@ -85,7 +84,7 @@ func main() {
 	case <-ctx.Done():
 	}
 
-	withTimeout, cancel := context.WithTimeout(context.Background(), time.Second * cfg.GetShutdownTimeout())
+	withTimeout, cancel := context.WithTimeout(context.Background(), time.Second*cfg.GetShutdownTimeout())
 	defer cancel()
 
 	task4 := once.New("send remaining messages", jobSender.Do)

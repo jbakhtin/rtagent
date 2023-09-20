@@ -6,15 +6,16 @@ import (
 )
 
 type Job struct {
-	key string
 	value types.Metricer
-	next * Job
+	next  *Job
+	key   string
 }
-func NewJob(key string, value types.Metricer) * Job {
-	return &Job {
-		key,
-		value,
-		nil,
+
+func NewJob(key string, value types.Metricer) *Job {
+	return &Job{
+		key:   key,
+		value: value,
+		next:  nil,
 	}
 }
 
@@ -27,27 +28,28 @@ func (n Job) Value() types.Metricer {
 }
 
 type queue struct {
-	sync.RWMutex
 	head *Job
 	tail *Job
+	sync.RWMutex
 	count int
 }
-func NewQueue() * queue {
-	return &queue {}
+
+func NewQueue() *queue {
+	return &queue{}
 }
 
-func(q *queue) Size() int {
+func (q *queue) Size() int {
 	q.Lock()
 	defer q.Unlock()
 	return q.count
 }
-func(q *queue) IsEmpty() bool {
+func (q *queue) IsEmpty() bool {
 	q.Lock()
 	defer q.Unlock()
 	return q.count == 0
 }
 
-func(q *queue) Enqueue(key string, metric types.Metricer) {
+func (q *queue) Enqueue(key string, metric types.Metricer) {
 	q.Lock()
 	defer q.Unlock()
 
@@ -62,7 +64,7 @@ func(q *queue) Enqueue(key string, metric types.Metricer) {
 	q.tail = node
 }
 
-func(q *queue) Dequeue() *Job {
+func (q *queue) Dequeue() *Job {
 	q.Lock()
 	defer q.Unlock()
 
@@ -78,4 +80,3 @@ func(q *queue) Dequeue() *Job {
 	}
 	return temp
 }
-

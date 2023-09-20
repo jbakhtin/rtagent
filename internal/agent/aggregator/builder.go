@@ -3,8 +3,8 @@ package aggregator
 import "github.com/jbakhtin/rtagent/internal/types"
 
 type Builder struct {
+	err        error
 	aggregator aggregator
-	err error
 }
 
 func New() *Builder {
@@ -29,11 +29,6 @@ func (b *Builder) WithCustomCollector(collector CollectorFunc) *Builder {
 
 func (b *Builder) WithCustomCollectors(collectors []CollectorFunc) *Builder {
 	b.aggregator.collectors = append(b.aggregator.collectors, collectors...)
-	return b
-}
-
-func (b *Builder) WithConfig(cfg Config) *Builder {
-	b.aggregator.cfg = cfg
 	return b
 }
 

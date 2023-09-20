@@ -21,7 +21,6 @@ func New(cfg Configer) *sender {
 	}
 }
 
-
 func (r *sender) Send(key string, value types.Metricer) error {
 	endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", r.cfg.GetServerAddress()))
 	model, err := models.ToJSON(r.cfg, key, value)

@@ -7,7 +7,7 @@ import (
 )
 
 type Slicer interface {
-	GetAll() (map[string]types.Metricer)
+	GetAll() map[string]types.Metricer
 }
 
 type Jober interface {
@@ -17,7 +17,7 @@ type Jober interface {
 
 type jobsMaker struct {
 	slicer Slicer
-	jober Jober
+	jober  Jober
 }
 
 func New(slicer Slicer, jober Jober) *jobsMaker {

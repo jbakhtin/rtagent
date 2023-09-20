@@ -7,8 +7,8 @@ import (
 )
 
 type Metrics struct {
-	sync.RWMutex
 	items map[string]types.Metricer
+	sync.RWMutex
 }
 
 func (m *Metrics) Merge(items map[string]types.Metricer) {
@@ -18,7 +18,7 @@ func (m *Metrics) Merge(items map[string]types.Metricer) {
 	maps.Copy(m.items, items)
 }
 
-func (m *Metrics) GetAll() map[string]types.Metricer{
+func (m *Metrics) GetAll() map[string]types.Metricer {
 	m.Lock()
 	defer m.Unlock()
 

@@ -9,18 +9,18 @@ import (
 )
 
 type task struct {
-	name string
-	limit int
+	f        tasker.Func
+	name     string
 	duration time.Duration
-	f tasker.Func
+	limit    int
 }
 
 func New(name string, limit int, duration time.Duration, f tasker.Func) *task {
 	return &task{
-		name,
-		limit,
-		duration,
-		f,
+		name:     name,
+		limit:    limit,
+		duration: duration,
+		f:        f,
 	}
 }
 

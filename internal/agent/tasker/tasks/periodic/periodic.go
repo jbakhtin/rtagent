@@ -8,16 +8,16 @@ import (
 )
 
 type task struct {
-	name string
+	f        tasker.Func
+	name     string
 	duration time.Duration
-	f tasker.Func
 }
 
 func New(name string, duration time.Duration, f tasker.Func) *task {
 	return &task{
-		name,
-		duration,
-		f,
+		name:     name,
+		duration: duration,
+		f:        f,
 	}
 }
 
@@ -38,5 +38,3 @@ func (t *task) Do(ctx context.Context) error {
 		}
 	}
 }
-
-

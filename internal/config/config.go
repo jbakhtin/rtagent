@@ -19,7 +19,7 @@ const (
 	_databaseDSN                = ""
 	_databaseDriver             = "pgx"
 	_rateLimit                  = 100
-	_shutdownTimeout                  = 10
+	_shutdownTimeout            = 10
 )
 
 const (
@@ -34,7 +34,7 @@ const (
 	_databaseDSNLabel                = "DSN БД"
 	_databaseDriverLabel             = "Драйвер подключения к БД"
 	_rateLimitLabel                  = "Количество исходящих запросов в секунду"
-	_shutdownTimeoutLabel                  = "Время на заерщение всех процессов перед отключением"
+	_shutdownTimeoutLabel            = "Время на заерщение всех процессов перед отключением"
 )
 
 type Config struct {
@@ -49,7 +49,7 @@ type Config struct {
 	ReportInterval             time.Duration `env:"REPORT_INTERVAL"`
 	StoreInterval              time.Duration `env:"STORE_INTERVAL"`
 	Restore                    bool          `env:"RESTORE"`
-	ShutdownTimeout                    time.Duration          `env:"SHUTDOWN_TIMEOUT"`
+	ShutdownTimeout            time.Duration `env:"SHUTDOWN_TIMEOUT"`
 }
 
 type Builder struct {
@@ -139,26 +139,26 @@ func (cb *Builder) Build() (Config, error) {
 	return cb.config, cb.err
 }
 
-func (c Config) GetPollInterval() time.Duration  {
+func (c Config) GetPollInterval() time.Duration {
 	return c.PollInterval
 }
 
-func (c Config) GetServerAddress() string  {
+func (c Config) GetServerAddress() string {
 	return c.Address
 }
 
-func (c Config) GetReportInterval() time.Duration  {
+func (c Config) GetReportInterval() time.Duration {
 	return c.ReportInterval
 }
 
-func (c Config) GetKeyApp() string  {
+func (c Config) GetKeyApp() string {
 	return c.KeyApp
 }
 
-func (c Config) GetAcceptableCountAgentErrors() int  {
+func (c Config) GetAcceptableCountAgentErrors() int {
 	return c.AcceptableCountAgentErrors
 }
 
-func (c Config) GetShutdownTimeout() time.Duration  {
+func (c Config) GetShutdownTimeout() time.Duration {
 	return c.ShutdownTimeout
 }
