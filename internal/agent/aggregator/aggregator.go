@@ -13,7 +13,7 @@ type aggregator struct {
 	collectors []CollectorFunc
 	collection Metrics
 	sync.RWMutex
-	poolCount  types.Counter
+	poolCount types.Counter
 }
 
 func (a *aggregator) poolCountCollector() (map[string]types.Metricer, error) {
