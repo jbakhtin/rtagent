@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/jbakhtin/rtagent/pkg/closer"
 	"log"
 	"os/signal"
 	"syscall"
@@ -29,6 +30,9 @@ func init() {
 }
 
 func main() {
+	osCtx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+	defer cancel()
+
 	logger, err := zap.NewDevelopment()
 	if err != nil {
 		log.Fatal(err)
@@ -55,15 +59,18 @@ func main() {
 		}
 	}()
 
-	ctxOS, _ := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
-
-	// Gracefully shut down
-	<-ctxOS.Done()
-	err = s.Shutdown(ctxServer)
+	cl, err := closer.New().WithFuncs(s.Shutdown).Build()
 	if err != nil {
-		logger.Info(err.Error())
+		logger.Error(err.Error())
 	}
 
-	cancel()
-	time.Sleep(2 * time.Second)
+	// Gracefully shut down
+	<-osCtx.Done()
+	withTimeout, cancel := context.WithTimeout(context.Background(), time.Second*cfg.ShutdownTimeout)
+	defer cancel()
+
+	err = cl.Close(withTimeout)
+	if err != nil {
+		logger.Error(err.Error())
+	}
 }
