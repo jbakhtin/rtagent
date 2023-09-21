@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/rsa"
 	"github.com/jbakhtin/rtagent/pkg/crypto"
 	"net/http"
 	"net/http/pprof"
@@ -36,9 +37,13 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 
-	privateKey, err := crypto.GetPrivateKey(cfg.GetCryptoKey())
-	if err != nil {
-		return err
+	var privateKey *rsa.PrivateKey
+
+	if cfg.GetCryptoKey() != "" {
+		privateKey, err = crypto.GetPrivateKey(cfg.GetCryptoKey())
+		if err != nil {
+			return err
+		}
 	}
 
 	// middlewares
@@ -63,7 +68,7 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 			r.Post("/{type}/{key}/{value}", handlerMetric.UpdateMetric())
 		})
 
-		r.Route("/update/", func(r chi.Router) {
+		r.Route("/updates/", func(r chi.Router) {
 			r.Use(middlewares.Decrypt(privateKey))
 			r.Post("/", handlerMetric.UpdateMetricsByJSON())
 		})
