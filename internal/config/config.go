@@ -20,6 +20,7 @@ const (
 	_databaseDriver             = "pgx"
 	_rateLimit                  = 100
 	_shutdownTimeout            = 10
+	_cryptoKey                  = ""
 )
 
 const (
@@ -35,6 +36,7 @@ const (
 	_databaseDriverLabel             = "Драйвер подключения к БД"
 	_rateLimitLabel                  = "Количество исходящих запросов в секунду"
 	_shutdownTimeoutLabel            = "Время на заерщение всех процессов перед отключением"
+	_cryptoKeyLabel                  = "Ключ для асимметричного шифрования"
 )
 
 type Config struct {
@@ -50,6 +52,7 @@ type Config struct {
 	StoreInterval              time.Duration `env:"STORE_INTERVAL"`
 	Restore                    bool          `env:"RESTORE"`
 	ShutdownTimeout            time.Duration `env:"SHUTDOWN_TIMEOUT"`
+	CryptoKey                  string        `env:"CRYPTO_KEY"`
 }
 
 type Builder struct {
@@ -73,6 +76,7 @@ func NewConfigBuilder() *Builder {
 			_storeInterval,
 			_restore,
 			_shutdownTimeout,
+			_cryptoKey,
 		},
 	}
 }
@@ -86,6 +90,7 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	databaseDSN := flag.String("d", _databaseDSN, _databaseDSNLabel)
 	databaseDriver := flag.String("dbDriver", _databaseDriver, _databaseDriverLabel)
 	shutdownTimeout := flag.Duration("shutdownTimeout", _shutdownTimeout, _shutdownTimeoutLabel)
+	cryptoKey := flag.String("crypto-key", _cryptoKey, _cryptoKeyLabel)
 	flag.Parse()
 
 	cb.config.Address = *address
@@ -96,6 +101,7 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	cb.config.DatabaseDSN = *databaseDSN
 	cb.config.DatabaseDriver = *databaseDriver
 	cb.config.ShutdownTimeout = *shutdownTimeout
+	cb.config.CryptoKey = *cryptoKey
 
 	return cb
 }
@@ -113,6 +119,7 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	keyApp := flag.String("k", _keyApp, _keyAppLabel)
 	rateLimit := flag.Int("l", _rateLimit, _rateLimitLabel)
 	shutdownTimeout := flag.Duration("shutdownTimeout", _shutdownTimeout, _shutdownTimeoutLabel)
+	cryptoKey := flag.String("crypto-key", _cryptoKey, _cryptoKeyLabel)
 	flag.Parse()
 
 	cb.config.PollInterval = *pollInterval
@@ -122,6 +129,7 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	cb.config.KeyApp = *keyApp
 	cb.config.RateLimit = *rateLimit
 	cb.config.ShutdownTimeout = *shutdownTimeout
+	cb.config.CryptoKey = *cryptoKey
 
 	return cb
 }
@@ -161,4 +169,8 @@ func (c Config) GetAcceptableCountAgentErrors() int {
 
 func (c Config) GetShutdownTimeout() time.Duration {
 	return c.ShutdownTimeout
+}
+
+func (c Config) GetCryptoKey() string {
+	return c.CryptoKey
 }
