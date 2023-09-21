@@ -46,7 +46,6 @@ func (r *sender) Send(key string, value types.Metricer) error {
 		return err
 	}
 
-
 	var encryptedKey string
 	var publicKey *rsa.PublicKey
 	if r.cfg.GetCryptoKey() != "" {

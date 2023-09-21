@@ -160,7 +160,7 @@ func GetPrivateKey(path string) (*rsa.PrivateKey, error) {
 	}
 
 	block, _ := pem.Decode(data)
-	if block == nil  {
+	if block == nil {
 		return nil, fmt.Errorf("GetPrivateKey: failed to decode PEM block containing private key")
 	}
 	priv, err := x509.ParsePKCS1PrivateKey(block.Bytes)
