@@ -45,6 +45,7 @@ type Config struct {
 	KeyApp                     string        `env:"KEY"`
 	DatabaseDSN                string        `env:"DATABASE_DSN"`
 	DatabaseDriver             string        `env:"DATABASE_DRIVER" envDefault:"pgx"`
+	CryptoKey                  string        `env:"CRYPTO_KEY"`
 	AcceptableCountAgentErrors int           `env:"ACCEPTABLE_COUNT_AGENT_ERRORS"`
 	RateLimit                  int           `env:"RATE_LIMIT" envDefault:"100"`
 	PollInterval               time.Duration `env:"POLL_INTERVAL"`
@@ -52,7 +53,6 @@ type Config struct {
 	StoreInterval              time.Duration `env:"STORE_INTERVAL"`
 	Restore                    bool          `env:"RESTORE"`
 	ShutdownTimeout            time.Duration `env:"SHUTDOWN_TIMEOUT"`
-	CryptoKey                  string        `env:"CRYPTO_KEY"`
 }
 
 type Builder struct {
@@ -69,6 +69,7 @@ func NewConfigBuilder() *Builder {
 			_keyApp,
 			_databaseDSN,
 			_databaseDriver,
+			_cryptoKey,
 			_acceptableCountAgentErrors,
 			_rateLimit,
 			_pollInterval,
@@ -76,7 +77,6 @@ func NewConfigBuilder() *Builder {
 			_storeInterval,
 			_restore,
 			_shutdownTimeout,
-			_cryptoKey,
 		},
 	}
 }

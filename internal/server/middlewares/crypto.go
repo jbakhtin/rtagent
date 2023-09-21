@@ -17,7 +17,12 @@ func Decrypt(privateKey *rsa.PrivateKey) func(next http.Handler) http.Handler {
 					http.Error(writer, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				request.Body.Close()
+				err = request.Body.Close()
+				if err != nil {
+					http.Error(writer, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
 				data, err := crypto.GetDecryptedMessage(privateKey, chyper, request.Header.Get("Encrypted-Key"))
 				if err != nil {
 					http.Error(writer, err.Error(), http.StatusInternalServerError)

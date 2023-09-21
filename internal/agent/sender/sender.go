@@ -2,6 +2,7 @@ package sender
 
 import (
 	"bytes"
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/server/models"
@@ -45,18 +46,18 @@ func (r *sender) Send(key string, value types.Metricer) error {
 		return err
 	}
 
+
 	var encryptedKey string
+	var publicKey *rsa.PublicKey
 	if r.cfg.GetCryptoKey() != "" {
-		publicKey, err := crypto.GetPublicKey(r.cfg.GetCryptoKey())
+		publicKey, err = crypto.GetPublicKey(r.cfg.GetCryptoKey())
 		if err != nil {
-			fmt.Println(err.Error())
 			return err
 		}
 
 		if publicKey != nil {
 			buf, encryptedKey, err = crypto.GetEncryptedMessage(publicKey, buf)
 			if err != nil {
-				fmt.Println(err.Error())
 				return err
 			}
 		}
