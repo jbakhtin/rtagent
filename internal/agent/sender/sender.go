@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/jbakhtin/rtagent/internal/server/models"
 	"github.com/jbakhtin/rtagent/internal/types"
+	"github.com/jbakhtin/rtagent/pkg/crypto"
 	"net/http"
 )
 
@@ -44,11 +45,29 @@ func (r *sender) Send(key string, value types.Metricer) error {
 		return err
 	}
 
+	publicKey, err := crypto.GetPublicKey(r.cfg.GetCryptoKey())
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+
+	var encryptedKey string
+	if publicKey != nil {
+		buf, encryptedKey, err = crypto.GetEncryptedMessage(publicKey, buf)
+		if err != nil {
+			fmt.Println(err.Error())
+			return err
+		}
+	}
+
+	fmt.Println(string(buf))
+
 	request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
 	if err != nil {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Encrypted-Key", encryptedKey)
 
 	client := http.Client{}
 	response, err := client.Do(request)

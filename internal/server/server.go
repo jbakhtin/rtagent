@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/jbakhtin/rtagent/pkg/crypto"
 	"net/http"
 	"net/http/pprof"
 
@@ -35,6 +36,11 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 
+	privateKey, err := crypto.GetPrivateKey(cfg.GetCryptoKey())
+	if err != nil {
+		return err
+	}
+
 	// middlewares
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -52,11 +58,15 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 		})
 
 		r.Route("/update/", func(r chi.Router) {
+			r.Use(middlewares.Decrypt(privateKey))
 			r.Post("/", handlerMetric.UpdateMetricByJSON())
 			r.Post("/{type}/{key}/{value}", handlerMetric.UpdateMetric())
 		})
 
-		r.Post("/updates/", handlerMetric.UpdateMetricsByJSON())
+		r.Route("/update/", func(r chi.Router) {
+			r.Use(middlewares.Decrypt(privateKey))
+			r.Post("/", handlerMetric.UpdateMetricsByJSON())
+		})
 
 		r.HandleFunc("/debug/pprof/*", pprof.Index)
 		r.HandleFunc("/debug/pprof/profile", pprof.Profile)
