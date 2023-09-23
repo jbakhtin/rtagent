@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"github.com/go-faster/errors"
 	"time"
 
 	"github.com/caarlos0/env/v6"
@@ -21,6 +22,7 @@ const (
 	_rateLimit                  = 100
 	_shutdownTimeout            = 10
 	_cryptoKey                  = ""
+	_config                     = ""
 )
 
 const (
@@ -37,6 +39,7 @@ const (
 	_rateLimitLabel                  = "Количество исходящих запросов в секунду"
 	_shutdownTimeoutLabel            = "Время на заерщение всех процессов перед отключением"
 	_cryptoKeyLabel                  = "Ключ для асимметричного шифрования"
+	_configLabel                     = "JSON file with config params"
 )
 
 type Config struct {
@@ -144,7 +147,7 @@ func (cb *Builder) WithAllFromEnv() *Builder {
 }
 
 func (cb *Builder) Build() (Config, error) {
-	return cb.config, cb.err
+	return cb.config, errors.Wrap(cb.err, "config builder")
 }
 
 func (c Config) GetPollInterval() time.Duration {
