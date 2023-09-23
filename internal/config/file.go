@@ -11,7 +11,9 @@ import (
 func (cb *Builder) WithAllFromJSONFile() *Builder {
 	var err error
 	defer func() {
-		cb.err = errors.Wrap(cb.err, "-config flag")
+		if cb.err != nil {
+			cb.err = errors.Wrap(cb.err, "-config flag")
+		}
 	}()
 
 	jsonFile := flag.String("config", _config, _configLabel)

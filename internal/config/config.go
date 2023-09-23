@@ -147,7 +147,12 @@ func (cb *Builder) WithAllFromEnv() *Builder {
 }
 
 func (cb *Builder) Build() (Config, error) {
-	return cb.config, errors.Wrap(cb.err, "config builder")
+	defer func() {
+		if cb.err != nil {
+			cb.err = errors.Wrap(cb.err, "-config flag")
+		}
+	}()
+	return cb.config, cb.err
 }
 
 func (c Config) GetPollInterval() time.Duration {
