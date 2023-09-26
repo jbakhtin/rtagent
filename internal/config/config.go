@@ -12,7 +12,7 @@ const (
 	_pollInterval               = time.Second * 2
 	_reportInterval             = time.Second * 10
 	_address                    = "127.0.0.1:8080"
-	_storeFile                  = "tmp/devops-metrics-db.json"
+	_storeFile                  = "./tmp/devops-metrics-db.json"
 	_storeInterval              = time.Second * 300
 	_restore                    = true
 	_acceptableCountAgentErrors = 100
@@ -44,7 +44,7 @@ const (
 
 type Config struct {
 	Address                    string        `env:"ADDRESS"`
-	StoreFile                  string        `env:"STORE_FILE"`
+	StoreFile                  string        `env:"STORE_FILE" envDefault:"tmp/devops-metrics-db.json"`
 	KeyApp                     string        `env:"KEY"`
 	DatabaseDSN                string        `env:"DATABASE_DSN"`
 	DatabaseDriver             string        `env:"DATABASE_DRIVER" envDefault:"pgx"`

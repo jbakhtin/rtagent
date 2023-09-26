@@ -49,8 +49,8 @@ func main() {
 		logger.Error(err.Error())
 		return
 	}
-
-	aggregator, err := aggregator.New().WithDefaultCollectors().Build()
+	poolCounter := aggregator.PoolCounter{}
+	aggregator, err := aggregator.New().WithDefaultCollectors().WithCustomCollector(poolCounter.PoolCount).Build()
 	if err != nil {
 		logger.Error(err.Error())
 	}
