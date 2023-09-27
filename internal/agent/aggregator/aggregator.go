@@ -10,8 +10,8 @@ import (
 type CollectorFunc func() (map[string]types.Metricer, error)
 
 type aggregator struct {
+	collection *Metrics
 	collectors []CollectorFunc
-	collection Metrics
 	sync.RWMutex
 }
 

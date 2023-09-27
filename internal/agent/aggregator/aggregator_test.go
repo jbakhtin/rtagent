@@ -19,7 +19,7 @@ func TestBuilder_Build(t *testing.T) {
 
 	type fields struct {
 		err        error
-		aggregator aggregator
+		aggregator *aggregator
 	}
 	tests := []struct {
 		name    string
@@ -31,13 +31,13 @@ func TestBuilder_Build(t *testing.T) {
 			"Test Build with out errors",
 			fields{
 				nil,
-				aggregator{
-					[]CollectorFunc{Runtime, Gopsutil, RandomMetric},
-					Metrics{
+				&aggregator{
+					collectors: []CollectorFunc{Runtime, Gopsutil, RandomMetric},
+					collection: &Metrics{
 						make(map[string]types.Metricer),
 						sync.RWMutex{},
 					},
-					sync.RWMutex{},
+					RWMutex: sync.RWMutex{},
 				},
 			},
 			aggr,
@@ -47,13 +47,13 @@ func TestBuilder_Build(t *testing.T) {
 			"Test Build with errors",
 			fields{
 				errors.New("Some error in builder"),
-				aggregator{
-					[]CollectorFunc{Runtime, Gopsutil, RandomMetric},
-					Metrics{
+				&aggregator{
+					collectors: []CollectorFunc{Runtime, Gopsutil, RandomMetric},
+					collection: &Metrics{
 						make(map[string]types.Metricer),
 						sync.RWMutex{},
 					},
-					sync.RWMutex{},
+					RWMutex: sync.RWMutex{},
 				},
 			},
 			aggr,
@@ -81,12 +81,12 @@ func TestBuilder_Build(t *testing.T) {
 				return
 			}
 
-			if !reflect.DeepEqual(got.collection, tt.want.collection) {
+			if !reflect.DeepEqual(&got.collection, &tt.want.collection) {
 				t.Errorf("Build() got = %v, want %v", got, tt.want)
 				return
 			}
 
-			if !reflect.DeepEqual(got.RWMutex, tt.want.RWMutex) {
+			if !reflect.DeepEqual(&got.RWMutex, &tt.want.RWMutex) {
 				t.Errorf("Build() got = %v, want %v", got, tt.want)
 				return
 			}
@@ -99,7 +99,7 @@ func TestBuilder_WithCustomCollector(t *testing.T) {
 
 	type fields struct {
 		err        error
-		aggregator aggregator
+		aggregator *aggregator
 	}
 	type args struct {
 		collector CollectorFunc
@@ -114,7 +114,7 @@ func TestBuilder_WithCustomCollector(t *testing.T) {
 			"Test Builder with custom collector",
 			fields{
 				nil,
-				aggregator{},
+				&aggregator{},
 			},
 			args{
 				RandomMetric,
@@ -142,7 +142,7 @@ func TestBuilder_WithCustomCollectors(t *testing.T) {
 
 	type fields struct {
 		err        error
-		aggregator aggregator
+		aggregator *aggregator
 	}
 	type args struct {
 		collectors []CollectorFunc
@@ -157,7 +157,7 @@ func TestBuilder_WithCustomCollectors(t *testing.T) {
 			"Test aggregator with default collectors",
 			fields{
 				nil,
-				aggregator{},
+				&aggregator{},
 			},
 			args{
 				[]CollectorFunc{RandomMetric},
@@ -183,7 +183,7 @@ func TestBuilder_WithCustomCollectors(t *testing.T) {
 func TestBuilder_WithDefaultCollectors(t *testing.T) {
 	type fields struct {
 		err        error
-		aggregator aggregator
+		aggregator *aggregator
 	}
 	tests := []struct {
 		name   string
@@ -194,11 +194,11 @@ func TestBuilder_WithDefaultCollectors(t *testing.T) {
 			"Test aggregator with default collectors",
 			fields{
 				nil,
-				aggregator{},
+				&aggregator{},
 			},
 			&Builder{
 				nil,
-				aggregator{
+				&aggregator{
 					collectors: []CollectorFunc{Runtime, Gopsutil, RandomMetric},
 				},
 			},
@@ -263,8 +263,7 @@ func TestGopsutil(t *testing.T) {
 
 func TestMetrics_GetAll(t *testing.T) {
 	type fields struct {
-		items   map[string]types.Metricer
-		RWMutex sync.RWMutex
+		metrics *Metrics
 	}
 	tests := []struct {
 		name   string
@@ -274,16 +273,20 @@ func TestMetrics_GetAll(t *testing.T) {
 		{
 			"Get all Metrics empty collection",
 			fields{
-				map[string]types.Metricer{},
-				sync.RWMutex{},
+				&Metrics{
+					map[string]types.Metricer{},
+					sync.RWMutex{},
+				},
 			},
 			map[string]types.Metricer{},
 		},
 		{
 			"Get all Metrics not empty collection",
 			fields{
-				map[string]types.Metricer{"TestMetric": types.Gauge(10)},
-				sync.RWMutex{},
+				&Metrics{
+					map[string]types.Metricer{"TestMetric": types.Gauge(10)},
+					sync.RWMutex{},
+				},
 			},
 			map[string]types.Metricer{"TestMetric": types.Gauge(10)},
 		},
@@ -291,11 +294,7 @@ func TestMetrics_GetAll(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &Metrics{
-				items:   tt.fields.items,
-				RWMutex: tt.fields.RWMutex,
-			}
-			if got := m.GetAll(); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.fields.metrics.GetAll(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetAll() = %v, want %v", got, tt.want)
 			}
 		})
@@ -304,8 +303,7 @@ func TestMetrics_GetAll(t *testing.T) {
 
 func TestMetrics_Merge(t *testing.T) {
 	type fields struct {
-		items   map[string]types.Metricer
-		RWMutex sync.RWMutex
+		metrics *Metrics
 	}
 	type args struct {
 		items map[string]types.Metricer
@@ -318,8 +316,10 @@ func TestMetrics_Merge(t *testing.T) {
 		{
 			"Merge two Metrics map",
 			fields{
-				map[string]types.Metricer{"PoolCount": types.Counter(10), "RandomMetric": types.Gauge(10)},
-				sync.RWMutex{},
+				&Metrics{
+					map[string]types.Metricer{"PoolCount": types.Counter(10), "RandomMetric": types.Gauge(10)},
+					sync.RWMutex{},
+				},
 			},
 			args{
 				map[string]types.Metricer{"TestCount": types.Counter(20)},
@@ -328,14 +328,10 @@ func TestMetrics_Merge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collection := &Metrics{
-				items:   tt.fields.items,
-				RWMutex: tt.fields.RWMutex,
-			}
 
-			collection.Merge(tt.args.items)
+			tt.fields.metrics.Merge(tt.args.items)
 
-			itemsCount := len(collection.items)
+			itemsCount := len(tt.fields.metrics.items)
 
 			if itemsCount != 3 {
 				t.Errorf("count items after Merge: %v, want %v", itemsCount, 3)
@@ -346,8 +342,7 @@ func TestMetrics_Merge(t *testing.T) {
 
 func TestMetrics_Set(t *testing.T) {
 	type fields struct {
-		items   map[string]types.Metricer
-		RWMutex sync.RWMutex
+		metrics *Metrics
 	}
 	type args struct {
 		key    string
@@ -361,8 +356,10 @@ func TestMetrics_Set(t *testing.T) {
 		{
 			name: "Set metric",
 			fields: fields{
-				map[string]types.Metricer{"PoolCount": types.Counter(1)},
-				sync.RWMutex{},
+				&Metrics{
+					map[string]types.Metricer{"PoolCount": types.Counter(1)},
+					sync.RWMutex{},
+				},
 			},
 			args: args{
 				"PoolCount",
@@ -372,10 +369,7 @@ func TestMetrics_Set(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_ = &Metrics{
-				items:   tt.fields.items,
-				RWMutex: tt.fields.RWMutex,
-			}
+			tt.fields.metrics.Set(tt.args.key, tt.args.metric)
 		})
 	}
 }
@@ -388,8 +382,8 @@ func TestNew(t *testing.T) {
 		{
 			"New builder",
 			&Builder{
-				aggregator: aggregator{
-					collection: Metrics{
+				aggregator: &aggregator{
+					collection: &Metrics{
 						items: make(map[string]types.Metricer, 0),
 					},
 				},
@@ -398,7 +392,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := New(); !reflect.DeepEqual(got, tt.want) {
+			if got := New(); !reflect.DeepEqual(got.aggregator, tt.want.aggregator) {
 				t.Errorf("New() = %v, want %v", got, tt.want)
 			}
 		})
@@ -494,10 +488,7 @@ func TestRuntime(t *testing.T) {
 
 func Test_aggregator_GetAll(t *testing.T) {
 	type fields struct {
-		collectors []CollectorFunc
-		collection Metrics
-		RWMutex    sync.RWMutex
-		poolCount  types.Counter
+		aggregator *aggregator
 	}
 	tests := []struct {
 		name   string
@@ -507,25 +498,21 @@ func Test_aggregator_GetAll(t *testing.T) {
 		{
 			"Get All",
 			fields{
-				[]CollectorFunc{Gopsutil},
-				Metrics{
-					map[string]types.Metricer{"TestMetric": types.Gauge(10)},
-					sync.RWMutex{},
+				&aggregator{
+					collectors: []CollectorFunc{Gopsutil},
+					collection: &Metrics{
+						map[string]types.Metricer{"TestMetric": types.Gauge(10)},
+						sync.RWMutex{},
+					},
+					RWMutex: sync.RWMutex{},
 				},
-				sync.RWMutex{},
-				1,
 			},
 			map[string]types.Metricer{"TestMetric": types.Gauge(10)},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &aggregator{
-				collectors: tt.fields.collectors,
-				collection: tt.fields.collection,
-				RWMutex:    tt.fields.RWMutex,
-			}
-			if got := a.GetAll(); !reflect.DeepEqual(got, tt.want) {
+			if got := tt.fields.aggregator.GetAll(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetAll() = %v, want %v", got, tt.want)
 			}
 		})
@@ -535,9 +522,7 @@ func Test_aggregator_GetAll(t *testing.T) {
 func Test_aggregator_Pool(t *testing.T) {
 	pooCounter := PoolCounter{}
 	type fields struct {
-		collectors []CollectorFunc
-		collection Metrics
-		RWMutex    sync.RWMutex
+		aggregator *aggregator
 	}
 	type args struct {
 		ctx context.Context
@@ -551,11 +536,13 @@ func Test_aggregator_Pool(t *testing.T) {
 		{
 			name: "Aggregator with counter func",
 			fields: fields{
-				[]CollectorFunc{pooCounter.PoolCount},
-				Metrics{
-					items: make(map[string]types.Metricer),
+				&aggregator{
+					collectors: []CollectorFunc{pooCounter.PoolCount},
+					collection: &Metrics{
+						items: make(map[string]types.Metricer),
+					},
+					RWMutex: sync.RWMutex{},
 				},
-				sync.RWMutex{},
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -565,43 +552,8 @@ func Test_aggregator_Pool(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			a := &aggregator{
-				collectors: tt.fields.collectors,
-				collection: tt.fields.collection,
-				RWMutex:    tt.fields.RWMutex,
-			}
-			if err := a.Pool(tt.args.ctx); (err != nil) != tt.wantErr {
+			if err := tt.fields.aggregator.Pool(tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("Pool() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func Test_aggregator_poolCountCollector(t *testing.T) {
-	type fields struct {
-		collectors []CollectorFunc
-		collection Metrics
-		RWMutex    sync.RWMutex
-		poolCount  types.Counter
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		want    map[string]types.Metricer
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			poolCounter := PoolCounter{}
-			got, err := poolCounter.PoolCount()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("poolCountCollector() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("poolCountCollector() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

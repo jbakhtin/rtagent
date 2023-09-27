@@ -4,13 +4,13 @@ import "github.com/jbakhtin/rtagent/internal/types"
 
 type Builder struct {
 	err        error
-	aggregator aggregator
+	aggregator *aggregator
 }
 
 func New() *Builder {
 	return &Builder{
-		aggregator: aggregator{
-			collection: Metrics{
+		aggregator: &aggregator{
+			collection: &Metrics{
 				items: make(map[string]types.Metricer, 0),
 			},
 		},
@@ -37,5 +37,5 @@ func (b *Builder) Build() (*aggregator, error) {
 		return nil, b.err
 	}
 
-	return &b.aggregator, b.err
+	return b.aggregator, b.err
 }

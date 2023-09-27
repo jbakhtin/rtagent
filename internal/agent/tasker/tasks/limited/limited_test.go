@@ -78,7 +78,6 @@ func TestNew(t *testing.T) {
 
 func Test_task_Do(t1 *testing.T) {
 	counter := Counter{}
-	ctx, cancel := context.WithCancel(context.TODO())
 
 	type fields struct {
 		f        tasker.Func
@@ -86,13 +85,9 @@ func Test_task_Do(t1 *testing.T) {
 		duration time.Duration
 		limit    int
 	}
-	type args struct {
-		ctx context.Context
-	}
 	tests := []struct {
 		name    string
 		fields  fields
-		args    args
 		wantErr bool
 	}{
 		{
@@ -102,9 +97,6 @@ func Test_task_Do(t1 *testing.T) {
 				"increment counter not more then 10 for 10 seconds",
 				time.Second * 10,
 				10,
-			},
-			args{
-				ctx,
 			},
 			true,
 		},
@@ -117,9 +109,10 @@ func Test_task_Do(t1 *testing.T) {
 				duration: tt.fields.duration,
 				limit:    tt.fields.limit,
 			}
+			ctx, cancel := context.WithCancel(context.TODO())
 			timer := time.NewTimer(time.Second * 1)
 			go func() {
-				if err := t.Do(tt.args.ctx); (err != nil) != tt.wantErr {
+				if err := t.Do(ctx); (err != nil) != tt.wantErr {
 					t1.Errorf("Do() error = %v, wantErr %v", err, tt.wantErr)
 				}
 			}()
