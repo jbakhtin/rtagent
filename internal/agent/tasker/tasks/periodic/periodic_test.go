@@ -97,7 +97,7 @@ func Test_task_Do(t1 *testing.T) {
 				name:     tt.fields.name,
 				duration: tt.fields.duration,
 			}
-			ctx, _:= context.WithTimeout(context.TODO(), time.Second * 2)
+			ctx, _ := context.WithTimeout(context.TODO(), time.Second*2)
 			go func() {
 				if err := t.Do(ctx); (err != nil) != tt.wantErr {
 					t1.Errorf("Do() error = %v, wantErr %v", err, tt.wantErr)

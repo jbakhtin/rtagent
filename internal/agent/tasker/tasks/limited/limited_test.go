@@ -27,8 +27,6 @@ func (c *Counter) Get() int {
 	return c.Counter
 }
 
-
-
 func TestNew(t *testing.T) {
 	counter := Counter{}
 

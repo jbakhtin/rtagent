@@ -88,7 +88,7 @@ func TestLimiter_Run(t *testing.T) {
 					goto Exit
 				}
 			}
-			Exit:
+		Exit:
 
 			if counter < 90 && counter > 110 {
 				t.Errorf("Error %v", counter)

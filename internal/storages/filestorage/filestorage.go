@@ -110,7 +110,7 @@ func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 	}
 
 	if _, err = file.Seek(0, 0); err != nil {
-		return  errors.Wrap(err, "seek file")
+		return errors.Wrap(err, "seek file")
 	}
 
 	if err = writer.WriteByte('\n'); err != nil {

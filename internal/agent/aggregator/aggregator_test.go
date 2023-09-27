@@ -140,7 +140,6 @@ func TestBuilder_WithCustomCollector(t *testing.T) {
 func TestBuilder_WithCustomCollectors(t *testing.T) {
 	aggrBuilder := New().WithCustomCollectors(RandomMetric)
 
-
 	type fields struct {
 		err        error
 		aggregator aggregator
@@ -241,8 +240,8 @@ func TestGopsutil(t *testing.T) {
 		{
 			"Get Gopsutil",
 			map[string]types.Metricer{
-				"TotalMemory": types.Gauge(memStats.Total),
-				"FreeMemory": types.Gauge(memStats.Free),
+				"TotalMemory":     types.Gauge(memStats.Total),
+				"FreeMemory":      types.Gauge(memStats.Free),
 				"CPUutilization1": types.Gauge(memStats.Used),
 			},
 			false,
@@ -255,7 +254,7 @@ func TestGopsutil(t *testing.T) {
 				t.Errorf("Gopsutil() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if len(got) !=  len(tt.want) {
+			if len(got) != len(tt.want) {
 				t.Errorf("Gopsutil() len(got) = %v, len(want) %v", len(got), len(tt.want))
 			}
 		})
@@ -319,11 +318,11 @@ func TestMetrics_Merge(t *testing.T) {
 		{
 			"Merge two Metrics map",
 			fields{
-				map[string]types.Metricer{"PoolCount" : types.Counter(10), "RandomMetric" : types.Gauge(10)},
+				map[string]types.Metricer{"PoolCount": types.Counter(10), "RandomMetric": types.Gauge(10)},
 				sync.RWMutex{},
 			},
 			args{
-				map[string]types.Metricer{"TestCount" : types.Counter(20)},
+				map[string]types.Metricer{"TestCount": types.Counter(20)},
 			},
 		},
 	}
@@ -362,7 +361,7 @@ func TestMetrics_Set(t *testing.T) {
 		{
 			name: "Set metric",
 			fields: fields{
-				map[string]types.Metricer{"PoolCount" : types.Counter(1)},
+				map[string]types.Metricer{"PoolCount": types.Counter(1)},
 				sync.RWMutex{},
 			},
 			args: args{
@@ -414,7 +413,7 @@ func TestRandomMetric(t *testing.T) {
 	}{
 		{
 			"Get a random metric",
-			map[string]types.Metricer{"RandomMetric":nil},
+			map[string]types.Metricer{"RandomMetric": nil},
 			false,
 		},
 	}
@@ -448,33 +447,33 @@ func TestRuntime(t *testing.T) {
 		{
 			"Get Runtime",
 			map[string]types.Metricer{
-				"Alloc": types.Gauge(memStats.Alloc),
-				"Frees": types.Gauge(memStats.Frees),
-				"HeapAlloc": types.Gauge(memStats.HeapAlloc),
-				"BuckHashSys": types.Gauge(memStats.BuckHashSys),
-				"GCSys": types.Gauge(memStats.GCSys),
+				"Alloc":         types.Gauge(memStats.Alloc),
+				"Frees":         types.Gauge(memStats.Frees),
+				"HeapAlloc":     types.Gauge(memStats.HeapAlloc),
+				"BuckHashSys":   types.Gauge(memStats.BuckHashSys),
+				"GCSys":         types.Gauge(memStats.GCSys),
 				"GCCPUFraction": types.Gauge(memStats.GCCPUFraction),
-				"HeapIdle": types.Gauge(memStats.HeapIdle),
-				"HeapInuse": types.Gauge(memStats.HeapInuse),
-				"HeapObjects": types.Gauge(memStats.HeapObjects),
-				"HeapReleased": types.Gauge(memStats.HeapReleased),
-				"HeapSys": types.Gauge(memStats.HeapSys),
-				"LastGC": types.Gauge(memStats.LastGC),
-				"Lookups": types.Gauge(memStats.Lookups),
-				"MCacheInuse": types.Gauge(memStats.MCacheInuse),
-				"MCacheSys": types.Gauge(memStats.MCacheSys),
-				"MSpanInuse": types.Gauge(memStats.MSpanInuse),
-				"MSpanSys": types.Gauge(memStats.MSpanSys),
-				"Mallocs": types.Gauge(memStats.Mallocs),
-				"NextGC": types.Gauge(memStats.NextGC),
-				"NumForcedGC": types.Gauge(memStats.NumForcedGC),
-				"NumGC": types.Gauge(memStats.NumGC),
-				"OtherSys": types.Gauge(memStats.OtherSys),
-				"PauseTotalNs": types.Gauge(memStats.PauseTotalNs),
-				"StackInuse": types.Gauge(memStats.StackInuse),
-				"StackSys": types.Gauge(memStats.StackSys),
-				"Sys": types.Gauge(memStats.Sys),
-				"TotalAlloc": types.Gauge(memStats.TotalAlloc),
+				"HeapIdle":      types.Gauge(memStats.HeapIdle),
+				"HeapInuse":     types.Gauge(memStats.HeapInuse),
+				"HeapObjects":   types.Gauge(memStats.HeapObjects),
+				"HeapReleased":  types.Gauge(memStats.HeapReleased),
+				"HeapSys":       types.Gauge(memStats.HeapSys),
+				"LastGC":        types.Gauge(memStats.LastGC),
+				"Lookups":       types.Gauge(memStats.Lookups),
+				"MCacheInuse":   types.Gauge(memStats.MCacheInuse),
+				"MCacheSys":     types.Gauge(memStats.MCacheSys),
+				"MSpanInuse":    types.Gauge(memStats.MSpanInuse),
+				"MSpanSys":      types.Gauge(memStats.MSpanSys),
+				"Mallocs":       types.Gauge(memStats.Mallocs),
+				"NextGC":        types.Gauge(memStats.NextGC),
+				"NumForcedGC":   types.Gauge(memStats.NumForcedGC),
+				"NumGC":         types.Gauge(memStats.NumGC),
+				"OtherSys":      types.Gauge(memStats.OtherSys),
+				"PauseTotalNs":  types.Gauge(memStats.PauseTotalNs),
+				"StackInuse":    types.Gauge(memStats.StackInuse),
+				"StackSys":      types.Gauge(memStats.StackSys),
+				"Sys":           types.Gauge(memStats.Sys),
+				"TotalAlloc":    types.Gauge(memStats.TotalAlloc),
 			},
 			false,
 		},
@@ -486,7 +485,7 @@ func TestRuntime(t *testing.T) {
 				t.Errorf("Runtime() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if len(got) !=  len(tt.want) {
+			if len(got) != len(tt.want) {
 				t.Errorf("Runtime() got = %v, want %v", got, tt.want)
 			}
 		})

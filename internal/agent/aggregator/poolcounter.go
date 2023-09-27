@@ -8,5 +8,5 @@ type PoolCounter struct {
 
 func (pc *PoolCounter) PoolCount() (map[string]types.Metricer, error) {
 	pc.Count++
-	return map[string]types.Metricer{"PollCount" : types.Counter(pc.Count)}, nil
+	return map[string]types.Metricer{"PollCount": types.Counter(pc.Count)}, nil
 }
