@@ -23,6 +23,7 @@ const (
 	_shutdownTimeout            = 10
 	_cryptoKey                  = ""
 	_config                     = ""
+	_trustedSubnet 				= ""
 )
 
 const (
@@ -40,6 +41,7 @@ const (
 	_shutdownTimeoutLabel            = "Время на заерщение всех процессов перед отключением"
 	_cryptoKeyLabel                  = "Ключ для асимметричного шифрования"
 	_configLabel                     = "JSON file with config params"
+	_trustedSubnetLabel				 = "Строковое представление бесклассовой адресации (CIDR)"
 )
 
 type Config struct {
@@ -56,6 +58,7 @@ type Config struct {
 	StoreInterval              time.Duration `env:"STORE_INTERVAL"`
 	Restore                    bool          `env:"RESTORE"`
 	ShutdownTimeout            time.Duration `env:"SHUTDOWN_TIMEOUT"`
+	TrustedSubnet				string `env:"TRUSTED_SUBNET"`
 }
 
 type Builder struct {
@@ -80,6 +83,7 @@ func NewConfigBuilder() *Builder {
 			_storeInterval,
 			_restore,
 			_shutdownTimeout,
+			_trustedSubnet,
 		},
 	}
 }
@@ -94,6 +98,7 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	databaseDriver := flag.String("dbDriver", _databaseDriver, _databaseDriverLabel)
 	shutdownTimeout := flag.Duration("shutdownTimeout", _shutdownTimeout, _shutdownTimeoutLabel)
 	cryptoKey := flag.String("crypto-key", _cryptoKey, _cryptoKeyLabel)
+	trustedSubnet := flag.String("t", _trustedSubnet, _trustedSubnetLabel)
 	flag.Parse()
 
 	cb.config.Address = *address
@@ -105,6 +110,7 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	cb.config.DatabaseDriver = *databaseDriver
 	cb.config.ShutdownTimeout = *shutdownTimeout
 	cb.config.CryptoKey = *cryptoKey
+	cb.config.TrustedSubnet = *trustedSubnet
 
 	return cb
 }
@@ -123,6 +129,7 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	rateLimit := flag.Int("l", _rateLimit, _rateLimitLabel)
 	shutdownTimeout := flag.Duration("shutdownTimeout", _shutdownTimeout, _shutdownTimeoutLabel)
 	cryptoKey := flag.String("crypto-key", _cryptoKey, _cryptoKeyLabel)
+	trustedSubnet := flag.String("t", _trustedSubnet, _trustedSubnetLabel)
 	flag.Parse()
 
 	cb.config.PollInterval = *pollInterval
@@ -133,6 +140,7 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	cb.config.RateLimit = *rateLimit
 	cb.config.ShutdownTimeout = *shutdownTimeout
 	cb.config.CryptoKey = *cryptoKey
+	cb.config.TrustedSubnet = *trustedSubnet
 
 	return cb
 }
@@ -181,4 +189,8 @@ func (c Config) GetShutdownTimeout() time.Duration {
 
 func (c Config) GetCryptoKey() string {
 	return c.CryptoKey
+}
+
+func (c Config) GetTrustedSubnet() string {
+	return c.TrustedSubnet
 }

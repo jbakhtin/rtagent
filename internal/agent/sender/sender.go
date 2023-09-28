@@ -73,6 +73,10 @@ func (r *sender) Send(key string, value types.Metricer) error {
 		request.Header.Set("Encrypted-Key", encryptedKey)
 	}
 
+	if r.cfg.GetTrustedSubnet() != "" {
+		request.Header.Set("X-Real-IP", r.cfg.GetTrustedSubnet())
+	}
+
 	client := http.Client{}
 	response, err := client.Do(request)
 	if err != nil {

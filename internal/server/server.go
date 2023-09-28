@@ -52,6 +52,7 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middlewares.GZIPCompressor)
+	r.Use(middlewares.TrustedSubnet(cfg))
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlerMetric.GetAllMetricsAsHTML())
