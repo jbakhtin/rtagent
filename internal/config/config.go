@@ -23,7 +23,7 @@ const (
 	_shutdownTimeout            = 10
 	_cryptoKey                  = ""
 	_config                     = ""
-	_trustedSubnet 				= ""
+	_trustedSubnet              = ""
 )
 
 const (
@@ -41,7 +41,7 @@ const (
 	_shutdownTimeoutLabel            = "Время на заерщение всех процессов перед отключением"
 	_cryptoKeyLabel                  = "Ключ для асимметричного шифрования"
 	_configLabel                     = "JSON file with config params"
-	_trustedSubnetLabel				 = "Строковое представление бесклассовой адресации (CIDR)"
+	_trustedSubnetLabel              = "Строковое представление бесклассовой адресации (CIDR)"
 )
 
 type Config struct {
@@ -51,6 +51,7 @@ type Config struct {
 	DatabaseDSN                string        `env:"DATABASE_DSN"`
 	DatabaseDriver             string        `env:"DATABASE_DRIVER" envDefault:"pgx"`
 	CryptoKey                  string        `env:"CRYPTO_KEY"`
+	TrustedSubnet              string        `env:"TRUSTED_SUBNET"`
 	AcceptableCountAgentErrors int           `env:"ACCEPTABLE_COUNT_AGENT_ERRORS"`
 	RateLimit                  int           `env:"RATE_LIMIT" envDefault:"100"`
 	PollInterval               time.Duration `env:"POLL_INTERVAL"`
@@ -58,7 +59,6 @@ type Config struct {
 	StoreInterval              time.Duration `env:"STORE_INTERVAL"`
 	Restore                    bool          `env:"RESTORE"`
 	ShutdownTimeout            time.Duration `env:"SHUTDOWN_TIMEOUT"`
-	TrustedSubnet				string `env:"TRUSTED_SUBNET"`
 }
 
 type Builder struct {
@@ -76,6 +76,7 @@ func NewConfigBuilder() *Builder {
 			_databaseDSN,
 			_databaseDriver,
 			_cryptoKey,
+			_trustedSubnet,
 			_acceptableCountAgentErrors,
 			_rateLimit,
 			_pollInterval,
@@ -83,7 +84,6 @@ func NewConfigBuilder() *Builder {
 			_storeInterval,
 			_restore,
 			_shutdownTimeout,
-			_trustedSubnet,
 		},
 	}
 }
