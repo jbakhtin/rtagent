@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package grpcMetric;
+
+option go_package = "github.com/jbakhtin/rtagent/proto/metric";
+
+message Metric {
+  enum Type {
+    gauge = 0;
+    counter = 1;
+  }
+  Type type = 1;
+  string key = 2;
+  uint64  delta  = 3;
+  float value = 4;
+  string hash = 5;
+}
