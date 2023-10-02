@@ -1,10 +1,11 @@
-package sender
+package http
 
 import (
 	"bytes"
 	"crypto/rsa"
 	"encoding/json"
 	"fmt"
+	sender2 "github.com/jbakhtin/rtagent/internal/agent/sender"
 	"github.com/jbakhtin/rtagent/internal/server/models"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"github.com/jbakhtin/rtagent/pkg/crypto"
@@ -14,10 +15,10 @@ import (
 type ReportFunction func() string
 
 type sender struct {
-	cfg Configer
+	cfg sender2.Configer
 }
 
-func New(cfg Configer) *sender {
+func New(cfg sender2.Configer) *sender {
 	return &sender{
 		cfg: cfg,
 	}

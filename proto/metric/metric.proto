@@ -15,3 +15,17 @@ message Metric {
   float value = 4;
   string hash = 5;
 }
+
+message UpdateMetricRequest {
+  Metric metric = 1;
+}
+
+message UpdateMetricResponse {
+  string error = 1; // ошибка
+}
+
+service Metrics {
+  rpc UpdateMetric(UpdateMetricRequest) returns (UpdateMetricResponse);
+}
+
+
