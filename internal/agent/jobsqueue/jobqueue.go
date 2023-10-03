@@ -19,12 +19,12 @@ func NewJob(key string, value types.Metricer) *Job {
 	}
 }
 
-func (n Job) Key() string {
-	return n.key
+func (j Job) Key() string {
+	return j.key
 }
 
-func (n Job) Value() types.Metricer {
-	return n.value
+func (j Job) Value() types.Metricer {
+	return j.value
 }
 
 type queue struct {

@@ -62,7 +62,7 @@ func main() {
 	task2 := periodic.New("make jobs", cfg.GetReportInterval(), jobMaker.Do)
 
 	sender := sender.New(cfg)
-	jobSender := worker.New(queue, sender)
+	jobSender := messagesender.New(queue, sender)
 	task3 := limited.New("send jobs", cfg.RateLimit, time.Second, jobSender.Do)
 
 	ctx, appCancel := context.WithCancel(osCtx)
