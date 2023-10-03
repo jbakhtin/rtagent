@@ -63,13 +63,13 @@ type Config struct {
 
 type Builder struct {
 	err    error
-	config Config
+	config *Config
 }
 
 func NewConfigBuilder() *Builder {
 	return &Builder{
 		nil,
-		Config{
+		&Config{
 			_address,
 			_storeFile,
 			_keyApp,
@@ -146,7 +146,7 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 }
 
 func (cb *Builder) WithAllFromEnv() *Builder {
-	err := env.Parse(&cb.config)
+	err := env.Parse(cb.config)
 	if err != nil {
 		cb.err = err
 	}
@@ -154,7 +154,7 @@ func (cb *Builder) WithAllFromEnv() *Builder {
 	return cb
 }
 
-func (cb *Builder) Build() (Config, error) {
+func (cb *Builder) Build() (*Config, error) {
 	defer func() {
 		if cb.err != nil {
 			cb.err = errors.Wrap(cb.err, "-config flag")
@@ -193,4 +193,12 @@ func (c Config) GetCryptoKey() string {
 
 func (c Config) GetTrustedSubnet() string {
 	return c.TrustedSubnet
+}
+
+func (c Config) GetDatabaseDriver() string {
+	return c.DatabaseDriver
+}
+
+func (c Config) GetDatabaseDSN() string {
+	return c.DatabaseDSN
 }

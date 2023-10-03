@@ -12,8 +12,6 @@ import (
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
-	"github.com/jbakhtin/rtagent/internal/storages/dbstorage"
-	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
 	"github.com/jbakhtin/rtagent/internal/types"
 )
 
@@ -38,31 +36,31 @@ var listOfMetricHTMLTemplate = `
 	{{end}}
 `
 
-func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, error) {
-	if cfg.DatabaseDSN != "" {
-		ms, err := dbstorage.New(cfg) // TODO: move to cfg
-		if err != nil {
-			return nil, err
-		}
-
-		return &HandlerMetric{
-			repository: &ms,
-			config:     cfg,
-		}, nil
-	}
-
-	ms, err := filestorage.New(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	err = ms.Start(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
+func NewHandlerMetric(ctx context.Context, cfg config.Config, repository MetricRepository) (*HandlerMetric, error) {
+	//if cfg.DatabaseDSN != "" {
+	//	ms, err := dbstorage.New(cfg) // TODO: move to cfg
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	return &HandlerMetric{
+	//		repository: &ms,
+	//		config:     cfg,
+	//	}, nil
+	//}
+	//
+	//ms, err := filestorage.New(cfg)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//err = ms.Start(ctx, cfg)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	return &HandlerMetric{
-		repository: &ms,
+		repository: repository,
 		config:     cfg,
 	}, nil
 }

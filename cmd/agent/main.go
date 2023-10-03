@@ -7,7 +7,7 @@ import (
 	"github.com/jbakhtin/rtagent/internal/agent/jobsmaker"
 	"github.com/jbakhtin/rtagent/internal/agent/jobsqueue"
 	"github.com/jbakhtin/rtagent/internal/agent/messagesender"
-	"github.com/jbakhtin/rtagent/internal/agent/sender"
+	"github.com/jbakhtin/rtagent/internal/agent/sender/grpc"
 	"github.com/jbakhtin/rtagent/internal/agent/tasker/tasks/limited"
 	"github.com/jbakhtin/rtagent/internal/agent/tasker/tasks/once"
 	"github.com/jbakhtin/rtagent/internal/agent/tasker/tasks/periodic"
@@ -61,7 +61,7 @@ func main() {
 	task1 := periodic.New("polling stats", cfg.GetPollInterval(), aggregator.Pool)
 	task2 := periodic.New("make jobs", cfg.GetReportInterval(), jobMaker.Do)
 
-	sender := sender.New(cfg)
+	sender := grpc.New(cfg)
 	jobSender := worker.New(queue, sender)
 	task3 := limited.New("send jobs", cfg.RateLimit, time.Second, jobSender.Do)
 

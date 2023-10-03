@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/rsa"
+	"github.com/jbakhtin/rtagent/internal/storage"
 	"github.com/jbakhtin/rtagent/pkg/crypto"
 	"net/http"
 	"net/http/pprof"
@@ -17,24 +18,27 @@ import (
 
 type MainServer struct {
 	*http.Server
+	repository storage.MetricRepository
 }
 
-func New(cfg config.Config) (MainServer, error) {
+func New(cfg config.Config, repository storage.MetricRepository) (MainServer, error) {
 	server := &http.Server{
 		Addr: cfg.Address,
 	}
 
 	return MainServer{
 		Server: server,
+		repository: repository,
 	}, nil
 }
 
-func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
+func (ms MainServer) Start(ctx context.Context, cfg config.Config) (err error) {
+	var handlerMetric *handlers.HandlerMetric
 	r := chi.NewRouter()
 
-	handlerMetric, err := handlers.NewHandlerMetric(ctx, cfg)
+	handlerMetric, err = handlers.NewHandlerMetric(ctx, cfg, ms.repository)
 	if err != nil {
-		return err
+		return
 	}
 
 	var privateKey *rsa.PrivateKey
@@ -42,7 +46,7 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 	if cfg.GetCryptoKey() != "" {
 		privateKey, err = crypto.GetPrivateKey(cfg.GetCryptoKey())
 		if err != nil {
-			return err
+			return
 		}
 	}
 
@@ -52,7 +56,7 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middlewares.GZIPCompressor)
-	r.Use(middlewares.TrustedSubnet(cfg))
+	//r.Use(middlewares.TrustedSubnet(cfg))
 
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlerMetric.GetAllMetricsAsHTML())
@@ -79,5 +83,11 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) error {
 		r.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	})
 
-	return http.ListenAndServe(ms.Addr, r)
+	go func() {
+		if err := http.ListenAndServe(ms.Addr, r); err != nil {
+			return
+		}
+	}()
+
+	return
 }

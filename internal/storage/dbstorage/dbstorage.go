@@ -8,11 +8,8 @@ import (
 	"fmt"
 
 	_ "github.com/jackc/pgx/v5"
-	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/types"
-	"github.com/pressly/goose/v3"
-	"go.uber.org/zap"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -45,40 +42,10 @@ const (
 )
 
 //go:embed migrations/*.sql
-var embedMigrations embed.FS
+var EmbedMigrations embed.FS
 
 type DBStorage struct {
-	Logger *zap.Logger
 	*sql.DB
-	config config.Config
-}
-
-func New(cfg config.Config) (DBStorage, error) {
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		return DBStorage{}, err
-	}
-
-	db, err := sql.Open(cfg.DatabaseDriver, cfg.DatabaseDSN)
-	if err != nil {
-		return DBStorage{}, err
-	}
-
-	goose.SetBaseFS(embedMigrations)
-
-	if err := goose.SetDialect("postgres"); err != nil {
-		return DBStorage{}, err
-	}
-
-	if err := goose.Up(db, "migrations"); err != nil {
-		return DBStorage{}, err
-	}
-
-	return DBStorage{
-		Logger: logger,
-		DB:     db,
-		config: cfg,
-	}, nil
 }
 
 func (dbs *DBStorage) Set(metric models.Metricer) (models.Metricer, error) {
@@ -111,7 +78,6 @@ func (dbs *DBStorage) Get(key string) (models.Metricer, error) {
 	var value *types.Gauge
 	err := dbs.QueryRow(getByID, key).Scan(&id, &mType, &delta, &value)
 	if err != nil {
-		dbs.Logger.Info(err.Error())
 		return nil, err
 	}
 

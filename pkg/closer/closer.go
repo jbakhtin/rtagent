@@ -9,11 +9,11 @@ import (
 
 type Func func(ctx context.Context) error
 
-type closer struct {
+type Closer struct {
 	funcs []Func
 }
 
-func (c *closer) Close(ctx context.Context) error {
+func (c *Closer) Close(ctx context.Context) error {
 	var (
 		msgs     = make([]string, 0, len(c.funcs))
 		complete = make(chan struct{}, 1)
