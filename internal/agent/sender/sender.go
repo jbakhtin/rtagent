@@ -23,19 +23,19 @@ func New(cfg Configer) *sender {
 	}
 }
 
-func (r *sender) Send(key string, value types.Metricer) error {
-	endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", r.cfg.GetServerAddress()))
-	model, err := models.ToJSON(r.cfg, key, value)
+func (s *sender) Send(key string, value types.Metricer) error {
+	endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", s.cfg.GetServerAddress()))
+	model, err := models.ToJSON(s.cfg, key, value)
 	if err != nil {
 		return err
 	}
 
-	model.Hash, err = model.CalcHash([]byte(r.cfg.GetKeyApp()))
+	model.Hash, err = model.CalcHash([]byte(s.cfg.GetKeyApp()))
 	if err != nil {
 		return err
 	}
 
-	hash, err := model.CalcHash([]byte(r.cfg.GetKeyApp()))
+	hash, err := model.CalcHash([]byte(s.cfg.GetKeyApp()))
 	if err != nil {
 		return err
 	}
@@ -48,8 +48,8 @@ func (r *sender) Send(key string, value types.Metricer) error {
 
 	var encryptedKey string
 	var publicKey *rsa.PublicKey
-	if r.cfg.GetCryptoKey() != "" {
-		publicKey, err = crypto.GetPublicKey(r.cfg.GetCryptoKey())
+	if s.cfg.GetCryptoKey() != "" {
+		publicKey, err = crypto.GetPublicKey(s.cfg.GetCryptoKey())
 		if err != nil {
 			return err
 		}
@@ -69,12 +69,12 @@ func (r *sender) Send(key string, value types.Metricer) error {
 	}
 	request.Header.Set("Content-Type", "application/json")
 
-	if r.cfg.GetCryptoKey() != "" {
+	if s.cfg.GetCryptoKey() != "" {
 		request.Header.Set("Encrypted-Key", encryptedKey)
 	}
 
-	if r.cfg.GetTrustedSubnet() != "" {
-		request.Header.Set("X-Real-IP", r.cfg.GetTrustedSubnet())
+	if s.cfg.GetTrustedSubnet() != "" {
+		request.Header.Set("X-Real-IP", s.cfg.GetTrustedSubnet())
 	}
 
 	client := http.Client{}

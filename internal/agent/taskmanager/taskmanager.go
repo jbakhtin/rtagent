@@ -15,11 +15,11 @@ type taskmanager struct {
 	funcs []Func
 }
 
-func (c *taskmanager) DoIt(ctx context.Context) (err error) {
+func (t *taskmanager) DoIt(ctx context.Context) (err error) {
 	defer func() {
 		err = errors.Wrap(err, "task manager")
 	}()
-	var msgs = make([]string, 0, len(c.funcs))
+	var msgs = make([]string, 0, len(t.funcs))
 	wg := sync.WaitGroup{}
 	defer func() {
 		wg.Wait()
@@ -30,7 +30,7 @@ func (c *taskmanager) DoIt(ctx context.Context) (err error) {
 			)
 		}
 	}()
-	wg.Add(len(c.funcs))
+	wg.Add(len(t.funcs))
 
 	newCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -45,11 +45,11 @@ func (c *taskmanager) DoIt(ctx context.Context) (err error) {
 		cancel()
 	}()
 
-	for i := range c.funcs {
+	for i := range t.funcs {
 		i := i
 		eg.Go(func() error {
 			defer wg.Done()
-			tempErr := c.funcs[i](newCtx)
+			tempErr := t.funcs[i](newCtx)
 			if tempErr != nil {
 				msgs = append(msgs, tempErr.Error())
 			}
