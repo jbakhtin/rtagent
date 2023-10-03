@@ -22,12 +22,10 @@ type MainServer struct {
 }
 
 func New(cfg config.Config, repository storage.MetricRepository) (MainServer, error) {
-	server := &http.Server{
-		Addr: cfg.Address,
-	}
-
 	return MainServer{
-		Server: server,
+		Server: &http.Server{
+			Addr: cfg.Address,
+		},
 		repository: repository,
 	}, nil
 }
@@ -84,7 +82,7 @@ func (ms MainServer) Start(ctx context.Context, cfg config.Config) (err error) {
 	})
 
 	go func() {
-		if err := http.ListenAndServe(ms.Addr, r); err != nil {
+		if err = http.ListenAndServe(ms.Addr, r); err != nil {
 			return
 		}
 	}()

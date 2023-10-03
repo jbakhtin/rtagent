@@ -34,8 +34,6 @@ func New(cfg Configer) *grpcSender {
 func (r *grpcSender) Send(key string, value types.Metricer) error {
 	c := pb.NewMetricsClient(r.conn)
 
-	// функция, в которой будем отправлять сообщения
-
 	metric := &pb.Metric{
 		Key: key,
 	}
@@ -47,12 +45,13 @@ func (r *grpcSender) Send(key string, value types.Metricer) error {
 		metric.Value = float32(v)
 		metric.Type = pb.Metric_gauge
 	}
-	metric.Hash = "test"
+	metric.Hash = "test" //ToDo: need implement hash calc
 
 	metricRequest := pb.UpdateMetricRequest{
 		Metric: metric,
 	}
 
+	//ToDo: need check error
 	c.UpdateMetric(context.TODO(), &metricRequest)
 
 	return nil

@@ -2,7 +2,6 @@ package grpcServer
 
 import (
 	"context"
-	"fmt"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/storage"
@@ -13,40 +12,32 @@ import (
 	"strconv"
 )
 
-// Server поддерживает все необходимые методы сервера.
 type Server struct {
 	grpc.Server
-	// нужно встраивать тип pb.Unimplemented<TypeName>
-	// для совместимости с будущими версиями
 	pb.UnimplementedMetricsServer
 
 	Repository storage.MetricRepository
 	config     config.Config
 }
 
-func New(cfg config.Config, repository storage.MetricRepository) *Server {
-
+func New(cfg config.Config, repository storage.MetricRepository) *Server { //ToDo: need remove confog
 	s := &Server{
 		Repository: repository,
 		Server: *grpc.NewServer(),
 	}
 
 	pb.RegisterMetricsServer(s, s)
+	//ToDo: need implement cors
 
 	return s
 }
 
 func (s *Server) Run(ctx context.Context) (err error) {
-	// определяем порт для сервера
-	listen, err := net.Listen("tcp", ":3200")
+	listen, err := net.Listen("tcp", ":3200") //ToDo: need move grpc server address to config
 	if err != nil {
 		return
 	}
 
-	fmt.Println("Се" +
-		"" +
-		"рвер gRPC начал работу")
-	// получаем запрос gRPC
 	go func() {
 		if err = s.Serve(listen); err != nil {
 			return
@@ -61,8 +52,6 @@ func (s *Server) UpdateMetric(ctx context.Context, request *pb.UpdateMetricReque
 	var metric models.Metricer
 	var err error
 
-	fmt.Println("test")
-
 	switch request.Metric.Type {
 	case pb.Metric_counter:
 		metric, err = models.NewCounter(types.CounterType, request.Metric.Key, strconv.Itoa(int(request.Metric.Delta)))
@@ -73,7 +62,9 @@ func (s *Server) UpdateMetric(ctx context.Context, request *pb.UpdateMetricReque
 		return &response, nil
 	}
 
-	_, err = s.Repository.Set(metric)
+	//ToDo: need to check th hash
+
+	_, err = s.Repository.Set(metric) // ToDo: need pass the context into
 	if err != nil {
 		return nil, err
 	}

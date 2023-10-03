@@ -50,14 +50,14 @@ func init() {
 		log.Fatal(errors.Wrap(err, "init config"))
 	}
 
+	storageBuilder := storage.New()
 	if cfg.DatabaseDSN != "" {
-		if repository, err = storage.New().Postgres(cfg).Build(); err != nil {
-			log.Fatal(errors.Wrap(err, "init repository"))
-		}
+		storageBuilder.Postgres(cfg)
 	} else {
-		if repository, err = storage.New().File(cfg).Build(); err != nil {
-			log.Fatal(errors.Wrap(err, "init repository"))
-		}
+		storageBuilder.File(cfg)
+	}
+	if repository, err = storageBuilder.Build(); err != nil {
+		log.Fatal(errors.Wrap(err, "init repository"))
 	}
 
 	if grpc = grpcServer.New(*cfg, repository); err != nil {
@@ -79,7 +79,7 @@ func main() {
 
 	switch temp := repository.(type) {
 	case *filestorage.FileStorage:
-		// ToDo: need to move bckuper to Facade
+		// ToDo: need to move backup implementation of file storage to FileStorage Facade
 		if err := temp.Start(osCtx, *cfg); err != nil {
 			log.Fatal(errors.Wrap(err, "start backup storage"))
 		}
