@@ -1,4 +1,4 @@
-package worker
+package messagesender
 
 import (
 	"context"
@@ -15,25 +15,25 @@ type IQueue interface {
 	IsEmpty() bool
 }
 
-type worker struct {
+type messageSender struct {
 	queue IQueue
 	api   IAPI
 }
 
-func New(queue IQueue, api IAPI) *worker {
-	return &worker{
+func New(queue IQueue, api IAPI) *messageSender {
+	return &messageSender{
 		queue,
 		api,
 	}
 }
 
-func (jm *worker) Do(ctx context.Context) error {
-	if jm.queue.IsEmpty() {
+func (ms *messageSender) Do(ctx context.Context) error {
+	if ms.queue.IsEmpty() {
 		return nil
 	}
 
-	node := jm.queue.Dequeue()
-	err := jm.api.Send(node.Key(), node.Value())
+	node := ms.queue.Dequeue()
+	err := ms.api.Send(node.Key(), node.Value())
 	if err != nil {
 		return nil //ToDo: need to forward to main to circuit breaker
 	}
