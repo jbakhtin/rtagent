@@ -5,38 +5,44 @@ import (
 	"crypto/rsa"
 	"encoding/json"
 	"fmt"
-	sender2 "github.com/jbakhtin/rtagent/internal/agent/sender"
 	"github.com/jbakhtin/rtagent/internal/server/models"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"github.com/jbakhtin/rtagent/pkg/crypto"
 	"net/http"
 )
 
+type Configer interface {
+	GetServerAddress() string
+	GetKeyApp() string
+	GetCryptoKey() string
+	GetTrustedSubnet() string
+}
+
 type ReportFunction func() string
 
-type sender struct {
-	cfg sender2.Configer
+type HttpSender struct {
+	Cfg Configer
 }
 
-func New(cfg sender2.Configer) *sender {
-	return &sender{
-		cfg: cfg,
+func New(cfg Configer) *HttpSender {
+	return &HttpSender{
+		Cfg: cfg,
 	}
 }
 
-func (r *sender) Send(key string, value types.Metricer) error {
-	endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", r.cfg.GetServerAddress()))
-	model, err := models.ToJSON(r.cfg, key, value)
+func (r *HttpSender) Send(key string, value types.Metricer) error {
+	endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", r.Cfg.GetServerAddress()))
+	model, err := models.ToJSON(r.Cfg, key, value)
 	if err != nil {
 		return err
 	}
 
-	model.Hash, err = model.CalcHash([]byte(r.cfg.GetKeyApp()))
+	model.Hash, err = model.CalcHash([]byte(r.Cfg.GetKeyApp()))
 	if err != nil {
 		return err
 	}
 
-	hash, err := model.CalcHash([]byte(r.cfg.GetKeyApp()))
+	hash, err := model.CalcHash([]byte(r.Cfg.GetKeyApp()))
 	if err != nil {
 		return err
 	}
@@ -49,8 +55,8 @@ func (r *sender) Send(key string, value types.Metricer) error {
 
 	var encryptedKey string
 	var publicKey *rsa.PublicKey
-	if r.cfg.GetCryptoKey() != "" {
-		publicKey, err = crypto.GetPublicKey(r.cfg.GetCryptoKey())
+	if r.Cfg.GetCryptoKey() != "" {
+		publicKey, err = crypto.GetPublicKey(r.Cfg.GetCryptoKey())
 		if err != nil {
 			return err
 		}
@@ -70,12 +76,12 @@ func (r *sender) Send(key string, value types.Metricer) error {
 	}
 	request.Header.Set("Content-Type", "application/json")
 
-	if r.cfg.GetCryptoKey() != "" {
+	if r.Cfg.GetCryptoKey() != "" {
 		request.Header.Set("Encrypted-Key", encryptedKey)
 	}
 
-	if r.cfg.GetTrustedSubnet() != "" {
-		request.Header.Set("X-Real-IP", r.cfg.GetTrustedSubnet())
+	if r.Cfg.GetTrustedSubnet() != "" {
+		request.Header.Set("X-Real-IP", r.Cfg.GetTrustedSubnet())
 	}
 
 	client := http.Client{}

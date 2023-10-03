@@ -15,19 +15,19 @@ func TestNew(t *testing.T) {
 	}
 
 	type args struct {
-		cfg Configer
+		cfg http.Configer
 	}
 	tests := []struct {
 		name string
 		args args
-		want *http.sender
+		want *http.HttpSender
 	}{
 		{
 			"New sender",
 			args{
 				cfg,
 			},
-			&http.sender{
+			&http.HttpSender{
 				cfg,
 			},
 		},
@@ -48,7 +48,7 @@ func Test_sender_Send(t *testing.T) {
 	}
 
 	type fields struct {
-		cfg Configer
+		cfg http.Configer
 	}
 	type args struct {
 		key   string
@@ -74,8 +74,8 @@ func Test_sender_Send(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &http.sender{
-				cfg: tt.fields.cfg,
+			r := &http.HttpSender{
+				Cfg: tt.fields.cfg,
 			}
 			if err := r.Send(tt.args.key, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("Send() error = %v, wantErr %v", err, tt.wantErr)

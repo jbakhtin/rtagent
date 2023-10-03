@@ -2,21 +2,27 @@ package grpc
 
 import (
 	"context"
-	"github.com/jbakhtin/rtagent/internal/agent/sender"
 	"github.com/jbakhtin/rtagent/internal/types"
 	pb "github.com/jbakhtin/rtagent/proto/metric"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type Configer interface {
+	GetServerAddress() string
+	GetKeyApp() string
+	GetCryptoKey() string
+	GetTrustedSubnet() string
+}
+
 type ReportFunction func() string
 
 type grpcSender struct {
-	cfg sender.Configer
+	cfg Configer
 	conn *grpc.ClientConn
 }
 
-func New(cfg sender.Configer) *grpcSender {
+func New(cfg Configer) *grpcSender {
 	conn, _ := grpc.Dial(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	return &grpcSender{
