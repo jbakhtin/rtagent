@@ -20,17 +20,17 @@ type Configer interface {
 
 type ReportFunction func() string
 
-type HttpSender struct {
+type HTTPSender struct {
 	Cfg Configer
 }
 
-func New(cfg Configer) *HttpSender {
-	return &HttpSender{
+func New(cfg Configer) (*HTTPSender, error) {
+	return &HTTPSender{
 		Cfg: cfg,
-	}
+	}, nil
 }
 
-func (s *HttpSender) Send(key string, value types.Metricer) error {
+func (s *HTTPSender) Send(key string, value types.Metricer) error {
 	endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", s.Cfg.GetServerAddress()))
 	model, err := models.ToJSON(s.Cfg, key, value)
 	if err != nil {

@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/go-faster/errors"
 	"io"
+	"log"
 	"os"
 	"time"
 
@@ -40,13 +40,15 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 			select {
 			case <-ctx.Done():
 				err := fs.Backup(ctx, cfg)
-				fmt.Println(err)
+				if err != nil {
+					log.Println(err) //ToDo need refactoring, need add channels
+				}
 				return
 
 			case <-ticker.C:
 				err := fs.Backup(ctx, cfg)
 				if err != nil {
-					fmt.Println(err)
+					log.Println(err)
 				}
 			}
 		}

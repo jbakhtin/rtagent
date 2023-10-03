@@ -22,13 +22,16 @@ type grpcSender struct {
 	conn *grpc.ClientConn
 }
 
-func New(cfg Configer) *grpcSender {
-	conn, _ := grpc.Dial(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
+func New(cfg Configer) (*grpcSender, error) {
+	conn, err := grpc.Dial(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
 
 	return &grpcSender{
 		cfg:  cfg,
 		conn: conn,
-	}
+	}, nil
 }
 
 func (r *grpcSender) Send(key string, value types.Metricer) error {
@@ -51,8 +54,11 @@ func (r *grpcSender) Send(key string, value types.Metricer) error {
 		Metric: metric,
 	}
 
-	//ToDo: need check error
-	c.UpdateMetric(context.TODO(), &metricRequest)
+	//ToDo: need log response error
+	_, err := c.UpdateMetric(context.TODO(), &metricRequest)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

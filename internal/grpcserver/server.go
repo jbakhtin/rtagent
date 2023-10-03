@@ -1,4 +1,4 @@
-package grpcServer
+package grpcserver
 
 import (
 	"context"
@@ -17,10 +17,9 @@ type Server struct {
 	pb.UnimplementedMetricsServer
 
 	Repository storage.MetricRepository
-	config     config.Config
 }
 
-func New(cfg config.Config, repository storage.MetricRepository) *Server { //ToDo: need remove confog
+func New(cfg config.Config, repository storage.MetricRepository) (*Server, error) { //ToDo: need remove confog
 	s := &Server{
 		Repository: repository,
 		Server:     *grpc.NewServer(),
@@ -29,7 +28,7 @@ func New(cfg config.Config, repository storage.MetricRepository) *Server { //ToD
 	pb.RegisterMetricsServer(s, s)
 	//ToDo: need implement cors
 
-	return s
+	return s, nil
 }
 
 func (s *Server) Run(ctx context.Context) (err error) {
@@ -60,6 +59,9 @@ func (s *Server) UpdateMetric(ctx context.Context, request *pb.UpdateMetricReque
 	default:
 		response.Error = "metric typ not valid"
 		return &response, nil
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	//ToDo: need to check th hash

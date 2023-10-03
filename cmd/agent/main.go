@@ -61,7 +61,10 @@ func main() {
 	task1 := periodic.New("polling stats", cfg.GetPollInterval(), aggregator.Pool)
 	task2 := periodic.New("make jobs", cfg.GetReportInterval(), jobMaker.Do)
 
-	sender := http.New(cfg)
+	sender, err := http.New(cfg)
+	if err != nil {
+		logger.Error(err.Error())
+	}
 	jobSender := messagesender.New(queue, sender)
 
 	task3 := limited.New("send jobs", cfg.RateLimit, time.Second, jobSender.Do)

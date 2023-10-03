@@ -20,21 +20,22 @@ func TestNew(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *http.HttpSender
+		want *http.HTTPSender
 	}{
 		{
 			"New sender",
 			args{
 				cfg,
 			},
-			&http.HttpSender{
-				cfg,
+			&http.HTTPSender{
+				Cfg: cfg,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := http.New(tt.args.cfg); !reflect.DeepEqual(got, tt.want) {
+
+			if got, _ := http.New(tt.args.cfg); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("New() = %v, want %v", got, tt.want)
 			}
 		})
@@ -74,7 +75,7 @@ func Test_sender_Send(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &http.HttpSender{
+			r := &http.HTTPSender{
 				Cfg: tt.fields.cfg,
 			}
 			if err := r.Send(tt.args.key, tt.args.value); (err != nil) != tt.wantErr {

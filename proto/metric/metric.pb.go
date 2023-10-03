@@ -67,15 +67,14 @@ func (Metric_Type) EnumDescriptor() ([]byte, []int) {
 }
 
 type Metric struct {
+	Hash          string `protobuf:"bytes,5,opt,name=hash,proto3" json:"hash,omitempty"`
+	Key           string `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
 	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
-
-	Type  Metric_Type `protobuf:"varint,1,opt,name=type,proto3,enum=grpcMetric.Metric_Type" json:"type,omitempty"`
-	Key   string      `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
-	Delta uint64      `protobuf:"varint,3,opt,name=delta,proto3" json:"delta,omitempty"`
-	Value float32     `protobuf:"fixed32,4,opt,name=value,proto3" json:"value,omitempty"`
-	Hash  string      `protobuf:"bytes,5,opt,name=hash,proto3" json:"hash,omitempty"`
+	Delta         uint64      `protobuf:"varint,3,opt,name=delta,proto3" json:"delta,omitempty"`
+	Value         float32     `protobuf:"fixed32,4,opt,name=value,proto3" json:"value,omitempty"`
+	Type          Metric_Type `protobuf:"varint,1,opt,name=type,proto3,enum=grpcMetric.Metric_Type" json:"type,omitempty"`
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Metric) Reset() {
@@ -146,11 +145,10 @@ func (x *Metric) GetHash() string {
 }
 
 type UpdateMetricRequest struct {
+	Metric        *Metric `protobuf:"bytes,1,opt,name=metric,proto3" json:"metric,omitempty"`
 	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
-
-	Metric *Metric `protobuf:"bytes,1,opt,name=metric,proto3" json:"metric,omitempty"`
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateMetricRequest) Reset() {
@@ -193,11 +191,10 @@ func (x *UpdateMetricRequest) GetMetric() *Metric {
 }
 
 type UpdateMetricResponse struct {
+	Error         string `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"` // ошибка
 	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
-
-	Error string `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"` // ошибка
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateMetricResponse) Reset() {

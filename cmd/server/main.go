@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-faster/errors"
-	"github.com/jbakhtin/rtagent/internal/grpcServer"
+	"github.com/jbakhtin/rtagent/internal/grpcserver"
 	"github.com/jbakhtin/rtagent/internal/storage"
 	"github.com/jbakhtin/rtagent/internal/storage/filestorage"
 	"github.com/jbakhtin/rtagent/pkg/closer"
@@ -15,7 +15,6 @@ import (
 
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/server"
-	"go.uber.org/zap"
 )
 
 var (
@@ -28,11 +27,11 @@ var (
 
 var (
 	repository storage.MetricRepository
-	logger     *zap.Logger
-	cfg        *config.Config
-	grpc       *grpcServer.Server
-	http       server.MainServer
-	clr        *closer.Closer
+	//logger     *zap.Logger
+	cfg  *config.Config
+	grpc *grpcserver.Server
+	http server.MainServer
+	clr  *closer.Closer
 )
 
 func init() {
@@ -42,9 +41,9 @@ func init() {
 		log.Fatal(errors.Wrap(err, "set app configuration info"))
 	}
 
-	if logger, err = zap.NewDevelopment(); err != nil {
-		log.Fatal(errors.Wrap(err, "init logger"))
-	}
+	//if logger, err = zap.NewDevelopment(); err != nil {
+	//	log.Fatal(errors.Wrap(err, "init logger"))
+	//}
 
 	if cfg, err = config.NewConfigBuilder().WithAllFromFlagsS().WithAllFromEnv().Build(); err != nil {
 		log.Fatal(errors.Wrap(err, "init config"))
@@ -60,7 +59,7 @@ func init() {
 		log.Fatal(errors.Wrap(err, "init repository"))
 	}
 
-	if grpc = grpcServer.New(*cfg, repository); err != nil {
+	if grpc, err = grpcserver.New(*cfg, repository); err != nil {
 		log.Fatal(errors.Wrap(err, "init grpc server"))
 	}
 
