@@ -26,8 +26,6 @@ vendor/
 
 # sandbox
 /cmd/sandbox/
-/cmd/grpcserver/
-/cmd/grpcclient/
 /tmp/*
 
 # profiles
