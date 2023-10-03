@@ -53,7 +53,7 @@ func (dbs *DBStorage) Set(metric models.Metricer) (models.Metricer, error) {
 	case models.Gauge:
 		var metricSaved models.Gauge
 		err := dbs.QueryRow(insertGauge, m.MKey, m.MType, m.MValue). // ToDo: Need to use QueryContext
-			Scan(&metricSaved.MKey, &metricSaved.MType, &metricSaved.MValue)
+										Scan(&metricSaved.MKey, &metricSaved.MType, &metricSaved.MValue)
 		if err != nil {
 			return nil, err
 		}

@@ -18,7 +18,7 @@ type Configer interface {
 type ReportFunction func() string
 
 type grpcSender struct {
-	cfg Configer
+	cfg  Configer
 	conn *grpc.ClientConn
 }
 
@@ -26,7 +26,7 @@ func New(cfg Configer) *grpcSender {
 	conn, _ := grpc.Dial(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	return &grpcSender{
-		cfg: cfg,
+		cfg:  cfg,
 		conn: conn,
 	}
 }

@@ -56,8 +56,8 @@ func TestMemStorage_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ms := &MemStorage{
-				Mx:     tt.fields.Mx,
-				Items:  tt.fields.Items,
+				Mx:    tt.fields.Mx,
+				Items: tt.fields.Items,
 			}
 			got, err := ms.Get(tt.args.key)
 			if (err != nil) != tt.wantErr {
@@ -110,8 +110,8 @@ func TestMemStorage_GetAll(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ms := &MemStorage{
-				Mx:     tt.fields.Mx,
-				Items:  tt.fields.Items,
+				Mx:    tt.fields.Mx,
+				Items: tt.fields.Items,
 			}
 			got, err := ms.GetAll()
 			if (err != nil) != tt.wantErr {
@@ -162,8 +162,8 @@ func TestMemStorage_Set(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ms := &MemStorage{
-				Mx:     tt.fields.Mx,
-				Items:  tt.fields.Items,
+				Mx:    tt.fields.Mx,
+				Items: tt.fields.Items,
 			}
 			got, err := ms.Set(tt.args.metric)
 			if (err != nil) != tt.wantErr {
@@ -215,8 +215,8 @@ func TestMemStorage_SetBatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ms := &MemStorage{
-				Mx:     tt.fields.Mx,
-				Items:  tt.fields.Items,
+				Mx:    tt.fields.Mx,
+				Items: tt.fields.Items,
 			}
 			got, err := ms.SetBatch(tt.args.metrics)
 			if (err != nil) != tt.wantErr {
@@ -255,8 +255,8 @@ func TestPing(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ms := &MemStorage{
-				Mx:     tt.fields.Mx,
-				Items:  tt.fields.Items,
+				Mx:    tt.fields.Mx,
+				Items: tt.fields.Items,
 			}
 			if err := ms.TestPing(); (err != nil) != tt.wantErr {
 				t.Errorf("TestPing() error = %v, wantErr %v", err, tt.wantErr)

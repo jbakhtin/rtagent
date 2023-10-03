@@ -21,7 +21,7 @@ type MetricRepository interface {
 
 type builder struct {
 	repository MetricRepository
-	err error
+	err        error
 }
 
 func New() *builder {
@@ -53,18 +53,18 @@ func (b *builder) Postgres(cfg postgresConfig) *builder {
 	}
 
 	b.repository = &dbstorage.DBStorage{
-		DB:     db,
+		DB: db,
 	}
 
 	return b
 }
 
-type inMemoryConfig interface {}
+type inMemoryConfig interface{}
 
 func (b *builder) InMemory(cfg inMemoryConfig) *builder {
 	b.repository = &memstorage.MemStorage{
-		Items:  make(map[string]models.Metricer, 0),
-		Mx:     &sync.RWMutex{},
+		Items: make(map[string]models.Metricer, 0),
+		Mx:    &sync.RWMutex{},
 	}
 
 	return b

@@ -23,7 +23,7 @@ type Server struct {
 func New(cfg config.Config, repository storage.MetricRepository) *Server { //ToDo: need remove confog
 	s := &Server{
 		Repository: repository,
-		Server: *grpc.NewServer(),
+		Server:     *grpc.NewServer(),
 	}
 
 	pb.RegisterMetricsServer(s, s)

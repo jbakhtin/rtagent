@@ -47,7 +47,7 @@ func TestHandlerMetric_Get(t *testing.T) {
 		},
 	}
 
-	repository, _:= storage.New().InMemory(cfg).Build()
+	repository, _ := storage.New().InMemory(cfg).Build()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h, err := NewHandlerMetric(ctx, *cfg, repository)

@@ -28,11 +28,11 @@ var (
 
 var (
 	repository storage.MetricRepository
-	logger *zap.Logger
-	cfg *config.Config
-	grpc *grpcServer.Server
-	http server.MainServer
-	clr *closer.Closer
+	logger     *zap.Logger
+	cfg        *config.Config
+	grpc       *grpcServer.Server
+	http       server.MainServer
+	clr        *closer.Closer
 )
 
 func init() {
@@ -83,7 +83,7 @@ func main() {
 		if err := temp.Start(osCtx, *cfg); err != nil {
 			log.Fatal(errors.Wrap(err, "start backup storage"))
 		}
-	// ...
+		// ...
 	}
 
 	if err := grpc.Run(osCtx); err != nil {

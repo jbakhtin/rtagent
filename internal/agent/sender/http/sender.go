@@ -30,7 +30,6 @@ func New(cfg Configer) *HttpSender {
 	}
 }
 
-
 func (s *HttpSender) Send(key string, value types.Metricer) error {
 	endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", s.Cfg.GetServerAddress()))
 	model, err := models.ToJSON(s.Cfg, key, value)

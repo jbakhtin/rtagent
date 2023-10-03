@@ -8,8 +8,8 @@ import (
 )
 
 type MemStorage struct {
-	Mx     *sync.RWMutex
-	Items  map[string]models.Metricer
+	Mx    *sync.RWMutex
+	Items map[string]models.Metricer
 }
 
 func (ms *MemStorage) Set(metric models.Metricer) (models.Metricer, error) {
