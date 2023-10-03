@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
+	"github.com/go-faster/errors"
 	"io"
 	"os"
 	"time"
@@ -73,18 +73,14 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 	file, err := fs.openFile(cfg, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		closeErr := file.Close()
-		if closeErr != nil {
-			return closeErr
-		}
 
-		return err
+		return errors.Wrap(err, "open file")
 	}
 	defer file.Close()
 
 	metrics, err := fs.GetAll()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "mem storage")
 	}
 
 	var JSONMetrics []handlerModels.Metrics
@@ -93,32 +89,32 @@ func (fs *FileStorage) Backup(ctx context.Context, cfg config.Config) error {
 	for _, v := range metrics {
 		JSONMetric, err = v.ToJSON([]byte(cfg.KeyApp))
 		if err != nil {
-			return err
+			return errors.Wrap(err, "metric to json")
 		}
 		JSONMetrics = append(JSONMetrics, JSONMetric)
 	}
 
 	data, err := json.Marshal(JSONMetrics)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "marshal json")
 	}
 
 	writer := bufio.NewWriter(file)
 	if _, err = writer.Write(data); err != nil {
-		return err
+		return errors.Wrap(err, "write to buffer")
 	}
 
-	err = file.Truncate(0)
+	err = file.Truncate(int64(0))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "truncate file")
 	}
 
 	if _, err = file.Seek(0, 0); err != nil {
-		return err
+		return errors.Wrap(err, "seek file")
 	}
 
 	if err = writer.WriteByte('\n'); err != nil {
-		return err
+		return errors.Wrap(err, "write bytes to file with \\\n")
 	}
 
 	return writer.Flush()
@@ -182,7 +178,7 @@ func (fs *FileStorage) openFile(cfg config.Config, flag int, perm os.FileMode) (
 		fs.Logger.Info(err.Error())
 
 		fs.Logger.Info("try to make dir 'tmp'")
-		err = os.Mkdir("tmp", perm)
+		err = os.Mkdir("./tmp", perm)
 		if err != nil {
 			return nil, err
 		}

@@ -3,7 +3,6 @@
 package ratelimiter
 
 import (
-	"context"
 	"time"
 )
 
@@ -27,34 +26,30 @@ func New(timeInterval time.Duration, count int) *Limiter {
 
 // Wait ожидает окончания действия.
 // Устанавливается в конце повторяющейся операции, количество выполнений которой нужно ограничить.
-func (l *Limiter) Wait() {
-	<-l.waiter
+func (l *Limiter) Wait() chan struct{} {
+	return l.waiter
 }
 
 // Run запускает внутренний цикл счетчика.
-func (l *Limiter) Run(ctx context.Context) error {
-	go l.run(ctx)
-
-	return nil
+func (l *Limiter) Run() {
+	go l.run()
 }
 
 // run обрабатывает состояния счетчика.
-func (l *Limiter) run(ctx context.Context) {
+func (l *Limiter) run() {
 	for {
-		if l.counter > l.maxCount {
+		if l.counter >= l.maxCount {
 			<-l.resetCounter.C
 			l.counter = 0
 		}
 
-		select {
-		case <-ctx.Done():
-			l.resetCounter.Stop()
-			return
-		case l.waiter <- struct{}{}:
-			l.counter++
-
-		case <-l.resetCounter.C:
-			l.counter = 0
-		}
+		l.waiter <- struct{}{}
+		l.counter++
 	}
+}
+
+func (l *Limiter) Close() error {
+	l.resetCounter.Stop()
+	close(l.waiter)
+	return nil
 }

@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"github.com/go-faster/errors"
 	"time"
 
 	"github.com/caarlos0/env/v6"
@@ -11,7 +12,7 @@ const (
 	_pollInterval               = time.Second * 2
 	_reportInterval             = time.Second * 10
 	_address                    = "127.0.0.1:8080"
-	_storeFile                  = "tmp/devops-metrics-db.json"
+	_storeFile                  = "./tmp/devops-metrics-db.json"
 	_storeInterval              = time.Second * 300
 	_restore                    = true
 	_acceptableCountAgentErrors = 100
@@ -19,6 +20,9 @@ const (
 	_databaseDSN                = ""
 	_databaseDriver             = "pgx"
 	_rateLimit                  = 100
+	_shutdownTimeout            = 10
+	_cryptoKey                  = ""
+	_config                     = ""
 )
 
 const (
@@ -33,20 +37,25 @@ const (
 	_databaseDSNLabel                = "DSN БД"
 	_databaseDriverLabel             = "Драйвер подключения к БД"
 	_rateLimitLabel                  = "Количество исходящих запросов в секунду"
+	_shutdownTimeoutLabel            = "Время на заерщение всех процессов перед отключением"
+	_cryptoKeyLabel                  = "Ключ для асимметричного шифрования"
+	_configLabel                     = "JSON file with config params"
 )
 
 type Config struct {
 	Address                    string        `env:"ADDRESS"`
-	StoreFile                  string        `env:"STORE_FILE"`
+	StoreFile                  string        `env:"STORE_FILE" envDefault:"tmp/devops-metrics-db.json"`
 	KeyApp                     string        `env:"KEY"`
 	DatabaseDSN                string        `env:"DATABASE_DSN"`
 	DatabaseDriver             string        `env:"DATABASE_DRIVER" envDefault:"pgx"`
+	CryptoKey                  string        `env:"CRYPTO_KEY"`
 	AcceptableCountAgentErrors int           `env:"ACCEPTABLE_COUNT_AGENT_ERRORS"`
 	RateLimit                  int           `env:"RATE_LIMIT" envDefault:"100"`
 	PollInterval               time.Duration `env:"POLL_INTERVAL"`
 	ReportInterval             time.Duration `env:"REPORT_INTERVAL"`
 	StoreInterval              time.Duration `env:"STORE_INTERVAL"`
 	Restore                    bool          `env:"RESTORE"`
+	ShutdownTimeout            time.Duration `env:"SHUTDOWN_TIMEOUT"`
 }
 
 type Builder struct {
@@ -63,12 +72,14 @@ func NewConfigBuilder() *Builder {
 			_keyApp,
 			_databaseDSN,
 			_databaseDriver,
+			_cryptoKey,
 			_acceptableCountAgentErrors,
 			_rateLimit,
 			_pollInterval,
 			_reportInterval,
 			_storeInterval,
 			_restore,
+			_shutdownTimeout,
 		},
 	}
 }
@@ -81,6 +92,8 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	keyApp := flag.String("k", _keyApp, _keyAppLabel)
 	databaseDSN := flag.String("d", _databaseDSN, _databaseDSNLabel)
 	databaseDriver := flag.String("dbDriver", _databaseDriver, _databaseDriverLabel)
+	shutdownTimeout := flag.Duration("shutdownTimeout", _shutdownTimeout, _shutdownTimeoutLabel)
+	cryptoKey := flag.String("crypto-key", _cryptoKey, _cryptoKeyLabel)
 	flag.Parse()
 
 	cb.config.Address = *address
@@ -90,6 +103,8 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	cb.config.KeyApp = *keyApp
 	cb.config.DatabaseDSN = *databaseDSN
 	cb.config.DatabaseDriver = *databaseDriver
+	cb.config.ShutdownTimeout = *shutdownTimeout
+	cb.config.CryptoKey = *cryptoKey
 
 	return cb
 }
@@ -106,6 +121,8 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	acceptableCountAgentErrors := flag.Int("e", _acceptableCountAgentErrors, _acceptableCountAgentErrorsLabel)
 	keyApp := flag.String("k", _keyApp, _keyAppLabel)
 	rateLimit := flag.Int("l", _rateLimit, _rateLimitLabel)
+	shutdownTimeout := flag.Duration("shutdownTimeout", _shutdownTimeout, _shutdownTimeoutLabel)
+	cryptoKey := flag.String("crypto-key", _cryptoKey, _cryptoKeyLabel)
 	flag.Parse()
 
 	cb.config.PollInterval = *pollInterval
@@ -114,6 +131,8 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	cb.config.AcceptableCountAgentErrors = *acceptableCountAgentErrors
 	cb.config.KeyApp = *keyApp
 	cb.config.RateLimit = *rateLimit
+	cb.config.ShutdownTimeout = *shutdownTimeout
+	cb.config.CryptoKey = *cryptoKey
 
 	return cb
 }
@@ -128,5 +147,38 @@ func (cb *Builder) WithAllFromEnv() *Builder {
 }
 
 func (cb *Builder) Build() (Config, error) {
+	defer func() {
+		if cb.err != nil {
+			cb.err = errors.Wrap(cb.err, "-config flag")
+		}
+	}()
 	return cb.config, cb.err
+}
+
+func (c Config) GetPollInterval() time.Duration {
+	return c.PollInterval
+}
+
+func (c Config) GetServerAddress() string {
+	return c.Address
+}
+
+func (c Config) GetReportInterval() time.Duration {
+	return c.ReportInterval
+}
+
+func (c Config) GetKeyApp() string {
+	return c.KeyApp
+}
+
+func (c Config) GetAcceptableCountAgentErrors() int {
+	return c.AcceptableCountAgentErrors
+}
+
+func (c Config) GetShutdownTimeout() time.Duration {
+	return c.ShutdownTimeout
+}
+
+func (c Config) GetCryptoKey() string {
+	return c.CryptoKey
 }

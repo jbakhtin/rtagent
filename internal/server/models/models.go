@@ -5,8 +5,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/jbakhtin/rtagent/internal/config"
-
 	"github.com/jbakhtin/rtagent/internal/types"
 )
 
@@ -18,7 +16,11 @@ type Metrics struct {
 	Hash  string         `json:"hash,omitempty"`
 }
 
-func ToJSON(cfg config.Config, id string, value types.Metricer) (Metrics, error) {
+type Configer interface {
+	GetKeyApp() string
+}
+
+func ToJSON(cfg Configer, id string, value types.Metricer) (Metrics, error) {
 	var err error
 	metric := Metrics{
 		MKey:  id,
@@ -27,10 +29,10 @@ func ToJSON(cfg config.Config, id string, value types.Metricer) (Metrics, error)
 	switch v := value.(type) {
 	case types.Counter:
 		metric.Delta = &v
-		metric.Hash, err = metric.CalcHash([]byte(cfg.KeyApp))
+		metric.Hash, err = metric.CalcHash([]byte(cfg.GetKeyApp()))
 	case types.Gauge:
 		metric.Value = &v
-		metric.Hash, err = metric.CalcHash([]byte(cfg.KeyApp))
+		metric.Hash, err = metric.CalcHash([]byte(cfg.GetKeyApp()))
 	}
 	if err != nil {
 		return Metrics{}, err
