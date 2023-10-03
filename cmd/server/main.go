@@ -50,8 +50,14 @@ func init() {
 		log.Fatal(errors.Wrap(err, "init config"))
 	}
 
-	if repository, err = storage.New().File(cfg).Build(); err != nil {
-		log.Fatal(errors.Wrap(err, "init repository"))
+	if cfg.DatabaseDSN != "" {
+		if repository, err = storage.New().Postgres(cfg).Build(); err != nil {
+			log.Fatal(errors.Wrap(err, "init repository"))
+		}
+	} else {
+		if repository, err = storage.New().File(cfg).Build(); err != nil {
+			log.Fatal(errors.Wrap(err, "init repository"))
+		}
 	}
 
 	if grpc = grpcServer.New(*cfg, repository); err != nil {
