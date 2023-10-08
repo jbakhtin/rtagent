@@ -2,11 +2,11 @@ package grpcserver
 
 import (
 	"context"
+	pb "github.com/jbakhtin/rtagent/gen/go/proto/metric/v1"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/storage"
 	"github.com/jbakhtin/rtagent/internal/types"
-	pb "github.com/jbakhtin/rtagent/proto/metric"
 	"google.golang.org/grpc"
 	"net"
 	"strconv"
@@ -14,7 +14,7 @@ import (
 
 type Server struct {
 	grpc.Server
-	pb.UnimplementedMetricsServer
+	pb.UnimplementedMetricsServiceServer
 
 	Repository storage.MetricRepository
 }
@@ -25,7 +25,7 @@ func New(cfg config.Config, repository storage.MetricRepository) (*Server, error
 		Server:     *grpc.NewServer(),
 	}
 
-	pb.RegisterMetricsServer(s, s)
+	pb.RegisterMetricsServiceServer(s, s)
 	//ToDo: need implement cors
 
 	return s, nil
@@ -52,9 +52,9 @@ func (s *Server) UpdateMetric(ctx context.Context, request *pb.UpdateMetricReque
 	var err error
 
 	switch request.Metric.Type {
-	case pb.Metric_counter:
+	case pb.Metric_TYPE_COUNTER:
 		metric, err = models.NewCounter(types.CounterType, request.Metric.Key, strconv.Itoa(int(request.Metric.Delta)))
-	case pb.Metric_gauge:
+	case pb.Metric_TYPE_GAUGE_UNSPECIFIED:
 		metric, err = models.NewGauge(types.GaugeType, request.Metric.Key, strconv.FormatFloat(float64(request.Metric.Value), 'E', -1, 32))
 	default:
 		response.Error = "metric typ not valid"

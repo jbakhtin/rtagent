@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	_ "github.com/bufbuild/protovalidate-go"
 	"github.com/jbakhtin/rtagent/internal/agent/aggregator"
 	"github.com/jbakhtin/rtagent/internal/agent/jobsmaker"
 	"github.com/jbakhtin/rtagent/internal/agent/jobsqueue"

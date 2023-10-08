@@ -2,8 +2,8 @@ package grpc
 
 import (
 	"context"
+	pb "github.com/jbakhtin/rtagent/gen/go/proto/metric/v1"
 	"github.com/jbakhtin/rtagent/internal/types"
-	pb "github.com/jbakhtin/rtagent/proto/metric"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
