@@ -52,9 +52,9 @@ func (s *Server) UpdateMetric(ctx context.Context, request *pb.UpdateMetricReque
 	var err error
 
 	switch request.Metric.Type {
-	case pb.Metric_TYPE_COUNTER:
+	case pb.Type_TYPE_COUNTER:
 		metric, err = models.NewCounter(types.CounterType, request.Metric.Key, strconv.Itoa(int(request.Metric.Delta)))
-	case pb.Metric_TYPE_GAUGE_UNSPECIFIED:
+	case pb.Type_TYPE_GAUGE:
 		metric, err = models.NewGauge(types.GaugeType, request.Metric.Key, strconv.FormatFloat(float64(request.Metric.Value), 'E', -1, 32))
 	default:
 		response.Error = "metric typ not valid"

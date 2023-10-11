@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"context"
-	pb "github.com/jbakhtin/rtagent/gen/go/proto/metric/v1"
+	pb "github.com/jbakhtin/rtagent/gen/go/metric/v1"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -35,7 +35,7 @@ func New(cfg Configer) (*grpcSender, error) {
 }
 
 func (r *grpcSender) Send(key string, value types.Metricer) error {
-	c := pb.NewMetricsClient(r.conn)
+	c := pb.NewMetricsServiceClient(r.conn)
 
 	metric := &pb.Metric{
 		Key: key,
@@ -43,10 +43,10 @@ func (r *grpcSender) Send(key string, value types.Metricer) error {
 	switch v := value.(type) {
 	case types.Counter:
 		metric.Delta = uint64(v)
-		metric.Type = pb.Metric_counter
+		metric.Type = pb.Type_TYPE_COUNTER
 	case types.Gauge:
 		metric.Value = float32(v)
-		metric.Type = pb.Metric_gauge
+		metric.Type = pb.Type_TYPE_GAUGE
 	}
 	metric.Hash = "test" //ToDo: need implement hash calc
 

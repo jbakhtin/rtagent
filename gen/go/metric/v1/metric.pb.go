@@ -4,6 +4,8 @@
 // 	protoc        (unknown)
 // source: metric/v1/metric.proto
 
+//nolint:fieldalignment
+
 package metricv1
 
 import (
