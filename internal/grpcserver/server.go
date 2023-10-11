@@ -2,7 +2,7 @@ package grpcserver
 
 import (
 	"context"
-	pb "github.com/jbakhtin/rtagent/gen/go/proto/metric/v1"
+	pb "github.com/jbakhtin/rtagent/gen/go/metric/v1"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/storage"

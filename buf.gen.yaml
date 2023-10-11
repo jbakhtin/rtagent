@@ -6,12 +6,12 @@ managed:
     except:
       - buf.build/bufbuild/protovalidate
 plugins:
-  - plugin: buf.build/bufbuild/validate-go:v1.0.2
+  - plugin: go
     out: gen/go
     opt:
       - paths=source_relative
   # dependencies
-  - plugin: buf.build/protocolbuffers/go
+  - plugin: go-grpc
     out: gen/go
     opt:
       - paths=source_relative
