@@ -1,4 +1,4 @@
-name: Check proto files
+name: protobuf
 
 jobs:
   build:
@@ -10,5 +10,5 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: '1.19'
-      - name: Buf lint
+      - name: buf lint
         run: buf lint
