@@ -2,10 +2,14 @@ package grpc
 
 import (
 	"context"
+	"fmt"
 	pb "github.com/jbakhtin/rtagent/gen/go/metric/v1"
+	"github.com/jbakhtin/rtagent/internal/agent/sender/grpc/interceptors"
+	"github.com/jbakhtin/rtagent/internal/models"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"strconv"
 )
 
 type Configer interface {
@@ -13,6 +17,7 @@ type Configer interface {
 	GetKeyApp() string
 	GetCryptoKey() string
 	GetTrustedSubnet() string
+	GetGRPCServerAddress() string
 }
 
 type ReportFunction func() string
@@ -23,7 +28,17 @@ type grpcSender struct {
 }
 
 func New(cfg Configer) (*grpcSender, error) {
-	conn, err := grpc.Dial(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	xRealIp := xrealip.XRealIP{
+		IPs: cfg.GetTrustedSubnet(),
+	}
+
+	conn, err := grpc.Dial(
+		cfg.GetGRPCServerAddress(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithChainUnaryInterceptor(
+				xRealIp.SetXRealIPInterceptor,
+			),
+		)
 	if err != nil {
 		return nil, err
 	}
@@ -37,26 +52,37 @@ func New(cfg Configer) (*grpcSender, error) {
 func (r *grpcSender) Send(key string, value types.Metricer) error {
 	c := pb.NewMetricsServiceClient(r.conn)
 
-	metric := &pb.Metric{
-		Key: key,
-	}
+	var pbMetric *pb.Metric
+
 	switch v := value.(type) {
 	case types.Counter:
-		metric.Delta = uint64(v)
-		metric.Type = pb.Type_TYPE_COUNTER
+		metricModel, err := models.NewCounter("counter", key, strconv.FormatInt(int64(v), 10))
+		if err != nil {
+			return err
+		}
+		pbMetric, err = metricModel.ToGRPC(r.cfg.GetKeyApp())
+		if err != nil {
+			return err
+		}
 	case types.Gauge:
-		metric.Value = float32(v)
-		metric.Type = pb.Type_TYPE_GAUGE
+		metricModel, err := models.NewGauge("gauge", key, strconv.FormatFloat(float64(v), 'E', -1, 64))
+		if err != nil {
+			return err
+		}
+		pbMetric, err = metricModel.ToGRPC(r.cfg.GetKeyApp())
+		if err != nil {
+			return err
+		}
 	}
-	metric.Hash = "test" //ToDo: need implement hash calc
 
 	metricRequest := pb.UpdateMetricRequest{
-		Metric: metric,
+		Metric: pbMetric,
 	}
 
 	//ToDo: need log response error
 	_, err := c.UpdateMetric(context.TODO(), &metricRequest)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 

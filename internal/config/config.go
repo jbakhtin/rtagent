@@ -8,10 +8,13 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+
+
 const (
 	_pollInterval               = time.Second * 2
 	_reportInterval             = time.Second * 10
 	_address                    = "127.0.0.1:8080"
+	_grpcAddress                = ":3200"
 	_storeFile                  = "./tmp/devops-metrics-db.json"
 	_storeInterval              = time.Second * 300
 	_restore                    = true
@@ -30,6 +33,7 @@ const (
 	_pollIntervalLabel               = "Период чтения состояния метрик"
 	_reportIntervalLabel             = "Период отправки состояния метрик на сервер"
 	_addressLabel                    = "Адрес сервера"
+	_grpcAddressLabel                = "Адрес GRPC сервера"
 	_storeFileLabel                  = "Файл хранения слепков состояния MemStorage"
 	_storeIntervalLabel              = "Период создания слепков MemStorage в секундах"
 	_restoreLabel                    = "Загрузить последний слепок MemStorage перед стартом сервиса"
@@ -46,6 +50,7 @@ const (
 
 type Config struct {
 	Address                    string        `env:"ADDRESS"`
+	GRPCAddress                string        `env:"GRPC_ADDRESS"`
 	StoreFile                  string        `env:"STORE_FILE" envDefault:"tmp/devops-metrics-db.json"`
 	KeyApp                     string        `env:"KEY"`
 	DatabaseDSN                string        `env:"DATABASE_DSN"`
@@ -71,6 +76,7 @@ func NewConfigBuilder() *Builder {
 		nil,
 		&Config{
 			_address,
+			_grpcAddress,
 			_storeFile,
 			_keyApp,
 			_databaseDSN,
@@ -90,6 +96,7 @@ func NewConfigBuilder() *Builder {
 
 func (cb *Builder) WithAllFromFlagsS() *Builder {
 	address := flag.String("a", _address, _addressLabel)
+	grpcAddress := flag.String("ga", _grpcAddress,_grpcAddressLabel)
 	storeFile := flag.String("f", _storeFile, _storeFileLabel)
 	storeInterval := flag.Duration("i", _storeInterval, _storeIntervalLabel)
 	restore := flag.Bool("r", _restore, _restoreLabel)
@@ -102,6 +109,7 @@ func (cb *Builder) WithAllFromFlagsS() *Builder {
 	flag.Parse()
 
 	cb.config.Address = *address
+	cb.config.GRPCAddress = *grpcAddress
 	cb.config.StoreFile = *storeFile
 	cb.config.StoreInterval = *storeInterval
 	cb.config.Restore = *restore
@@ -124,6 +132,7 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	pollInterval := flag.Duration("p", _pollInterval, _pollIntervalLabel)
 	reportInterval := flag.Duration("r", _reportInterval, _reportIntervalLabel)
 	address := flag.String("a", _address, _addressLabel)
+	grpcAddress := flag.String("ag", _grpcAddress, _grpcAddressLabel)
 	acceptableCountAgentErrors := flag.Int("e", _acceptableCountAgentErrors, _acceptableCountAgentErrorsLabel)
 	keyApp := flag.String("k", _keyApp, _keyAppLabel)
 	rateLimit := flag.Int("l", _rateLimit, _rateLimitLabel)
@@ -135,6 +144,7 @@ func (cb *Builder) WithAllFromFlagsA() *Builder {
 	cb.config.PollInterval = *pollInterval
 	cb.config.ReportInterval = *reportInterval
 	cb.config.Address = *address
+	cb.config.GRPCAddress = *grpcAddress
 	cb.config.AcceptableCountAgentErrors = *acceptableCountAgentErrors
 	cb.config.KeyApp = *keyApp
 	cb.config.RateLimit = *rateLimit
@@ -169,6 +179,10 @@ func (c Config) GetPollInterval() time.Duration {
 
 func (c Config) GetServerAddress() string {
 	return c.Address
+}
+
+func (c Config) GetGRPCServerAddress() string {
+	return c.GRPCAddress
 }
 
 func (c Config) GetReportInterval() time.Duration {

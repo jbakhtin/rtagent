@@ -2,6 +2,8 @@ package models
 
 import (
 	"fmt"
+	pb "github.com/jbakhtin/rtagent/gen/go/metric/v1"
+	"github.com/jbakhtin/rtagent/pkg/hasher"
 	"strconv"
 
 	"github.com/jbakhtin/rtagent/internal/server/models"
@@ -79,6 +81,24 @@ func (g Gauge) ToJSON(key []byte) (models.Metrics, error) {
 	return JSONMetric, nil
 }
 
+func (g Gauge) ToGRPC(key string) (*pb.Metric, error) {
+	var err error
+	GRPCMetric := &pb.Metric{
+		Key:  g.MKey,
+		Type: pb.Type_TYPE_GAUGE,
+		Value: float32(g.MValue),
+	}
+
+	if len(key) != 0 {
+		GRPCMetric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", GRPCMetric.Key, GRPCMetric.Type, GRPCMetric.Value), []byte(key))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return GRPCMetric, nil
+}
+
 // Counter ----
 
 func NewCounter(mType, mKey, mValue string) (Counter, error) {
@@ -118,13 +138,31 @@ func (c Counter) ToJSON(key []byte) (models.Metrics, error) {
 	}
 
 	if len(key) != 0 {
-		JSONMetric.Hash, err = JSONMetric.CalcHash(key)
+		JSONMetric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", JSONMetric.MKey, JSONMetric.MType, JSONMetric.Value), key)
 		if err != nil {
 			return models.Metrics{}, err
 		}
 	}
 
 	return JSONMetric, nil
+}
+
+func (c Counter) ToGRPC(key string) (*pb.Metric, error) {
+	var err error
+	GRPCMetric := &pb.Metric{
+		Key:  c.MKey,
+		Type: pb.Type_TYPE_COUNTER,
+		Delta: uint64(c.MValue),
+	}
+
+	if len(key) != 0 {
+		GRPCMetric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", GRPCMetric.Key, GRPCMetric.Type, GRPCMetric.Delta), []byte(key))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return GRPCMetric, nil
 }
 
 func (c *Counter) Increment() {
