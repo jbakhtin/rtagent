@@ -192,7 +192,7 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 		case types.GaugeType:
 			metric, err = models.NewGauge(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Value))
 			if h.config.KeyApp != "" {
-				hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", metrics.MKey, metrics.MType, *metrics.Value), []byte(h.config.KeyApp))
+				hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%f", metrics.MKey, metrics.MType, *metrics.Value), []byte(h.config.KeyApp))
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
@@ -310,7 +310,7 @@ func (h *HandlerMetric) UpdateMetricsByJSON() http.HandlerFunc {
 					return
 				}
 				if h.config.KeyApp != "" {
-					hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", m.MKey, m.MType, *m.Value), []byte(h.config.KeyApp))
+					hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%f", m.MKey, m.MType, *m.Value), []byte(h.config.KeyApp))
 					if err != nil {
 						http.Error(w, err.Error(), http.StatusInternalServerError)
 						return

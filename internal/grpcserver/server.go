@@ -78,7 +78,7 @@ func (s *Server) UpdateMetric(ctx context.Context, request *pb.UpdateMetricReque
 	case pb.Type_TYPE_GAUGE:
 		metric, err = models.NewGauge(types.GaugeType, request.Metric.Key, strconv.FormatFloat(float64(request.Metric.Value), 'E', -1, 32))
 		if s.cfg.GetKeyApp() != "" {
-			hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", request.Metric.Key, request.Metric.Type, request.Metric.Value), []byte(s.cfg.GetKeyApp()))
+			hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%f", request.Metric.Key, request.Metric.Type, request.Metric.Value), []byte(s.cfg.GetKeyApp()))
 			if err != nil {
 				return nil, errors.Wrap(err, "calc hash")
 			}
