@@ -88,8 +88,7 @@ func (s *Server) UpdateMetric(ctx context.Context, request *pb.UpdateMetricReque
 			}
 		}
 	default:
-		response.Error = "metric typ not valid"
-		return &response, nil
+		return nil, errors.New("metric typ not valid")
 	}
 	if err != nil {
 		return nil, err

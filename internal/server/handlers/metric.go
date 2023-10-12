@@ -304,7 +304,7 @@ func (h *HandlerMetric) UpdateMetricsByJSON() http.HandlerFunc {
 			var metric models.Metricer
 			switch m.MType {
 			case types.GaugeType:
-				metric, err = models.NewGauge(m.MType, m.MKey, fmt.Sprintf("%f", *m.Value))
+				metric, err = models.NewGauge(m.MType, m.MKey, fmt.Sprintf("%v", *m.Value))
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return

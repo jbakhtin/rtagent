@@ -47,8 +47,6 @@ message UpdateMetricRequest {
   Metric metric = 1;
 }
 
-message UpdateMetricResponse {
-  string error = 1;
-}
+message UpdateMetricResponse {}
 
 
