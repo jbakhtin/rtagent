@@ -187,25 +187,36 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 			return
 		}
 
-		if h.config.KeyApp != "" {
-			hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", metrics.MKey, metrics.MType, metrics.Value), []byte(h.config.KeyApp))
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			if hash != metrics.Hash {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-		}
-
 		var metric models.Metricer
 		switch metrics.MType {
 		case types.GaugeType:
 			metric, err = models.NewGauge(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Value))
+			if h.config.KeyApp != "" {
+				hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", metrics.MKey, metrics.MType, *metrics.Value), []byte(h.config.KeyApp))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				if hash != metrics.Hash {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+			}
 		case types.CounterType:
 			metric, err = models.NewCounter(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Delta))
+			if h.config.KeyApp != "" {
+				hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", metrics.MKey, metrics.MType, *metrics.Delta), []byte(h.config.KeyApp))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				if hash != metrics.Hash {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+			}
 		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
