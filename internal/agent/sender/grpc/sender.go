@@ -27,7 +27,7 @@ type grpcSender struct {
 }
 
 func New(cfg Configer) (*grpcSender, error) {
-	xRealIp := xrealip.XRealIP{
+	xRealIP := xrealip.XRealIP{
 		IPs: cfg.GetTrustedSubnet(),
 	}
 
@@ -35,7 +35,7 @@ func New(cfg Configer) (*grpcSender, error) {
 		cfg.GetGRPCServerAddress(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(
-			xRealIp.SetXRealIPInterceptor,
+			xRealIP.SetXRealIPInterceptor,
 		),
 	)
 	if err != nil {

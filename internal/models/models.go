@@ -72,7 +72,7 @@ func (g Gauge) ToJSON(key []byte) (models.Metrics, error) {
 		Value: &g.MValue,
 	}
 	if len(key) != 0 {
-		JSONMetric.Hash, err = JSONMetric.CalcHash(key)
+		JSONMetric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", JSONMetric.MKey, JSONMetric.MType, JSONMetric.Value), key)
 		if err != nil {
 			return models.Metrics{}, err
 		}
