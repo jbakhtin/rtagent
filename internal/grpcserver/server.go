@@ -97,7 +97,6 @@ func (s *Server) UpdateMetric(ctx context.Context, request *pb.UpdateMetricReque
 
 	_, err = s.Repository.Set(metric) // ToDo: need pass the context into
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 

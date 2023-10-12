@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"fmt"
 	pb "github.com/jbakhtin/rtagent/gen/go/metric/v1"
 	"github.com/jbakhtin/rtagent/internal/agent/sender/grpc/interceptors"
 	"github.com/jbakhtin/rtagent/internal/models"
@@ -82,7 +81,6 @@ func (r *grpcSender) Send(key string, value types.Metricer) error {
 	//ToDo: need log response error
 	_, err := c.UpdateMetric(context.TODO(), &metricRequest)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
