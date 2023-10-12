@@ -7,7 +7,7 @@ import (
 )
 
 func CalcHash(value string, salt []byte) (string, error) {
-	h := hmac.New(sha256.New, []byte(salt))
+	h := hmac.New(sha256.New, salt)
 
 	_, err := h.Write([]byte(value))
 	if err != nil {

@@ -28,10 +28,10 @@ func ToJSON(cfg Configer, id string, value types.Metricer) (Metrics, error) {
 	switch v := value.(type) {
 	case types.Counter:
 		metric.Delta = &v
-		metric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", metric.MKey, metric.MType, metric.Delta), []byte(cfg.GetKeyApp()))
+		metric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", metric.MKey, metric.MType, *metric.Delta), []byte(cfg.GetKeyApp()))
 	case types.Gauge:
 		metric.Value = &v
-		metric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", metric.MKey, metric.MType, metric.Value), []byte(cfg.GetKeyApp()))
+		metric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", metric.MKey, metric.MType, *metric.Value), []byte(cfg.GetKeyApp()))
 	}
 	if err != nil {
 		return Metrics{}, err

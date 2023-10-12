@@ -72,7 +72,7 @@ func (g Gauge) ToJSON(key []byte) (models.Metrics, error) {
 		Value: &g.MValue,
 	}
 	if len(key) != 0 {
-		JSONMetric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", JSONMetric.MKey, JSONMetric.MType, JSONMetric.Value), key)
+		JSONMetric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", JSONMetric.MKey, JSONMetric.MType, JSONMetric.Value), key)
 		if err != nil {
 			return models.Metrics{}, err
 		}
@@ -90,7 +90,7 @@ func (g Gauge) ToGRPC(key string) (*pb.Metric, error) {
 	}
 
 	if len(key) != 0 {
-		GRPCMetric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", GRPCMetric.Key, GRPCMetric.Type, GRPCMetric.Value), []byte(key))
+		GRPCMetric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", GRPCMetric.Key, GRPCMetric.Type, GRPCMetric.Value), []byte(key))
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +138,7 @@ func (c Counter) ToJSON(key []byte) (models.Metrics, error) {
 	}
 
 	if len(key) != 0 {
-		JSONMetric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", JSONMetric.MKey, JSONMetric.MType, JSONMetric.Value), key)
+		JSONMetric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", JSONMetric.MKey, JSONMetric.MType, JSONMetric.Value), key)
 		if err != nil {
 			return models.Metrics{}, err
 		}
@@ -156,7 +156,7 @@ func (c Counter) ToGRPC(key string) (*pb.Metric, error) {
 	}
 
 	if len(key) != 0 {
-		GRPCMetric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", GRPCMetric.Key, GRPCMetric.Type, GRPCMetric.Delta), []byte(key))
+		GRPCMetric.Hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", GRPCMetric.Key, GRPCMetric.Type, GRPCMetric.Delta), []byte(key))
 		if err != nil {
 			return nil, err
 		}

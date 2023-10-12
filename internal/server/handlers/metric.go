@@ -188,7 +188,7 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 		}
 
 		if h.config.KeyApp != "" {
-			hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", metrics.MKey, metrics.MType, metrics.Value), []byte(h.config.KeyApp))
+			hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", metrics.MKey, metrics.MType, metrics.Value), []byte(h.config.KeyApp))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -291,7 +291,7 @@ func (h *HandlerMetric) UpdateMetricsByJSON() http.HandlerFunc {
 		mMetrics := make([]models.Metricer, len(metrics))
 		for i, m := range metrics {
 			if h.config.KeyApp != "" {
-				hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", m.MKey, m.MType, m.Value), []byte(h.config.KeyApp))
+				hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%v", m.MKey, m.MType, m.Value), []byte(h.config.KeyApp))
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
