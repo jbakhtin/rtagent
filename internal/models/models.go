@@ -84,8 +84,8 @@ func (g Gauge) ToJSON(key []byte) (models.Metrics, error) {
 func (g Gauge) ToGRPC(key string) (*pb.Metric, error) {
 	var err error
 	GRPCMetric := &pb.Metric{
-		Key:  g.MKey,
-		Type: pb.Type_TYPE_GAUGE,
+		Key:   g.MKey,
+		Type:  pb.Type_TYPE_GAUGE,
 		Value: float32(g.MValue),
 	}
 
@@ -150,8 +150,8 @@ func (c Counter) ToJSON(key []byte) (models.Metrics, error) {
 func (c Counter) ToGRPC(key string) (*pb.Metric, error) {
 	var err error
 	GRPCMetric := &pb.Metric{
-		Key:  c.MKey,
-		Type: pb.Type_TYPE_COUNTER,
+		Key:   c.MKey,
+		Type:  pb.Type_TYPE_COUNTER,
 		Delta: uint64(c.MValue),
 	}
 

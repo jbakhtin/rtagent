@@ -36,9 +36,9 @@ func New(cfg Configer) (*grpcSender, error) {
 		cfg.GetGRPCServerAddress(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(
-				xRealIp.SetXRealIPInterceptor,
-			),
-		)
+			xRealIp.SetXRealIPInterceptor,
+		),
+	)
 	if err != nil {
 		return nil, err
 	}

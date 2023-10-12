@@ -12,7 +12,6 @@ type TrustedSubnet struct {
 	Subnets string
 }
 
-
 func (ts TrustedSubnet) TrustedSubnetsInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	trustedSubnets := metadata.ValueFromIncomingContext(ctx, "x-real-ip")
 	if trustedSubnets == nil {

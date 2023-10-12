@@ -21,7 +21,7 @@ type Server struct {
 	pb.UnimplementedMetricsServiceServer
 
 	Repository storage.MetricRepository
-	cfg config.Config
+	cfg        config.Config
 }
 
 func New(cfg config.Config, repository storage.MetricRepository) (*Server, error) {
@@ -32,7 +32,7 @@ func New(cfg config.Config, repository storage.MetricRepository) (*Server, error
 	s := &Server{
 		Repository: repository,
 		Server:     *grpc.NewServer(grpc.UnaryInterceptor(trustedSubnets.TrustedSubnetsInterceptor)),
-		cfg: cfg,
+		cfg:        cfg,
 	}
 
 	pb.RegisterMetricsServiceServer(s, s)

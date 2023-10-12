@@ -8,8 +8,6 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
-
-
 const (
 	_pollInterval               = time.Second * 2
 	_reportInterval             = time.Second * 10
@@ -96,7 +94,7 @@ func NewConfigBuilder() *Builder {
 
 func (cb *Builder) WithAllFromFlagsS() *Builder {
 	address := flag.String("a", _address, _addressLabel)
-	grpcAddress := flag.String("ga", _grpcAddress,_grpcAddressLabel)
+	grpcAddress := flag.String("ga", _grpcAddress, _grpcAddressLabel)
 	storeFile := flag.String("f", _storeFile, _storeFileLabel)
 	storeInterval := flag.Duration("i", _storeInterval, _storeIntervalLabel)
 	restore := flag.Bool("r", _restore, _restoreLabel)
