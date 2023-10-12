@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jbakhtin/rtagent/pkg/hasher"
 	"html/template"
 	"net/http"
 
@@ -37,28 +38,6 @@ var listOfMetricHTMLTemplate = `
 `
 
 func NewHandlerMetric(ctx context.Context, cfg config.Config, repository MetricRepository) (*HandlerMetric, error) {
-	//if cfg.DatabaseDSN != "" {
-	//	ms, err := dbstorage.New(cfg) // TODO: move to cfg
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//
-	//	return &HandlerMetric{
-	//		repository: &ms,
-	//		config:     cfg,
-	//	}, nil
-	//}
-	//
-	//ms, err := filestorage.New(cfg)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//err = ms.Start(ctx, cfg)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	return &HandlerMetric{
 		repository: repository,
 		config:     cfg,
@@ -209,7 +188,7 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 		}
 
 		if h.config.KeyApp != "" {
-			hash, err = metrics.CalcHash([]byte(h.config.KeyApp))
+			hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", metrics.MKey, metrics.MType, metrics.Value), []byte(h.config.KeyApp))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -312,7 +291,7 @@ func (h *HandlerMetric) UpdateMetricsByJSON() http.HandlerFunc {
 		mMetrics := make([]models.Metricer, len(metrics))
 		for i, m := range metrics {
 			if h.config.KeyApp != "" {
-				hash, err = m.CalcHash([]byte(h.config.KeyApp))
+				hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%x", m.MKey, m.MType, m.Value), []byte(h.config.KeyApp))
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return

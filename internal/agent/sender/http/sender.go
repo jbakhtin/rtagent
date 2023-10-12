@@ -37,11 +37,6 @@ func (s *HTTPSender) Send(key string, value types.Metricer) error {
 		return err
 	}
 
-	model.Hash, err = model.CalcHash([]byte(s.Cfg.GetKeyApp()))
-	if err != nil {
-		return err
-	}
-
 	buf, err := json.Marshal(model)
 	if err != nil {
 		return err
