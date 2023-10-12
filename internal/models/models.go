@@ -61,7 +61,7 @@ func (g Gauge) Key() string {
 }
 
 func (g Gauge) StringValue() string {
-	return fmt.Sprintf("%v", g.MValue)
+	return fmt.Sprintf("%x", g.MValue)
 }
 
 func (g Gauge) ToJSON(key []byte) (models.Metrics, error) {
@@ -125,7 +125,7 @@ func (c Counter) Key() string {
 }
 
 func (c Counter) StringValue() string {
-	value := fmt.Sprintf("%v", c.MValue)
+	value := fmt.Sprintf("%x", c.MValue)
 	return value
 }
 
