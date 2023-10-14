@@ -14,7 +14,7 @@ enum Type {
 
 service MetricsService {
   // UpdateMetric - update metric by key.
-  rpc UpdateMetric(UpdateMetricRequest) returns (UpdateMetricResponse);
+  rpc UpdateMetric(UpdateMetricRequest) returns (google.protobuf.Empty);
 }
 
 message Metric {
