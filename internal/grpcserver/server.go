@@ -11,6 +11,7 @@ import (
 	"github.com/jbakhtin/rtagent/internal/storage"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"github.com/jbakhtin/rtagent/pkg/hasher"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/grpc"
 	"net"
 	"strconv"
@@ -56,8 +57,8 @@ func (s *Server) Run(ctx context.Context) (err error) {
 	return
 }
 
-func (s *Server) UpdateMetric(ctx context.Context, request *pb.UpdateMetricRequest) (*pb.UpdateMetricResponse, error) {
-	var response pb.UpdateMetricResponse
+func (s *Server) UpdateMetric(ctx context.Context, request *pb.UpdateMetricRequest) (*emptypb.Empty, error) {
+	var response emptypb.Empty
 	var metric models.Metricer
 	var err error
 	var hash string

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package metric.v1;
 
+import "google/protobuf/empty.proto";
 import "buf/validate/validate.proto";
 
 option go_package = "github.com/jbakhtin/rtagent/pkg/proto/metric/v1";
@@ -46,7 +47,5 @@ message Metric {
 message UpdateMetricRequest {
   Metric metric = 1;
 }
-
-message UpdateMetricResponse {}
 
 
