@@ -1,0 +1,12 @@
+version: v1
+deps:
+  - buf.build/bufbuild/protovalidate
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT
+  ignore:
+    - buf.build/bufbuild/protovalidate
+  rpc_allow_google_protobuf_empty_responses: true

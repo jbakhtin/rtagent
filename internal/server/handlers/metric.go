@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/jbakhtin/rtagent/pkg/hasher"
 	"html/template"
 	"net/http"
 
@@ -12,8 +13,6 @@ import (
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
-	"github.com/jbakhtin/rtagent/internal/storages/dbstorage"
-	"github.com/jbakhtin/rtagent/internal/storages/filestorage"
 	"github.com/jbakhtin/rtagent/internal/types"
 )
 
@@ -38,31 +37,9 @@ var listOfMetricHTMLTemplate = `
 	{{end}}
 `
 
-func NewHandlerMetric(ctx context.Context, cfg config.Config) (*HandlerMetric, error) {
-	if cfg.DatabaseDSN != "" {
-		ms, err := dbstorage.New(cfg) // TODO: move to cfg
-		if err != nil {
-			return nil, err
-		}
-
-		return &HandlerMetric{
-			repository: &ms,
-			config:     cfg,
-		}, nil
-	}
-
-	ms, err := filestorage.New(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	err = ms.Start(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-
+func NewHandlerMetric(ctx context.Context, cfg config.Config, repository MetricRepository) (*HandlerMetric, error) {
 	return &HandlerMetric{
-		repository: &ms,
+		repository: repository,
 		config:     cfg,
 	}, nil
 }
@@ -210,25 +187,36 @@ func (h *HandlerMetric) UpdateMetricByJSON() http.HandlerFunc {
 			return
 		}
 
-		if h.config.KeyApp != "" {
-			hash, err = metrics.CalcHash([]byte(h.config.KeyApp))
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			if hash != metrics.Hash {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-		}
-
 		var metric models.Metricer
 		switch metrics.MType {
 		case types.GaugeType:
 			metric, err = models.NewGauge(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Value))
+			if h.config.KeyApp != "" {
+				hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%f", metrics.MKey, metrics.MType, *metrics.Value), []byte(h.config.KeyApp))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				if hash != metrics.Hash {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+			}
 		case types.CounterType:
 			metric, err = models.NewCounter(metrics.MType, metrics.MKey, fmt.Sprintf("%v", *metrics.Delta))
+			if h.config.KeyApp != "" {
+				hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%d", metrics.MKey, metrics.MType, *metrics.Delta), []byte(h.config.KeyApp))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				if hash != metrics.Hash {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+			}
 		}
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -313,19 +301,6 @@ func (h *HandlerMetric) UpdateMetricsByJSON() http.HandlerFunc {
 		var hash string
 		mMetrics := make([]models.Metricer, len(metrics))
 		for i, m := range metrics {
-			if h.config.KeyApp != "" {
-				hash, err = m.CalcHash([]byte(h.config.KeyApp))
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				if hash != m.Hash {
-					w.WriteHeader(http.StatusBadRequest)
-					return
-				}
-			}
-
 			var metric models.Metricer
 			switch m.MType {
 			case types.GaugeType:
@@ -334,11 +309,36 @@ func (h *HandlerMetric) UpdateMetricsByJSON() http.HandlerFunc {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
+				if h.config.KeyApp != "" {
+					hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%f", m.MKey, m.MType, *m.Value), []byte(h.config.KeyApp))
+					if err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+
+					if hash != m.Hash {
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+				}
 			case types.CounterType:
-				metric, err = models.NewCounter(m.MType, m.MKey, fmt.Sprintf("%v", *m.Delta))
+				metric, err = models.NewCounter(m.MType, m.MKey, fmt.Sprintf("%d", *m.Delta))
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
+				}
+
+				if h.config.KeyApp != "" {
+					hash, err = hasher.CalcHash(fmt.Sprintf("%s:%s:%d", m.MKey, m.MType, *m.Delta), []byte(h.config.KeyApp))
+					if err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+
+					if hash != m.Hash {
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
 				}
 			}
 

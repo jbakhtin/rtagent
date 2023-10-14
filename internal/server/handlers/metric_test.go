@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"github.com/jbakhtin/rtagent/internal/config"
+	"github.com/jbakhtin/rtagent/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"log"
@@ -45,9 +46,11 @@ func TestHandlerMetric_Get(t *testing.T) {
 			},
 		},
 	}
+
+	repository, _ := storage.New().InMemory(cfg).Build()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h, err := NewHandlerMetric(ctx, cfg)
+			h, err := NewHandlerMetric(ctx, *cfg, repository)
 			if err != nil {
 				require.NoError(t, err)
 			}

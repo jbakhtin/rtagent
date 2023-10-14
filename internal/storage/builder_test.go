@@ -1,4 +1,4 @@
-package storages
+package storage
 
 import (
 	"math/rand"
@@ -8,8 +8,6 @@ import (
 
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
-	"github.com/jbakhtin/rtagent/internal/storages/dbstorage"
-	"github.com/jbakhtin/rtagent/internal/storages/memstorage"
 	"github.com/jbakhtin/rtagent/internal/types"
 )
 
@@ -27,12 +25,12 @@ func genRandString(length int) string {
 func Benchmark(b *testing.B) {
 	// Инициализация хранилищ
 	cfg, _ := config.NewConfigBuilder().WithAllFromEnv().Build()
-	memStorage, err := memstorage.NewMemStorage(cfg)
+	memStorage, err := New().InMemory(cfg).Build()
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	dbStorage, err := dbstorage.New(cfg)
+	dbStorage, err := New().Postgres(cfg).Build()
 	if err != nil {
 		b.Fatal(err)
 	}

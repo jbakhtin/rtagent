@@ -1,7 +1,6 @@
 package memstorage
 
 import (
-	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/models"
 	"go.uber.org/zap"
 	"reflect"
@@ -57,9 +56,8 @@ func TestMemStorage_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ms := &MemStorage{
-				Mx:     tt.fields.Mx,
-				Items:  tt.fields.Items,
-				Logger: tt.fields.Logger,
+				Mx:    tt.fields.Mx,
+				Items: tt.fields.Items,
 			}
 			got, err := ms.Get(tt.args.key)
 			if (err != nil) != tt.wantErr {
@@ -112,9 +110,8 @@ func TestMemStorage_GetAll(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ms := &MemStorage{
-				Mx:     tt.fields.Mx,
-				Items:  tt.fields.Items,
-				Logger: tt.fields.Logger,
+				Mx:    tt.fields.Mx,
+				Items: tt.fields.Items,
 			}
 			got, err := ms.GetAll()
 			if (err != nil) != tt.wantErr {
@@ -165,9 +162,8 @@ func TestMemStorage_Set(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ms := &MemStorage{
-				Mx:     tt.fields.Mx,
-				Items:  tt.fields.Items,
-				Logger: tt.fields.Logger,
+				Mx:    tt.fields.Mx,
+				Items: tt.fields.Items,
 			}
 			got, err := ms.Set(tt.args.metric)
 			if (err != nil) != tt.wantErr {
@@ -219,9 +215,8 @@ func TestMemStorage_SetBatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ms := &MemStorage{
-				Mx:     tt.fields.Mx,
-				Items:  tt.fields.Items,
-				Logger: tt.fields.Logger,
+				Mx:    tt.fields.Mx,
+				Items: tt.fields.Items,
 			}
 			got, err := ms.SetBatch(tt.args.metrics)
 			if (err != nil) != tt.wantErr {
@@ -230,51 +225,6 @@ func TestMemStorage_SetBatch(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("SetBatch() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestNewMemStorage(t *testing.T) {
-	logger, _ := zap.NewDevelopment()
-	//metric1, _ := models.NewCounter("counter", "TestMetric", "10")
-	//metric2, _ := models.NewCounter("gauge", "TestMetric2", "10")
-	//metric3, _ := models.NewCounter("gauge", "TestMetricSet1", "0")
-	//metric4, _ := models.NewCounter("gauge", "TestMetricSet2", "1")
-
-	cfg, _ := config.NewConfigBuilder().WithAllFromEnv().Build()
-
-	type args struct {
-		cfg config.Config
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    MemStorage
-		wantErr bool
-	}{
-		{
-			"New mem storage",
-			args{
-				cfg,
-			},
-			MemStorage{
-				&sync.RWMutex{},
-				map[string]models.Metricer{},
-				logger,
-			},
-			false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewMemStorage(tt.args.cfg)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewMemStorage() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got.Items, tt.want.Items) {
-				t.Errorf("NewMemStorage() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -305,9 +255,8 @@ func TestPing(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ms := &MemStorage{
-				Mx:     tt.fields.Mx,
-				Items:  tt.fields.Items,
-				Logger: tt.fields.Logger,
+				Mx:    tt.fields.Mx,
+				Items: tt.fields.Items,
 			}
 			if err := ms.TestPing(); (err != nil) != tt.wantErr {
 				t.Errorf("TestPing() error = %v, wantErr %v", err, tt.wantErr)

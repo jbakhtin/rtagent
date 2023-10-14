@@ -1,6 +1,7 @@
 package sender
 
 import (
+	"github.com/jbakhtin/rtagent/internal/agent/sender/http"
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"reflect"
@@ -14,26 +15,27 @@ func TestNew(t *testing.T) {
 	}
 
 	type args struct {
-		cfg Configer
+		cfg http.Configer
 	}
 	tests := []struct {
 		name string
 		args args
-		want *sender
+		want *http.HTTPSender
 	}{
 		{
 			"New sender",
 			args{
 				cfg,
 			},
-			&sender{
-				cfg,
+			&http.HTTPSender{
+				Cfg: cfg,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := New(tt.args.cfg); !reflect.DeepEqual(got, tt.want) {
+
+			if got, _ := http.New(tt.args.cfg); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("New() = %v, want %v", got, tt.want)
 			}
 		})
@@ -47,7 +49,7 @@ func Test_sender_Send(t *testing.T) {
 	}
 
 	type fields struct {
-		cfg Configer
+		cfg http.Configer
 	}
 	type args struct {
 		key   string
@@ -73,8 +75,8 @@ func Test_sender_Send(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &sender{
-				cfg: tt.fields.cfg,
+			r := &http.HTTPSender{
+				Cfg: tt.fields.cfg,
 			}
 			if err := r.Send(tt.args.key, tt.args.value); (err != nil) != tt.wantErr {
 				t.Errorf("Send() error = %v, wantErr %v", err, tt.wantErr)

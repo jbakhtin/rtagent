@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"github.com/go-faster/errors"
 	"io"
+	"log"
 	"os"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 	handlerModels "github.com/jbakhtin/rtagent/internal/server/models"
 	"github.com/jbakhtin/rtagent/internal/types"
 
-	"github.com/jbakhtin/rtagent/internal/storages/memstorage"
+	"github.com/jbakhtin/rtagent/internal/storage/memstorage"
 
 	"github.com/jbakhtin/rtagent/internal/config"
 )
@@ -21,17 +22,6 @@ import (
 // FileStorage является оберткой над MemStorage и вынесен в отдельный пакет, как полноценное хранилище
 type FileStorage struct {
 	memstorage.MemStorage
-}
-
-func New(cfg config.Config) (FileStorage, error) {
-	memStorage, err := memstorage.NewMemStorage(cfg)
-	if err != nil {
-		return FileStorage{}, err
-	}
-
-	return FileStorage{
-		MemStorage: memStorage,
-	}, nil
 }
 
 func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
@@ -51,17 +41,14 @@ func (fs *FileStorage) Start(ctx context.Context, cfg config.Config) error {
 			case <-ctx.Done():
 				err := fs.Backup(ctx, cfg)
 				if err != nil {
-					fs.Logger.Error(err.Error())
-				} else {
-					fs.Logger.Info("the data is saved to the disk")
+					log.Println(err) //ToDo need refactoring, need add channels
 				}
-				fs.Logger.Info("stop file storage loop")
 				return
 
 			case <-ticker.C:
 				err := fs.Backup(ctx, cfg)
 				if err != nil {
-					fs.Logger.Error(err.Error())
+					log.Println(err)
 				}
 			}
 		}
@@ -175,9 +162,9 @@ func (fs *FileStorage) Restore(ctx context.Context, cfg config.Config) error {
 func (fs *FileStorage) openFile(cfg config.Config, flag int, perm os.FileMode) (*os.File, error) {
 	file, err := os.OpenFile(cfg.StoreFile, flag, perm)
 	if os.IsNotExist(err) {
-		fs.Logger.Info(err.Error())
+		//fs.Logger.Info(err.Error())
 
-		fs.Logger.Info("try to make dir 'tmp'")
+		//fs.Logger.Info("try to make dir 'tmp'")
 		err = os.Mkdir("./tmp", perm)
 		if err != nil {
 			return nil, err

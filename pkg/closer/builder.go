@@ -2,12 +2,12 @@ package closer
 
 type builder struct {
 	err    error
-	closer closer
+	closer Closer
 }
 
 func New() *builder {
 	return &builder{
-		closer: closer{},
+		closer: Closer{},
 		err:    nil,
 	}
 }
@@ -17,7 +17,7 @@ func (b *builder) WithFuncs(funcs ...Func) *builder {
 	return b
 }
 
-func (b *builder) Build() (*closer, error) {
+func (b *builder) Build() (*Closer, error) {
 	if b.err != nil {
 		return nil, b.err
 	}

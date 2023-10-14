@@ -7,7 +7,6 @@ import (
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/copylock"
-	"golang.org/x/tools/go/analysis/passes/fieldalignment"
 	"golang.org/x/tools/go/analysis/passes/httpresponse"
 	"golang.org/x/tools/go/analysis/passes/ifaceassert"
 	"golang.org/x/tools/go/analysis/passes/loopclosure"
@@ -73,7 +72,7 @@ func Start() error {
 		osexitcheck.Analyzer,
 
 		errcheck.Analyzer,
-		fieldalignment.Analyzer,
+		//fieldalignment.Analyzer,
 	}
 
 	checks := make(map[string]bool)

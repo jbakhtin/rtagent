@@ -1,3 +1,4 @@
 {
-  "address": "test2"
+  "address": "test2",
+  "trusted_subnet": ""
 }

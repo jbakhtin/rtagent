@@ -3,6 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/go-faster/errors"
+	"github.com/jbakhtin/rtagent/internal/grpcserver"
+	"github.com/jbakhtin/rtagent/internal/storage"
+	"github.com/jbakhtin/rtagent/internal/storage/filestorage"
 	"github.com/jbakhtin/rtagent/pkg/closer"
 	"log"
 	"os/signal"
@@ -11,21 +15,60 @@ import (
 
 	"github.com/jbakhtin/rtagent/internal/config"
 	"github.com/jbakhtin/rtagent/internal/server"
-	"go.uber.org/zap"
-
-	_ "net/http/pprof"
 )
 
 var (
 	BuildVersion = "N/A"
 	BuildDate    = "N/A"
 	BuildCommit  = "N/A"
+
+	buildFmt = "Build version: %s\nBuild date: %s\nBuild commit: %s\n"
+)
+
+var (
+	repository storage.MetricRepository
+	//logger     *zap.Logger
+	cfg  *config.Config
+	grpc *grpcserver.Server
+	http server.MainServer
+	clr  *closer.Closer
 )
 
 func init() {
-	_, err := fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", BuildVersion, BuildDate, BuildCommit)
-	if err != nil {
-		log.Fatal(err)
+	var err error
+
+	if _, err = fmt.Printf(buildFmt, BuildVersion, BuildDate, BuildCommit); err != nil {
+		log.Fatal(errors.Wrap(err, "set app configuration info"))
+	}
+
+	//if logger, err = zap.NewDevelopment(); err != nil {
+	//	log.Fatal(errors.Wrap(err, "init logger"))
+	//}
+
+	if cfg, err = config.NewConfigBuilder().WithAllFromFlagsS().WithAllFromEnv().Build(); err != nil {
+		log.Fatal(errors.Wrap(err, "init config"))
+	}
+
+	storageBuilder := storage.New()
+	if cfg.DatabaseDSN != "" {
+		storageBuilder.Postgres(cfg)
+	} else {
+		storageBuilder.File(cfg)
+	}
+	if repository, err = storageBuilder.Build(); err != nil {
+		log.Fatal(errors.Wrap(err, "init repository"))
+	}
+
+	if grpc, err = grpcserver.New(*cfg, repository); err != nil {
+		log.Fatal(errors.Wrap(err, "init grpc server"))
+	}
+
+	if http, err = server.New(*cfg, repository); err != nil {
+		log.Fatal(errors.Wrap(err, "init http server"))
+	}
+
+	if clr, err = closer.New().WithFuncs(http.Shutdown).Build(); err != nil {
+		log.Fatal(errors.Wrap(err, "init closer"))
 	}
 }
 
@@ -33,34 +76,21 @@ func main() {
 	osCtx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	defer cancel()
 
-	logger, err := zap.NewDevelopment()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	cfg, err := config.NewConfigBuilder().
-		WithAllFromFlagsS().
-		WithAllFromEnv().
-		Build()
-	if err != nil {
-		logger.Error(err.Error())
-		return
-	}
-
-	s, err := server.New(cfg)
-	if err != nil {
-		logger.Error(err.Error())
-	}
-
-	go func() {
-		if err = s.Start(osCtx, cfg); err != nil {
-			logger.Info(err.Error())
+	switch temp := repository.(type) {
+	case *filestorage.FileStorage:
+		// ToDo: need to move backup implementation of file storage to FileStorage Facade
+		if err := temp.Start(osCtx, *cfg); err != nil {
+			log.Fatal(errors.Wrap(err, "start backup storage"))
 		}
-	}()
+		// ...
+	}
 
-	cl, err := closer.New().WithFuncs(s.Shutdown).Build()
-	if err != nil {
-		logger.Error(err.Error())
+	if err := grpc.Run(osCtx); err != nil {
+		log.Fatal(errors.Wrap(err, "start grpc server"))
+	}
+
+	if err := http.Start(osCtx, *cfg); err != nil {
+		log.Fatal(errors.Wrap(err, "start http server"))
 	}
 
 	// Gracefully shut down
@@ -68,8 +98,7 @@ func main() {
 	withTimeout, cancelShutdownProc := context.WithTimeout(context.Background(), time.Second*cfg.ShutdownTimeout)
 	defer cancelShutdownProc()
 
-	err = cl.Close(withTimeout)
-	if err != nil {
-		logger.Error(err.Error())
+	if err := clr.Close(withTimeout); err != nil {
+		log.Fatal(errors.Wrap(err, "shutdown"))
 	}
 }

@@ -1,4 +1,4 @@
-package sender
+package http
 
 import (
 	"bytes"
@@ -11,35 +11,31 @@ import (
 	"net/http"
 )
 
+type Configer interface {
+	GetServerAddress() string
+	GetKeyApp() string
+	GetCryptoKey() string
+	GetTrustedSubnet() string
+}
+
 type ReportFunction func() string
 
-type sender struct {
-	cfg Configer
+type HTTPSender struct {
+	Cfg Configer
 }
 
-func New(cfg Configer) *sender {
-	return &sender{
-		cfg: cfg,
-	}
+func New(cfg Configer) (*HTTPSender, error) {
+	return &HTTPSender{
+		Cfg: cfg,
+	}, nil
 }
 
-func (s *sender) Send(key string, value types.Metricer) error {
-	endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", s.cfg.GetServerAddress()))
-	model, err := models.ToJSON(s.cfg, key, value)
+func (s *HTTPSender) Send(key string, value types.Metricer) error {
+	endpoint := fmt.Sprintf("%s/update/", fmt.Sprintf("http://%s", s.Cfg.GetServerAddress()))
+	model, err := models.ToJSON(s.Cfg, key, value)
 	if err != nil {
 		return err
 	}
-
-	model.Hash, err = model.CalcHash([]byte(s.cfg.GetKeyApp()))
-	if err != nil {
-		return err
-	}
-
-	hash, err := model.CalcHash([]byte(s.cfg.GetKeyApp()))
-	if err != nil {
-		return err
-	}
-	model.Hash = hash
 
 	buf, err := json.Marshal(model)
 	if err != nil {
@@ -48,8 +44,9 @@ func (s *sender) Send(key string, value types.Metricer) error {
 
 	var encryptedKey string
 	var publicKey *rsa.PublicKey
-	if s.cfg.GetCryptoKey() != "" {
-		publicKey, err = crypto.GetPublicKey(s.cfg.GetCryptoKey())
+
+	if s.Cfg.GetCryptoKey() != "" {
+		publicKey, err = crypto.GetPublicKey(s.Cfg.GetCryptoKey())
 		if err != nil {
 			return err
 		}
@@ -69,8 +66,12 @@ func (s *sender) Send(key string, value types.Metricer) error {
 	}
 	request.Header.Set("Content-Type", "application/json")
 
-	if s.cfg.GetCryptoKey() != "" {
+	if s.Cfg.GetCryptoKey() != "" {
 		request.Header.Set("Encrypted-Key", encryptedKey)
+	}
+
+	if s.Cfg.GetTrustedSubnet() != "" {
+		request.Header.Set("X-Real-IP", s.Cfg.GetTrustedSubnet())
 	}
 
 	client := http.Client{}
