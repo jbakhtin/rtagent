@@ -11,8 +11,8 @@ import (
 	"github.com/jbakhtin/rtagent/internal/storage"
 	"github.com/jbakhtin/rtagent/internal/types"
 	"github.com/jbakhtin/rtagent/pkg/hasher"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"net"
 	"strconv"
 )
